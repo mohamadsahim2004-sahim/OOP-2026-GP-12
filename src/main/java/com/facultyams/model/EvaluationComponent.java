@@ -1,35 +1,33 @@
 package com.facultyams.model;
 
 public class EvaluationComponent {
-    private int componentId;
-    private int courseId;
+    private int evalComponentid;
     private String componentName;
-    private double percentage;
+    private String category;
+    private double maxMarks;
+    private double weightage;
+
 
     public EvaluationComponent() {
-}
-    public EvaluationComponent(int componentId, int courseId, String componentName, double percentage) {
-        this.componentId = componentId;
-        this.courseId = courseId;
+    }
+
+    public EvaluationComponent(int evalComponentid, String componentName,
+                               String category, double maxMarks, double weightage) {
+        this.evalComponentid = evalComponentid;
         this.componentName = componentName;
-        this.percentage = percentage;
+        this.category = category;
+        this.maxMarks = maxMarks;
+        this.weightage = weightage;
     }
 
-    public int getComponentId() {
-        return componentId;
+    public int getEvalComponentid() {
+        return evalComponentid;
     }
 
-    public void setComponentId(int componentId) {
-        this.componentId = componentId;
+    public void setEvalComponentid(int evalComponentid) {
+        this.evalComponentid = evalComponentid;
     }
 
-    public int getCourseId() {
-        return courseId;
-    }
-
-    public void setCourseId(int courseId) {
-        this.courseId = courseId;
-    }
 
     public String getComponentName() {
         return componentName;
@@ -39,11 +37,19 @@ public class EvaluationComponent {
         this.componentName = componentName;
     }
 
-    public double getPercentage() {
-        return percentage;
+    public String getCategory() {
+        return category;
     }
 
-    public void setPercentage(double percentage) {
-        this.percentage = percentage;
+    public void setCategory(String category) {
+        this.category = category;
+    }
+
+    public double getMaxMarks() {
+        return maxMarks;
+    }
+
+    public void setMaxMarks(double maxMarks) {
+        this.maxMarks = maxMarks;
     }
 }
