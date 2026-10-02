@@ -1,4 +1,4 @@
 package com.facultyams.model;
 
-public class Marks {
+public class Lecturer {
 }
