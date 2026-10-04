@@ -19,7 +19,7 @@ public class Marks {
         this.isEligible=isEligible;
     }
 
-    protected int getMarksId(){
+    public int getMarksId(){
         return marksId;
     }
 
@@ -49,8 +49,11 @@ public class Marks {
         this.grade=grade;
     }
 
-    public boolean isEligible(boolean eligible){
-        isEligible=eligible;
+    public boolean isEligible(){
+        return isEligible;
+    }
+    public void setEligible(boolean eligible){
+        this.isEligible=eligible;
     }
 
     
