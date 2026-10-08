@@ -1,1 +1,1 @@
-# OOP-2026-GP-12
+# Faculty of Technology Academic Management System (FOT-AMS)

@@ -1,4 +1,21 @@
+<<<<<<< HEAD
 .idea/
 *.iml
 target/
 src/main/resources/db.properties
+=======
+﻿# Compiled output
+bin/
+*.class
+
+# IDE files
+.idea/
+*.iml
+.vscode/
+*.classpath
+*.project
+
+# OS files
+.DS_Store
+Thumbs.db
+>>>>>>> f94db0731ace9c66e88ec5ae2f93345dc331f2d0
