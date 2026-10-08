@@ -1,102 +1,151 @@
 package com.facultyams.ui;
 
-import com.facultyams.exception.AuthenticationException;
-import com.facultyams.exception.DatabaseException;
-import com.facultyams.exception.ValidationException;
 import com.facultyams.model.User;
 import com.facultyams.service.AuthService;
-import com.facultyams.util.UIUtil;
 
-import javax.swing.BorderFactory;
-import javax.swing.JButton;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JPasswordField;
-import javax.swing.JTextField;
-import javax.swing.SwingConstants;
-import java.awt.Font;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.Insets;
+import javax.swing.*;
+import java.awt.*;
 
-/** Login screen. On success the user is routed to the dashboard for their role. */
 public class LoginFrame extends JFrame {
 
-    private final AuthService authService = new AuthService();
-    private final JTextField usernameField = new JTextField(20);
-    private final JPasswordField passwordField = new JPasswordField(20);
-    private final JButton loginButton = new JButton("Login");
+    private final JTextField usernameField;
+    private final JPasswordField passwordField;
+    private final JButton loginButton;
+
+    private final AuthService authService;
 
     public LoginFrame() {
-        super("FoT-AMS - Login");
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setResizable(false);
-        buildUi();
-        pack();
+
+        authService = new AuthService();
+
+        setTitle(
+                "Faculty Academic Management System - Login"
+        );
+
+        setSize(450, 300);
         setLocationRelativeTo(null);
+        setDefaultCloseOperation(
+                JFrame.EXIT_ON_CLOSE
+        );
+
+        JPanel mainPanel =
+                new JPanel(new BorderLayout(15, 15));
+
+        mainPanel.setBorder(
+                BorderFactory.createEmptyBorder(
+                        25, 35, 25, 35
+                )
+        );
+
+        JLabel title =
+                new JLabel(
+                        "Faculty Academic Management System",
+                        SwingConstants.CENTER
+                );
+
+        title.setFont(
+                new Font(
+                        "Arial",
+                        Font.BOLD,
+                        20
+                )
+        );
+
+        mainPanel.add(
+                title,
+                BorderLayout.NORTH
+        );
+
+        JPanel form =
+                new JPanel(
+                        new GridLayout(
+                                3,
+                                2,
+                                10,
+                                15
+                        )
+                );
+
+        form.add(new JLabel("Username:"));
+
+        usernameField =
+                new JTextField();
+
+        form.add(usernameField);
+
+        form.add(new JLabel("Password:"));
+
+        passwordField =
+                new JPasswordField();
+
+        form.add(passwordField);
+
+        loginButton =
+                new JButton("Login");
+
+        JButton exitButton =
+                new JButton("Exit");
+
+        form.add(loginButton);
+        form.add(exitButton);
+
+        mainPanel.add(
+                form,
+                BorderLayout.CENTER
+        );
+
+        setContentPane(mainPanel);
+
+        loginButton.addActionListener(
+                e -> performLogin()
+        );
+
+        exitButton.addActionListener(
+                e -> System.exit(0)
+        );
+
+        getRootPane().setDefaultButton(
+                loginButton
+        );
     }
 
-    private void buildUi() {
-        JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBorder(BorderFactory.createEmptyBorder(20, 30, 20, 30));
-        GridBagConstraints c = new GridBagConstraints();
-        c.insets = new Insets(6, 6, 6, 6);
-        c.fill = GridBagConstraints.HORIZONTAL;
+    private void performLogin() {
 
-        JLabel title = new JLabel("Faculty of Technology", SwingConstants.CENTER);
-        title.setFont(title.getFont().deriveFont(Font.BOLD, 18f));
-        JLabel subtitle = new JLabel("Academic Management System", SwingConstants.CENTER);
+        String username =
+                usernameField.getText().trim();
 
-        c.gridx = 0;
-        c.gridy = 0;
-        c.gridwidth = 2;
-        panel.add(title, c);
-        c.gridy = 1;
-        panel.add(subtitle, c);
+        String password =
+                new String(
+                        passwordField.getPassword()
+                );
 
-        c.gridwidth = 1;
-        c.gridy = 2;
-        panel.add(new JLabel("Username:"), c);
-        c.gridx = 1;
-        panel.add(usernameField, c);
-
-        c.gridx = 0;
-        c.gridy = 3;
-        panel.add(new JLabel("Password:"), c);
-        c.gridx = 1;
-        panel.add(passwordField, c);
-
-        JButton exitButton = new JButton("Exit");
-        JPanel buttons = new JPanel();
-        buttons.add(loginButton);
-        buttons.add(exitButton);
-        c.gridx = 0;
-        c.gridy = 4;
-        c.gridwidth = 2;
-        panel.add(buttons, c);
-
-        loginButton.addActionListener(e -> doLogin());
-        passwordField.addActionListener(e -> doLogin());
-        exitButton.addActionListener(e -> System.exit(0));
-        getRootPane().setDefaultButton(loginButton);
-
-        setContentPane(panel);
-    }
-
-    private void doLogin() {
-        String username = usernameField.getText();
-        char[] passwordChars = passwordField.getPassword();
-        String password = new String(passwordChars);
-        java.util.Arrays.fill(passwordChars, '\0');
         try {
-            User user = authService.login(username, password);
+
+            User user =
+                    authService.login(
+                            username,
+                            password
+                    );
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Login successful.",
+                    "Success",
+                    JOptionPane.INFORMATION_MESSAGE
+            );
+
             dispose();
+
             DashboardRouter.openDashboard(user);
-        } catch (ValidationException | AuthenticationException | DatabaseException e) {
-            UIUtil.showException(this, e);
-            passwordField.setText("");
-            passwordField.requestFocusInWindow();
+
+        } catch (Exception ex) {
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    ex.getMessage(),
+                    "Login Failed",
+                    JOptionPane.ERROR_MESSAGE
+            );
         }
     }
 }

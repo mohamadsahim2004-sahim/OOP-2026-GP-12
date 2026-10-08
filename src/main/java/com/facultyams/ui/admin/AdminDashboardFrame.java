@@ -1,117 +1,268 @@
 package com.facultyams.ui.admin;
 
-import com.facultyams.exception.AuthorizationException;
-import com.facultyams.exception.DatabaseException;
-import com.facultyams.model.User;
-import com.facultyams.service.AdminService;
-import com.facultyams.ui.DashboardRouter;
-import com.facultyams.util.UIUtil;
+import com.facultyams.security.Session;
+import com.facultyams.service.AuthService;
 
-import javax.swing.BorderFactory;
-import javax.swing.JButton;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JTabbedPane;
-import javax.swing.SwingConstants;
-import java.awt.BorderLayout;
-import java.awt.Component;
-import java.awt.FlowLayout;
-import java.awt.Font;
-import java.awt.GridLayout;
-import java.util.Map;
+import javax.swing.*;
+import java.awt.*;
 
-/**
- * Admin dashboard: overview figures plus tabs for user, department and course management.
- * Members who add admin screens (notices, timetables) can add another tab in buildTabs().
- */
 public class AdminDashboardFrame extends JFrame {
 
-    private final AdminService adminService = new AdminService();
-    private final JPanel statsPanel = new JPanel(new GridLayout(2, 3, 10, 10));
-    private final JTabbedPane tabs = new JTabbedPane();
+    private final JTabbedPane tabs;
 
-    public AdminDashboardFrame(User admin) {
-        super("FoT-AMS - Admin Dashboard");
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    public AdminDashboardFrame() {
 
-        JPanel content = new JPanel(new BorderLayout(5, 5));
-        content.add(buildHeader(admin), BorderLayout.NORTH);
-        content.add(buildTabs(), BorderLayout.CENTER);
-        setContentPane(content);
+        Session.requireAdmin();
 
-        setSize(1150, 720);
+        setTitle(
+                "Faculty Academic Management System - Admin"
+        );
+
+        setSize(1200, 750);
         setLocationRelativeTo(null);
-        refreshStatistics();
+
+        setDefaultCloseOperation(
+                JFrame.EXIT_ON_CLOSE
+        );
+
+        JPanel header =
+                new JPanel(
+                        new BorderLayout()
+                );
+
+        header.setBorder(
+                BorderFactory.createEmptyBorder(
+                        10, 15, 10, 15
+                )
+        );
+
+        JLabel title =
+                new JLabel(
+                        "ADMIN DASHBOARD"
+                );
+
+        title.setFont(
+                new Font(
+                        "Arial",
+                        Font.BOLD,
+                        22
+                )
+        );
+
+        header.add(
+                title,
+                BorderLayout.WEST
+        );
+
+        JPanel right =
+                new JPanel(
+                        new FlowLayout(
+                                FlowLayout.RIGHT
+                        )
+                );
+
+        JLabel userLabel =
+                new JLabel(
+                        "Logged in as: "
+                                + Session
+                                .getCurrentUser()
+                                .getUsername()
+                );
+
+        JButton logoutButton =
+                new JButton("Logout");
+
+        right.add(userLabel);
+        right.add(logoutButton);
+
+        header.add(
+                right,
+                BorderLayout.EAST
+        );
+
+        tabs = new JTabbedPane();
+
+        tabs.addTab(
+                "Overview",
+                createOverviewPanel()
+        );
+
+        tabs.addTab(
+                "Users",
+                new UserManagementPanel()
+        );
+
+        tabs.addTab(
+                "Departments",
+                new DepartmentManagementPanel()
+        );
+
+        tabs.addTab(
+                "Courses",
+                new CourseManagementPanel()
+        );
+
+        tabs.addTab(
+                "Notices",
+                new NoticeManagementPanel()
+        );
+
+        tabs.addTab(
+                "Timetable",
+                new TimeTableManagementPanel()
+        );
+
+        logoutButton.addActionListener(
+                e -> logout()
+        );
+
+        setLayout(new BorderLayout());
+
+        add(
+                header,
+                BorderLayout.NORTH
+        );
+
+        add(
+                tabs,
+                BorderLayout.CENTER
+        );
     }
 
-    private JPanel buildHeader(User admin) {
-        JLabel welcome = new JLabel("Welcome, " + admin.getFullName() + " (Admin)");
-        welcome.setFont(welcome.getFont().deriveFont(Font.BOLD, 15f));
-        JButton logoutButton = new JButton("Logout");
-        logoutButton.addActionListener(e -> {
-            if (UIUtil.confirm(this, "Do you want to log out?")) {
-                DashboardRouter.logout(this);
-            }
-        });
-        JPanel header = new JPanel(new BorderLayout());
-        header.setBorder(BorderFactory.createEmptyBorder(8, 10, 0, 10));
-        header.add(welcome, BorderLayout.WEST);
-        header.add(logoutButton, BorderLayout.EAST);
-        return header;
+    private JPanel createOverviewPanel() {
+
+        JPanel panel =
+                new JPanel(
+                        new GridLayout(
+                                2,
+                                3,
+                                20,
+                                20
+                        )
+                );
+
+        panel.setBorder(
+                BorderFactory.createEmptyBorder(
+                        30, 30, 30, 30
+                )
+        );
+
+        panel.add(
+                createCard(
+                        "Users",
+                        "Manage system users"
+                )
+        );
+
+        panel.add(
+                createCard(
+                        "Departments",
+                        "Manage departments"
+                )
+        );
+
+        panel.add(
+                createCard(
+                        "Courses",
+                        "Manage course units"
+                )
+        );
+
+        panel.add(
+                createCard(
+                        "Notices",
+                        "Publish announcements"
+                )
+        );
+
+        panel.add(
+                createCard(
+                        "Timetable",
+                        "Manage schedules"
+                )
+        );
+
+        panel.add(
+                createCard(
+                        "Security",
+                        "Role-based access"
+                )
+        );
+
+        return panel;
     }
 
-    private JTabbedPane buildTabs() {
-        tabs.addTab("Overview", buildOverview());
-        tabs.addTab("Users", new UserManagementPanel());
-        tabs.addTab("Departments", new DepartmentManagementPanel());
-        tabs.addTab("Courses", new CourseManagementPanel());
+    private JPanel createCard(
+            String title,
+            String description) {
 
-        // Reload a tab's data every time it is opened (polymorphic refresh()).
-        tabs.addChangeListener(e -> {
-            Component selected = tabs.getSelectedComponent();
-            if (selected instanceof AbstractManagementPanel<?>) {
-                ((AbstractManagementPanel<?>) selected).refresh();
-            } else {
-                refreshStatistics();
-            }
-        });
-        return tabs;
-    }
+        JPanel card =
+                new JPanel(
+                        new BorderLayout()
+                );
 
-    private JPanel buildOverview() {
-        JButton refreshButton = new JButton("Refresh");
-        refreshButton.addActionListener(e -> refreshStatistics());
-        JPanel south = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        south.add(refreshButton);
+        card.setBorder(
+                BorderFactory.createCompoundBorder(
+                        BorderFactory.createLineBorder(
+                                Color.GRAY
+                        ),
+                        BorderFactory.createEmptyBorder(
+                                15, 15, 15, 15
+                        )
+                )
+        );
 
-        statsPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-        JPanel overview = new JPanel(new BorderLayout());
-        overview.add(statsPanel, BorderLayout.CENTER);
-        overview.add(south, BorderLayout.SOUTH);
-        return overview;
-    }
+        JLabel titleLabel =
+                new JLabel(title);
 
-    private void refreshStatistics() {
-        statsPanel.removeAll();
-        try {
-            Map<String, Integer> stats = adminService.getDashboardStatistics();
-            for (Map.Entry<String, Integer> entry : stats.entrySet()) {
-                statsPanel.add(statCard(entry.getKey(), entry.getValue()));
-            }
-        } catch (DatabaseException | AuthorizationException e) {
-            statsPanel.add(new JLabel("Statistics unavailable: " + e.getMessage()));
-        }
-        statsPanel.revalidate();
-        statsPanel.repaint();
-    }
+        titleLabel.setFont(
+                new Font(
+                        "Arial",
+                        Font.BOLD,
+                        18
+                )
+        );
 
-    private static JPanel statCard(String title, int value) {
-        JLabel number = new JLabel(String.valueOf(value), SwingConstants.CENTER);
-        number.setFont(number.getFont().deriveFont(Font.BOLD, 28f));
-        JPanel card = new JPanel(new BorderLayout());
-        card.setBorder(BorderFactory.createTitledBorder(title));
-        card.add(number, BorderLayout.CENTER);
+        JLabel descriptionLabel =
+                new JLabel(
+                        "<html>"
+                                + description
+                                + "</html>"
+                );
+
+        card.add(
+                titleLabel,
+                BorderLayout.NORTH
+        );
+
+        card.add(
+                descriptionLabel,
+                BorderLayout.CENTER
+        );
+
         return card;
+    }
+
+    private void logout() {
+
+        int result =
+                JOptionPane.showConfirmDialog(
+                        this,
+                        "Are you sure you want to logout?",
+                        "Logout",
+                        JOptionPane.YES_NO_OPTION
+                );
+
+        if (result
+                != JOptionPane.YES_OPTION) {
+            return;
+        }
+
+        new AuthService().logout();
+
+        dispose();
+
+        new com.facultyams.ui.LoginFrame()
+                .setVisible(true);
     }
 }

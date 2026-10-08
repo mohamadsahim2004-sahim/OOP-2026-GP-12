@@ -9,7 +9,74 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Properties;
 
-/**
+/**package com.facultyams.config;
+
+ import java.io.IOException;
+ import java.io.InputStream;
+ import java.sql.Connection;
+ import java.sql.DriverManager;
+ import java.sql.SQLException;
+ import java.util.Properties;
+
+ public final class DatabaseConnection {
+
+ private static final String URL;
+ private static final String USERNAME;
+ private static final String PASSWORD;
+
+ static {
+ Properties properties = new Properties();
+
+ try (InputStream input =
+ DatabaseConnection.class
+ .getClassLoader()
+ .getResourceAsStream("db.properties")) {
+
+ if (input == null) {
+ throw new IllegalStateException(
+ "db.properties not found in src/main/resources"
+ );
+ }
+
+ properties.load(input);
+
+ } catch (IOException e) {
+ throw new IllegalStateException(
+ "Unable to load database configuration", e
+ );
+ }
+
+ URL = properties.getProperty("db.url");
+ USERNAME = properties.getProperty("db.username");
+ PASSWORD = properties.getProperty("db.password");
+
+ if (URL == null || USERNAME == null || PASSWORD == null) {
+ throw new IllegalStateException(
+ "Database configuration is incomplete"
+ );
+ }
+ }
+
+ private DatabaseConnection() {
+ }
+
+ public static Connection getConnection() throws SQLException {
+ return DriverManager.getConnection(
+ URL,
+ USERNAME,
+ PASSWORD
+ );
+ }
+
+ public static boolean testConnection() {
+
+ try (Connection connection = getConnection()) {
+ return connection != null && !connection.isClosed();
+ } catch (SQLException e) {
+ return false;
+ }
+ }
+ }
  * Creates JDBC connections to the MySQL database.
  *
  * Settings are read from the classpath in this order (later wins):
