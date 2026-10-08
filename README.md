@@ -42,7 +42,7 @@ You can click any of the 4 demo badges on the login screen for instant one-click
 | **Administrator** | `admin` | `admin123` | System Administrator (Full privileges) |
 | **Lecturer** | `lec_ict01` | `lec123` | Dr. K. L. Perera (Senior Lecturer Gr. I) |
 | **Technical Officer** | `to_ict01` | `to123` | Mr. S. Fernando (Attendance & Medicals) |
-| **Undergraduate** | `TG/2024/2105` | `student123` | Mohamad Shahim (Batch B09 - Group 12 Leader) |
+| **Undergraduate** | `TG/2024/2105` | `student123` | Mohamad Shahim (Batch B09) |
 | **Undergraduate** | `TG/2024/2104` | `student123` | M. Aamir (Batch B09) |
 | **Undergraduate** | `TG/2024/2093` | `student123` | F. Zumra (Batch B09) |
 | **Undergraduate** | `TG/2024/2076` | `student123` | M. Mariyam (Batch B09) |
