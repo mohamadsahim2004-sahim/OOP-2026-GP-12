@@ -1,0 +1,5 @@
+# Copy this file to db.properties (same folder) and put YOUR local MySQL details.
+# db.properties is ignored by Git, so your password is never committed.
+db.url=jdbc:mysql://localhost:3306/faculty_ams?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Colombo
+db.user=root
+db.password=your_mysql_password
