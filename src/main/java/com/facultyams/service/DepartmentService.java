@@ -1,27 +1,37 @@
 package com.facultyams.service;
 
 import com.facultyams.dao.DepartmentDAO;
+import com.facultyams.dao.DepartmentDAO.DepartmentHead;
+import com.facultyams.dao.UserDAO;
 import com.facultyams.exception.AuthorizationException;
 import com.facultyams.exception.DatabaseException;
 import com.facultyams.exception.ValidationException;
 import com.facultyams.model.Department;
+import com.facultyams.model.User;
 import com.facultyams.security.Role;
 import com.facultyams.security.Session;
 import com.facultyams.util.ValidationUtil;
 
 import java.util.List;
+import java.util.Map;
 
 /** Department management rules. Changes are Admin-only; reading is open to logged-in users. */
 public class DepartmentService {
 
     private final DepartmentDAO departmentDAO;
+    private final UserDAO userDAO;
 
     public DepartmentService() {
         this(new DepartmentDAO());
     }
 
     public DepartmentService(DepartmentDAO departmentDAO) {
+        this(departmentDAO, new UserDAO());
+    }
+
+    public DepartmentService(DepartmentDAO departmentDAO, UserDAO userDAO) {
         this.departmentDAO = departmentDAO;
+        this.userDAO = userDAO;
     }
 
     public List<Department> getAllDepartments() throws AuthorizationException, DatabaseException {
@@ -43,6 +53,33 @@ public class DepartmentService {
             throw new ValidationException("Department with id " + departmentId + " was not found.");
         }
         return department;
+    }
+
+    /** Department id -> head lecturer (only departments that have one). */
+    public Map<Integer, DepartmentHead> getDepartmentHeads() throws AuthorizationException, DatabaseException {
+        Session.requireLogin();
+        return departmentDAO.findHeads();
+    }
+
+    /**
+     * Admin only. Sets the head of a department, or clears it when lecturerUserId is null.
+     * The head must be a lecturer of that same department.
+     */
+    public void setDepartmentHead(int departmentId, Integer lecturerUserId)
+            throws ValidationException, AuthorizationException, DatabaseException {
+        Session.requireRole(Role.ADMIN);
+        Department department = getDepartmentById(departmentId);
+        if (lecturerUserId != null) {
+            User lecturer = userDAO.findById(lecturerUserId);
+            if (lecturer == null || lecturer.getRole() != Role.LECTURER) {
+                throw new ValidationException("The head of a department must be a lecturer.");
+            }
+            if (lecturer.getDepartmentId() == null || lecturer.getDepartmentId() != departmentId) {
+                throw new ValidationException(lecturer.getFullName() + " does not belong to "
+                        + department.getDepartmentCode() + ". Move the lecturer to this department first.");
+            }
+        }
+        departmentDAO.setHead(departmentId, lecturerUserId);
     }
 
     public Department addDepartment(Department department)

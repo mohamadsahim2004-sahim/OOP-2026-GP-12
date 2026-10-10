@@ -360,6 +360,11 @@ public class UserManagementPanel extends AbstractManagementPanel<User> {
         }
     }
 
+    @Override
+    protected void deleteSelected() {
+        deleteUser();
+    }
+
     private void deleteUser() {
         User selected = requireSelection("user");
         if (selected == null || !UIUtil.confirm(this, "Permanently delete user '" + selected.getUsername()

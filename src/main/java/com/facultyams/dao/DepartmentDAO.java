@@ -10,7 +10,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /** Database access for departments. SQL only - rules live in DepartmentService. */
 public class DepartmentDAO {
@@ -101,6 +103,44 @@ public class DepartmentDAO {
             ps.executeUpdate();
         } catch (SQLException e) {
             throw new DatabaseException("Failed to delete department: " + e.getMessage(), e);
+        }
+    }
+
+    // ----- head of department (needs database/migrations/002_department_head.sql) -----
+
+    /** The lecturer who heads a department. */
+    public record DepartmentHead(int userId, String fullName) {
+    }
+
+    /** Department id -> head, only for departments that have one. */
+    public Map<Integer, DepartmentHead> findHeads() throws DatabaseException {
+        String sql = "SELECT d.department_id, u.user_id, u.full_name FROM departments d "
+                + "JOIN users u ON u.user_id = d.head_user_id";
+        try (Connection con = DatabaseConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            Map<Integer, DepartmentHead> heads = new HashMap<>();
+            while (rs.next()) {
+                heads.put(rs.getInt("department_id"), new DepartmentHead(rs.getInt("user_id"), rs.getString("full_name")));
+            }
+            return heads;
+        } catch (SQLException e) {
+            throw new DatabaseException("Head of department is unavailable. Has "
+                    + "database/migrations/002_department_head.sql been run? (" + e.getMessage() + ")", e);
+        }
+    }
+
+    /** Sets (or clears, when userId is null) the head of a department. */
+    public void setHead(int departmentId, Integer userId) throws DatabaseException {
+        String sql = "UPDATE departments SET head_user_id = ? WHERE department_id = ?";
+        try (Connection con = DatabaseConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setObject(1, userId);
+            ps.setInt(2, departmentId);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new DatabaseException("Failed to set the head of department. Has "
+                    + "database/migrations/002_department_head.sql been run? (" + e.getMessage() + ")", e);
         }
     }
 

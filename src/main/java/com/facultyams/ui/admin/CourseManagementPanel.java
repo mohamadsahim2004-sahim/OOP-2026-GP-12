@@ -264,6 +264,11 @@ public class CourseManagementPanel extends AbstractManagementPanel<Course> {
         }
     }
 
+    @Override
+    protected void deleteSelected() {
+        deleteCourse();
+    }
+
     private void deleteCourse() {
         Course selected = requireSelection("course");
         if (selected == null || !UIUtil.confirm(this, "Delete course " + selected + "?")) {
