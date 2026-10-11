@@ -1,4 +1,8 @@
 package com.facultyams.security;
 
-public class Role {
+public enum Role {
+    STUDENT,
+    LECTURER,
+    ADMIN,
+    TECHNICAL_OFFICER
 }
