@@ -4,11 +4,12 @@ public class MarksService {
     public boolean isValidateMarks(double marks){
         return marks >= 0 && marks <= 100;      //validate marks
     }
-    public boolean isCAEligible(double caMarks){
-        if(!isValidateMarks(caMarks)){
+    public boolean isCAEligible(double caMarks) {
+        if (!isValidateMarks(caMarks)){
             throw new IllegalArgumentException(
-                    "Marks should be between 0 and 100");   //Check CA eligibility
-        }
+                    "Marks should be between 0 and 100"  //Check CA eligibility
+            );
+    }
         return caMarks >= 40;
     }
 
@@ -18,31 +19,37 @@ public class MarksService {
 
         if (!isValidateMarks(caMarks)) {
             throw new IllegalArgumentException(
-                    "CA makrs should be between 0 & 100");
+                    "CA makrs should be between 0 & 100"
+            );
         }
 
         if (!isValidateMarks(attendancePercentage)) {
-            throw new IllegalAccessException(
-                    "Attendance should be between 0 & 100");
+            throw new IllegalArgumentException(
+                    "Attendance should be between 0 & 100"
+            );
 
         }
-        return isCAEligiblity(caMarks) && attendancePercentage >= 80;
+        return isCAEligible(caMarks) && attendancePercentage >= 80;
     }
-        return isCAEligible(caMarks){
+    public boolean validateMarksObject(Marks marks){
             if(marks == null) {
-                throw new IllegalAccessException(
-                        "Marks can not be null");
+                throw new IllegalArgumentException(
+                        "Marks can not be null"
+                );
             }
             if(!isValidateMarks(marks.getObtainMarks())){
-                throw new IllegalAccessException(
-                        "Obtained marks should be between 0 & 100");
+                throw new IllegalArgumentException(
+                        "Obtained marks should be between 0 & 100"
+                );
 
             }
                 if(!isValidateMarks(marks.getFinalMarks())){
-                    throw new IllegalAccessException(
-                            "Final marks should be between 0 & 100");
+                    throw new IllegalArgumentException(
+                            "Final marks should be between 0 & 100"
+                    );
 
                 }
+                return true;
             }
         }
 

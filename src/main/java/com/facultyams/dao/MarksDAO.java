@@ -4,6 +4,7 @@ import com.facultyams.config.DatabaseConnection; //to build connection between j
 import com.facultyams.model.Marks;
 import java.sql.Connection; // to import connection
 import java.sql.PreparedStatement;
+import java.sql.SQLException;
 public class MarksDAO {
     private Connection connection;   //this creates a variable that hods the database connection
 
@@ -11,7 +12,7 @@ public class MarksDAO {
                           //when marksDA object is created
         connection =DatabaseConnection.getConnection();
     }
-    public void saveMarks(Marks marks){
+    public void saveMarks(Marks marks)throws SQLException{
         String sql = "INSERT INTO marks (marksid, obtainMarks, finalMarks, grade, isEligible) VALUES (?, ?, ?, ?, ?)";
 
         PreparedStatement statment = connection.prepareStatement(sql);
