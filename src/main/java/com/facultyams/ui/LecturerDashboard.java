@@ -56,10 +56,7 @@ public class LecturerDashboard extends JFrame{
 
     }
 
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            LecturerDashboard dashboard = new LecturerDashboard();
-            dashboard.setVisible(true);
+    
         });
     }
 }
