@@ -167,7 +167,11 @@ public class LecturerDashboard extends JFrame {
         };
 
         for (String section : sections) {
-            mainContent.add(createPlaceholder(section), section);
+            if (section.equals("My Profile")) {
+                mainContent.add(createProfilePanel(), section);
+            } else {
+                mainContent.add(createPlaceholder(section), section);
+            }
         }
 
         add(mainContent, BorderLayout.CENTER);
@@ -351,6 +355,33 @@ public class LecturerDashboard extends JFrame {
         content.add(message);
 
         panel.add(content, BorderLayout.NORTH);
+        return panel;
+
+
+
+    }
+
+    private JPanel createProfilePanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(backgroundColor);
+        panel.setBorder(new EmptyBorder(25, 25, 25, 25));
+
+        JLabel heading = new JLabel("My Profile");
+        heading.setFont(new Font("Arial", Font.BOLD, 23));
+        heading.setForeground(navy);
+
+        JLabel message = new JLabel(
+                "Lecturer profile details will appear here.");
+        message.setFont(new Font("Arial", Font.PLAIN, 14));
+        message.setForeground(textColor);
+
+        JPanel content = new JPanel(new GridLayout(2, 1, 0, 12));
+        content.setOpaque(false);
+        content.add(heading);
+        content.add(message);
+
+        panel.add(content, BorderLayout.NORTH);
+
         return panel;
     }
 

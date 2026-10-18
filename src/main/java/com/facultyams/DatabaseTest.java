@@ -10,7 +10,7 @@ public class DatabaseTest {
             }
 
             }
-        catch(SQLException e){
+        catch(SQLException e){//if db trows an exception , it prints the failure msg & error dtils
             System.out.println("Database connection failed!");
             e.printStackTrace();
         }
