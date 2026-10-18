@@ -54,7 +54,9 @@ public class UserService {
     /** e.g. getUsersByRole(Role.STUDENT) - available to every logged-in user. */
     public List<User> getUsersByRole(Role role) throws AuthorizationException, DatabaseException {
         Session.requireLogin();
-        return userDAO.findByRole(role);
+        List<User> users = userDAO.findByRole(role);
+        users.forEach(UserService::hideHashFromNonAdmin);
+        return users;
     }
 
     public User getUserById(int userId) throws ValidationException, AuthorizationException, DatabaseException {
@@ -63,6 +65,14 @@ public class UserService {
         User user = userDAO.findById(userId);
         if (user == null) {
             throw new ValidationException("User with id " + userId + " was not found.");
+        }
+        return hideHashFromNonAdmin(user);
+    }
+
+    /** Only administrators may ever see stored password hashes; other callers get the user without it. */
+    private static User hideHashFromNonAdmin(User user) {
+        if (user != null && !Session.isAdmin()) {
+            user.setPasswordHash(null);
         }
         return user;
     }
