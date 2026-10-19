@@ -23,6 +23,7 @@ public class UndergraduateDashboardFrame extends JFrame {
     private CourseMaterialsView courseMaterialsView;
     private StudentResultsView resultsView;
     private StudentAttendanceView attendanceView;
+    private com.srms.ui.views.AttendanceView modernAttendanceView;
     private StudentMedicalView medicalView;
     private TimetableView timetableView;
     private NoticesView noticesView;
@@ -72,6 +73,7 @@ public class UndergraduateDashboardFrame extends JFrame {
         courseMaterialsView = new CourseMaterialsView();
         resultsView = new StudentResultsView();
         attendanceView = new StudentAttendanceView();
+        modernAttendanceView = new com.srms.ui.views.AttendanceView();
         medicalView = new StudentMedicalView();
         timetableView = new TimetableView();
         noticesView = new NoticesView();
@@ -81,7 +83,7 @@ public class UndergraduateDashboardFrame extends JFrame {
         cardsPanel.add(coursesContainerView, "Course Enrollment");
         cardsPanel.add(courseMaterialsView, "Course Materials");
         cardsPanel.add(resultsView, "Results");
-        cardsPanel.add(attendanceView, "Attendance");
+        cardsPanel.add(modernAttendanceView, "Attendance");
         cardsPanel.add(medicalView, "Medical Records");
         cardsPanel.add(timetableView, "Timetable");
         cardsPanel.add(noticesView, "Notice Board");
@@ -93,6 +95,9 @@ public class UndergraduateDashboardFrame extends JFrame {
         String normalized = normalizeViewName(viewName);
         if ("Course Enrollment".equals(normalized) && coursesContainerView != null) {
             coursesContainerView.resetToOverview();
+        }
+        if ("Attendance".equals(normalized) && modernAttendanceView != null) {
+            modernAttendanceView.resetToOverview();
         }
         topBarPanel.setTitle(normalized);
         sidebarPanel.setActiveView(normalized);
