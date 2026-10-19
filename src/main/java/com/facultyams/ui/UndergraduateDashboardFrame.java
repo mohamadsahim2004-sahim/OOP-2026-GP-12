@@ -19,6 +19,7 @@ public class UndergraduateDashboardFrame extends JFrame {
     private DashboardView dashboardView;
     private StudentProfileView profileView;
     private CourseEnrollmentView courseEnrollmentView;
+    private com.srms.ui.views.CoursesContainerView coursesContainerView;
     private CourseMaterialsView courseMaterialsView;
     private StudentResultsView resultsView;
     private StudentAttendanceView attendanceView;
@@ -67,6 +68,7 @@ public class UndergraduateDashboardFrame extends JFrame {
         dashboardView = new DashboardView(this::navigateTo);
         profileView = new StudentProfileView();
         courseEnrollmentView = new CourseEnrollmentView();
+        coursesContainerView = new com.srms.ui.views.CoursesContainerView(courseEnrollmentView);
         courseMaterialsView = new CourseMaterialsView();
         resultsView = new StudentResultsView();
         attendanceView = new StudentAttendanceView();
@@ -76,7 +78,7 @@ public class UndergraduateDashboardFrame extends JFrame {
 
         cardsPanel.add(dashboardView, "Dashboard");
         cardsPanel.add(profileView, "Profile");
-        cardsPanel.add(courseEnrollmentView, "Course Enrollment");
+        cardsPanel.add(coursesContainerView, "Course Enrollment");
         cardsPanel.add(courseMaterialsView, "Course Materials");
         cardsPanel.add(resultsView, "Results");
         cardsPanel.add(attendanceView, "Attendance");
@@ -89,6 +91,9 @@ public class UndergraduateDashboardFrame extends JFrame {
 
     public void navigateTo(String viewName) {
         String normalized = normalizeViewName(viewName);
+        if ("Course Enrollment".equals(normalized) && coursesContainerView != null) {
+            coursesContainerView.resetToOverview();
+        }
         topBarPanel.setTitle(normalized);
         sidebarPanel.setActiveView(normalized);
         cardLayout.show(cardsPanel, normalized);
