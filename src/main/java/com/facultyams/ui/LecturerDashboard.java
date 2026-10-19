@@ -10,7 +10,6 @@ public class LecturerDashboard extends JFrame {
     private final CardLayout cardLayout = new CardLayout();
     private final JPanel mainContent = new JPanel(cardLayout);
     private final JPanel sidebar = new JPanel();
-    private JButton selectedButton;
 
     private final Color navy = new Color(23, 54, 92);
     private final Color sidebarColor = new Color(229, 236, 245);
@@ -30,44 +29,18 @@ public class LecturerDashboard extends JFrame {
     }
 
     private void createHeader() {
-        JPanel header = new JPanel(new BorderLayout(12, 0));
+        JPanel header = new JPanel(new BorderLayout());
         header.setBackground(navy);
         header.setBorder(new EmptyBorder(15, 20, 15, 20));
 
-        JLabel logo = new JLabel("F", SwingConstants.CENTER);        logo.setFont(new Font("Arial", Font.BOLD, 25));
-        logo.setForeground(navy);
-        logo.setOpaque(true);
-        logo.setBackground(Color.WHITE);
-        logo.setHorizontalAlignment(SwingConstants.CENTER);
-        logo.setPreferredSize(new Dimension(40, 40));
-
-        JLabel title = new JLabel("FacultyAMS");
+        JLabel title = new JLabel("FacultyAMS - Lecturer Portal");
         title.setFont(new Font("Arial", Font.BOLD, 22));
         title.setForeground(Color.WHITE);
 
-        JLabel subtitle = new JLabel("Lecturer Portal");
-        subtitle.setFont(new Font("Arial", Font.PLAIN, 14));
-        subtitle.setForeground(new Color(215, 229, 246));
+        JButton notification = new JButton("Notices");
+        notification.addActionListener(e -> showSection("Notices"));
 
-        JPanel titlePanel = new JPanel(new GridLayout(2, 1));
-        titlePanel.setOpaque(false);
-        titlePanel.add(title);
-        titlePanel.add(subtitle);
-
-        JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
-        left.setOpaque(false);
-        left.add(logo);
-        left.add(titlePanel);
-
-        JButton notification = new JButton("N");        notification.setForeground(Color.WHITE);
-        notification.setBackground(navy);
-        notification.setBorderPainted(false);
-        notification.setFocusPainted(false);
-        notification.setFont(new Font("Arial", Font.PLAIN, 20));
-        notification.addActionListener(e ->
-                showSection("Notices"));
-
-        header.add(left, BorderLayout.WEST);
+        header.add(title, BorderLayout.WEST);
         header.add(notification, BorderLayout.EAST);
 
         add(header, BorderLayout.NORTH);
@@ -80,82 +53,14 @@ public class LecturerDashboard extends JFrame {
         sidebar.setPreferredSize(new Dimension(275, 0));
 
         JLabel menuTitle = new JLabel("MAIN MENU");
-        menuTitle.setFont(new Font("Arial", Font.BOLD, 11));
-        menuTitle.setForeground(new Color(82, 103, 130));
-        menuTitle.setBorder(new EmptyBorder(0, 8, 10, 0));
+        menuTitle.setFont(new Font("Arial", Font.BOLD, 12));
+        menuTitle.setForeground(textColor);
+        menuTitle.setBorder(new EmptyBorder(0, 8, 15, 0));
         menuTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
         sidebar.add(menuTitle);
-        String[][] items = {
-                {"dashboard", "Dashboard"},
-                {"profile", "My Profile"},
-                {"book", "Course Materials"},
-                {"edit", "Upload Exam Marks"},
-                {"students", "Undergraduate Details"},
-                {"check", "Exam Eligibility"},
-                {"chart", "Marks, Grades and GPA"},
-                {"calendar", "Attendance and Medical Records"},
-                {"notice", "Notices"}
-        };
 
-
-        for (String[] item : items) {
-
-            JButton button = createMenuButton("", item[1]);
-
-            button.setIcon(new MenuIcon(item[0], textColor));
-            button.setIconTextGap(12); button.addActionListener(e -> {
-                selectMenuButton(button);
-                showSection(item[1]);
-            });
-
-            sidebar.add(button);
-            sidebar.add(Box.createVerticalStrut(5));
-        }
-
-        JButton backButton = createMenuButton("←", "Back");
-        backButton.addActionListener(e -> dispose());
-
-        sidebar.add(Box.createVerticalGlue());
-        sidebar.add(backButton);
-
-        add(sidebar, BorderLayout.WEST);
-    }
-
-    private JButton createMenuButton(String icon, String text) {
-        JButton button = new JButton(icon + "   " + text);
-        button.setFont(new Font("Arial", Font.PLAIN, 13));
-        button.setHorizontalAlignment(SwingConstants.LEFT);
-        button.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
-        button.setPreferredSize(new Dimension(220, 38));
-        button.setBorder(new EmptyBorder(8, 8, 8, 8));
-        button.setFocusPainted(false);
-        button.setOpaque(true);
-        button.setBackground(sidebarColor);
-        button.setForeground(textColor);
-        button.setAlignmentX(Component.LEFT_ALIGNMENT);
-        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        return button;
-    }
-
-    private void selectMenuButton(JButton button) {
-        for (Component component : sidebar.getComponents()) {
-            if (component instanceof JButton) {
-                component.setBackground(sidebarColor);
-                component.setForeground(textColor);
-            }
-        }
-
-        button.setBackground(navy);
-        button.setForeground(Color.WHITE);
-        selectedButton = button;
-    }
-
-    private void createDashboard() {
-        mainContent.setBackground(backgroundColor);
-
-        mainContent.add(createHomePanel(), "Dashboard");
-
-        String[] sections = {
+        String[] items = {
+                "Dashboard",
                 "My Profile",
                 "Course Materials",
                 "Upload Exam Marks",
@@ -166,12 +71,58 @@ public class LecturerDashboard extends JFrame {
                 "Notices"
         };
 
+        for (String item : items) {
+            JButton button = createMenuButton(item);
+
+            button.addActionListener(e -> showSection(item));
+
+            sidebar.add(button);
+            sidebar.add(Box.createVerticalStrut(5));
+        }
+
+        JButton backButton = createMenuButton("Back");
+        backButton.addActionListener(e -> dispose());
+
+        sidebar.add(Box.createVerticalGlue());
+        sidebar.add(backButton);
+
+        add(sidebar, BorderLayout.WEST);
+    }
+
+    private JButton createMenuButton(String text) {
+        JButton button = new JButton(text);
+        button.setFont(new Font("Arial", Font.PLAIN, 13));
+        button.setHorizontalAlignment(SwingConstants.LEFT);
+        button.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+        button.setPreferredSize(new Dimension(250, 40));
+        button.setBackground(sidebarColor);
+        button.setForeground(textColor);
+        button.setBorder(new EmptyBorder(8, 10, 8, 10));
+        button.setFocusPainted(false);
+        button.setAlignmentX(Component.LEFT_ALIGNMENT);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        return button;
+    }
+
+    private void createDashboard() {
+        mainContent.setBackground(backgroundColor);
+
+        mainContent.add(createHomePanel(), "Dashboard");
+        mainContent.add(createProfilePanel(), "My Profile");
+        mainContent.add(createUploadMarksPanel(), "Upload Exam Marks");
+
+        String[] sections = {
+                "Course Materials",
+                "Undergraduate Details",
+                "Exam Eligibility",
+                "Marks, Grades and GPA",
+                "Attendance and Medical Records",
+                "Notices"
+        };
+
         for (String section : sections) {
-            if (section.equals("My Profile")) {
-                mainContent.add(createProfilePanel(), section);
-            } else {
-                mainContent.add(createPlaceholder(section), section);
-            }
+            mainContent.add(createPlaceholder(section), section);
         }
 
         add(mainContent, BorderLayout.CENTER);
@@ -179,186 +130,52 @@ public class LecturerDashboard extends JFrame {
     }
 
     private JPanel createHomePanel() {
-        JPanel home = new JPanel(new BorderLayout(0, 10));
-        home.setBackground(backgroundColor);
-        home.setBorder(new EmptyBorder(18, 30, 18, 30));
+        JPanel panel = new JPanel(new BorderLayout(0, 15));
+        panel.setBackground(backgroundColor);
+        panel.setBorder(new EmptyBorder(25, 30, 25, 30));
 
-        JLabel heading = new JLabel("Dashboard");
-        heading.setFont(new Font("Arial", Font.BOLD, 23));
+        JLabel heading = new JLabel("Lecturer Dashboard");
+        heading.setFont(new Font("Arial", Font.BOLD, 25));
         heading.setForeground(navy);
 
-        JLabel welcome = new JLabel("Welcome back, Lecturer");
-        welcome.setFont(new Font("Arial", Font.PLAIN, 13));
-        welcome.setForeground(new Color(82, 103, 130));
+        JLabel welcome = new JLabel("Welcome back, Lecturer!");
+        welcome.setFont(new Font("Arial", Font.PLAIN, 15));
+        welcome.setForeground(textColor);
 
-        JPanel welcomePanel = new JPanel(new GridLayout(2, 1, 0, 8));
-        welcomePanel.setOpaque(false);
-        welcomePanel.add(heading);
-        welcomePanel.add(welcome);
+        JPanel top = new JPanel(new GridLayout(2, 1, 0, 8));
+        top.setOpaque(false);
+        top.add(heading);
+        top.add(welcome);
 
-        JPanel cards = new JPanel(new GridLayout(2, 2, 14, 12));
-        cards.setOpaque(false);
-        cards.setPreferredSize(new Dimension(0, 300));
+        JPanel cards = new JPanel(new GridLayout(2, 2, 15, 15));
         cards.setOpaque(false);
 
-        addDashboardCard(cards, "▱", "Courses",
-                "Manage materials", "Course Materials");
+        addDashboardCard(cards, "Course Materials");
+        addDashboardCard(cards, "Upload Exam Marks");
+        addDashboardCard(cards, "Undergraduate Details");
+        addDashboardCard(cards, "Marks, Grades and GPA");
 
-        addDashboardCard(cards, "☑", "Exam Marks",
-                "Enter and review", "Upload Exam Marks");
+        panel.add(top, BorderLayout.NORTH);
+        panel.add(cards, BorderLayout.CENTER);
 
-        addDashboardCard(cards, "♧", "Students",
-                "Academic details", "Undergraduate Details");
-
-        addDashboardCard(cards, "▥", "Results",
-                "Grades and GPA", "Marks, Grades and GPA");
-
-        JPanel quickAccess = new JPanel(new BorderLayout(0, 10));
-        quickAccess.setBackground(Color.WHITE);
-        quickAccess.setBorder(new EmptyBorder(15, 15, 15, 15));
-
-        JLabel quickTitle = new JLabel("Quick Access");
-        quickTitle.setFont(new Font("Arial", Font.BOLD, 16));
-        quickTitle.setForeground(navy);
-
-        JPanel quickButtons = new JPanel(
-                new FlowLayout(FlowLayout.LEFT, 0, 0));
-        quickButtons.setOpaque(false);
-
-        addQuickButton(quickButtons, "Exam Eligibility");
-        addQuickButton(quickButtons, "Attendance and Medical Records");
-        addQuickButton(quickButtons, "Notices");
-
-        quickAccess.add(quickTitle, BorderLayout.NORTH);
-        quickAccess.add(quickButtons, BorderLayout.CENTER);
-
-
-        JPanel lower = new JPanel();
-        lower.setLayout(new BoxLayout(lower, BoxLayout.Y_AXIS));
-        lower.setOpaque(false);
-
-        JPanel cardsWrapper = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-        cardsWrapper.setPreferredSize(new Dimension(650, 260));        cardsWrapper.setOpaque(false);
-        cardsWrapper.setAlignmentX(Component.LEFT_ALIGNMENT);
-        cardsWrapper.setMaximumSize(new Dimension(650, 260));
-        cards.setPreferredSize(new Dimension(650, 260));
-        cardsWrapper.add(cards);
-
-        quickAccess.setPreferredSize(new Dimension(650, 75));
-        quickAccess.setMaximumSize(new Dimension(650, 75));
-        quickAccess.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-        lower.add(cardsWrapper);
-        lower.add(Box.createVerticalStrut(12));
-        lower.add(quickAccess);
-
-        home.add(welcomePanel, BorderLayout.NORTH);
-        home.add(lower, BorderLayout.CENTER);
-
-
-
-        return home;
+        return panel;
     }
 
-    private void addDashboardCard(JPanel panel, String icon,
-                                  String title, String description,
-                                  String destination) {
-        JButton card = new JButton();
-        card.setLayout(new BorderLayout());
+    private void addDashboardCard(JPanel panel, String destination) {
+        JButton card = new JButton(
+                "<html><center><b>" + destination
+                        + "</b><br>Open section</center></html>"
+        );
+
+        card.setFont(new Font("Arial", Font.PLAIN, 16));
         card.setBackground(Color.WHITE);
         card.setForeground(navy);
-        card.setBorder(new EmptyBorder(12, 12, 12, 12));
         card.setFocusPainted(false);
-        card.setHorizontalAlignment(SwingConstants.LEFT);
         card.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
-        JLabel iconLabel = new JLabel(
-                new MenuIcon(
-                        title.equals("Courses") ? "book" :
-                                title.equals("Exam Marks") ? "check" :
-                                        title.equals("Students") ? "students" : "chart",
-                        new Color(38, 100, 165)
-                )
-        );  iconLabel.setFont(new Font("Arial", Font.BOLD, 21));
-        iconLabel.setForeground(new Color(38, 100, 165));
-
-        JLabel titleLabel = new JLabel(title);
-        titleLabel.setFont(new Font("Arial", Font.BOLD, 16));
-        titleLabel.setForeground(navy);
-
-        JLabel descriptionLabel = new JLabel(description);
-        descriptionLabel.setFont(new Font("Arial", Font.PLAIN, 12));
-        descriptionLabel.setForeground(new Color(82, 103, 130));
-
-
-        JPanel cardContent = new JPanel();
-        cardContent.setLayout(
-                new BoxLayout(cardContent, BoxLayout.Y_AXIS)
-        );
-        cardContent.setOpaque(false);
-
-        iconLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        descriptionLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-        cardContent.add(iconLabel);
-        cardContent.add(Box.createVerticalStrut(8));
-        cardContent.add(titleLabel);
-        cardContent.add(Box.createVerticalStrut(5));
-        cardContent.add(descriptionLabel);
-
-        card.add(cardContent, BorderLayout.CENTER);
-
-
-        card.addActionListener(e -> {
-            selectMenuByName(destination);
-            showSection(destination);
-        });
+        card.addActionListener(e -> showSection(destination));
 
         panel.add(card);
-    }
-
-    private void addQuickButton(JPanel panel, String destination) {
-        JButton button = new JButton(destination);
-        button.setFont(new Font("Arial", Font.PLAIN, 12));
-        button.setForeground(new Color(82, 103, 130));
-        button.setBorderPainted(false);
-        button.setContentAreaFilled(false);
-        button.setFocusPainted(false);
-        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
-
-        button.addActionListener(e -> {
-            selectMenuByName(destination);
-            showSection(destination);
-        });
-
-        panel.add(button);
-    }
-
-    private JPanel createPlaceholder(String section) {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(backgroundColor);
-        panel.setBorder(new EmptyBorder(25, 25, 25, 25));
-
-        JLabel heading = new JLabel(section);
-        heading.setFont(new Font("Arial", Font.BOLD, 23));
-        heading.setForeground(navy);
-
-        JLabel message = new JLabel(
-                "The " + section + " section is ready for development.");
-        message.setFont(new Font("Arial", Font.PLAIN, 14));
-        message.setForeground(textColor);
-
-        JPanel content = new JPanel(new GridLayout(2, 1, 0, 12));
-        content.setOpaque(false);
-        content.add(heading);
-        content.add(message);
-
-        panel.add(content, BorderLayout.NORTH);
-        return panel;
-
-
-
     }
 
     private JPanel createProfilePanel() {
@@ -371,9 +188,9 @@ public class LecturerDashboard extends JFrame {
         heading.setForeground(navy);
 
         JLabel message = new JLabel(
-                "Lecturer profile details will appear here.");
+                "Lecturer profile details will appear here."
+        );
         message.setFont(new Font("Arial", Font.PLAIN, 14));
-        message.setForeground(textColor);
 
         JPanel content = new JPanel(new GridLayout(2, 1, 0, 12));
         content.setOpaque(false);
@@ -385,17 +202,128 @@ public class LecturerDashboard extends JFrame {
         return panel;
     }
 
-    private void selectMenuByName(String name) {
-        for (Component component : sidebar.getComponents()) {
-            if (component instanceof JButton) {
-                JButton button = (JButton) component;
+    private JPanel createUploadMarksPanel() {
+        JPanel panel = new JPanel(new BorderLayout(0, 15));
+        panel.setBackground(backgroundColor);
+        panel.setBorder(new EmptyBorder(25, 25, 25, 25));
 
-                if (button.getText().endsWith(name)) {
-                    selectMenuButton(button);
-                    return;
+        JLabel heading = new JLabel("Upload Exam Marks");
+        heading.setFont(new Font("Arial", Font.BOLD, 23));
+        heading.setForeground(navy);
+
+        JPanel form = new JPanel(new GridLayout(0, 2, 12, 12));
+        form.setBackground(Color.WHITE);
+        form.setBorder(new EmptyBorder(20, 20, 20, 20));
+
+        JTextField marksIdField = new JTextField();
+        JTextField caMarksField = new JTextField();
+        JTextField finalMarksField = new JTextField();
+        JTextField gradeField = new JTextField();
+
+        form.add(new JLabel("Marks ID:"));
+        form.add(marksIdField);
+
+        form.add(new JLabel("CA Marks (0-100):"));
+        form.add(caMarksField);
+
+        form.add(new JLabel("Final Marks (0-100):"));
+        form.add(finalMarksField);
+
+        form.add(new JLabel("Grade:"));
+        form.add(gradeField);
+
+        JButton validateButton = new JButton("Validate Marks");
+
+        validateButton.addActionListener(e -> {
+            try {
+                int marksID = Integer.parseInt(
+                        marksIdField.getText().trim()
+                );
+
+                double caMarks = Double.parseDouble(
+                        caMarksField.getText().trim()
+                );
+
+                double finalMarks = Double.parseDouble(
+                        finalMarksField.getText().trim()
+                );
+
+                if (marksID <= 0) {
+                    throw new IllegalArgumentException(
+                            "Marks ID must be greater than zero."
+                    );
                 }
+
+                if (caMarks < 0 || caMarks > 100
+                        || finalMarks < 0 || finalMarks > 100) {
+                    throw new IllegalArgumentException(
+                            "Marks must be between 0 and 100."
+                    );
+                }
+
+                if (gradeField.getText().trim().isEmpty()) {
+                    throw new IllegalArgumentException(
+                            "Please enter a grade."
+                    );
+                }
+
+                JOptionPane.showMessageDialog(
+                        panel,
+                        "Marks input validated successfully."
+                );
+
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(
+                        panel,
+                        "Enter a valid Marks ID and numeric marks.",
+                        "Invalid Input",
+                        JOptionPane.ERROR_MESSAGE
+                );
+
+            } catch (IllegalArgumentException ex) {
+                JOptionPane.showMessageDialog(
+                        panel,
+                        ex.getMessage(),
+                        "Invalid Input",
+                        JOptionPane.ERROR_MESSAGE
+                );
             }
-        }
+        });
+
+        JPanel bottom = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        bottom.setOpaque(false);
+        bottom.add(validateButton);
+
+        panel.add(heading, BorderLayout.NORTH);
+        panel.add(form, BorderLayout.CENTER);
+        panel.add(bottom, BorderLayout.SOUTH);
+
+        return panel;
+    }
+
+    private JPanel createPlaceholder(String section) {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(backgroundColor);
+        panel.setBorder(new EmptyBorder(25, 25, 25, 25));
+
+        JLabel heading = new JLabel(section);
+        heading.setFont(new Font("Arial", Font.BOLD, 23));
+        heading.setForeground(navy);
+
+        JLabel message = new JLabel(
+                "The " + section + " section is ready for development."
+        );
+        message.setFont(new Font("Arial", Font.PLAIN, 14));
+        message.setForeground(textColor);
+
+        JPanel content = new JPanel(new GridLayout(2, 1, 0, 12));
+        content.setOpaque(false);
+        content.add(heading);
+        content.add(message);
+
+        panel.add(content, BorderLayout.NORTH);
+
+        return panel;
     }
 
     private void showSection(String name) {

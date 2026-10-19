@@ -1,6 +1,9 @@
 package com.facultyams.service;
 import com.facultyams.model.Marks;
+import com.facultyams.dao.MarksDAO;
+import java.sql.SQLException;
 public class MarksService {
+    private final MarksDAO marksDAO = new MarksDAO();
     public boolean isValidateMarks(double marks){
         return marks >= 0 && marks <= 100;      //validate marks
     }
@@ -19,7 +22,7 @@ public class MarksService {
 
         if (!isValidateMarks(caMarks)) {
             throw new IllegalArgumentException(
-                    "CA makrs should be between 0 & 100"
+                    "CA marks should be between 0 & 100"
             );
         }
 
@@ -51,7 +54,17 @@ public class MarksService {
                 }
                 return true;
             }
+    public Marks findMarksById(int marksID) throws SQLException {
+        if (marksID <= 0) {
+            throw new IllegalArgumentException(
+                    "Marks ID must be greater than zero."
+            );
         }
 
+        return marksDAO.findMarksById(marksID);
+    }
+        }
+
+        //code for validate marks and check exam eligibility
 
 
