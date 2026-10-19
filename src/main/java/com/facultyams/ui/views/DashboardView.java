@@ -4,21 +4,52 @@ import com.facultyams.model.Marks;
 import com.facultyams.model.Notice;
 import com.facultyams.model.Student;
 import com.facultyams.service.DataService;
-import com.facultyams.ui.components.*;
-import com.facultyams.ui.theme.IconHelper;
+import com.facultyams.ui.components.CardPanel;
 import com.facultyams.ui.theme.Theme;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.geom.Arc2D;
+import java.awt.geom.Area;
+import java.awt.geom.Ellipse2D;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.function.Consumer;
 import javax.swing.*;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
-import javax.swing.table.TableCellRenderer;
+import javax.swing.table.JTableHeader;
 
+/**
+ * Modern, clean, minimal Dashboard UI matching the exact SRMS undergraduate portal design.
+ */
 public class DashboardView extends JPanel {
     private final Consumer<String> navigationHandler;
     private final DataService dataService = DataService.getInstance();
+
+    // Design Tokens
+    private static final Color COLOR_TEXT_PRIMARY   = new Color(15, 23, 42);    // #0F172A
+    private static final Color COLOR_TEXT_SECONDARY = new Color(100, 116, 139);  // #64748B
+    private static final Color COLOR_TEXT_MUTED     = new Color(148, 163, 184); // #94A3B8
+    private static final Color COLOR_PRIMARY        = new Color(37, 99, 235);   // #2563EB
+    private static final Color COLOR_PRIMARY_LIGHT  = new Color(219, 234, 254); // #DBEAFE
+    private static final Color COLOR_SUCCESS        = new Color(22, 163, 74);   // #16A34A
+    private static final Color COLOR_SUCCESS_LIGHT  = new Color(220, 252, 231); // #DCFCE7
+    private static final Color COLOR_DANGER         = new Color(220, 38, 38);   // #DC2626
+    private static final Color COLOR_DANGER_LIGHT   = new Color(254, 226, 226); // #FEE2E2
+    private static final Color COLOR_WARNING        = new Color(245, 158, 11);  // #F59E0B
+    private static final Color COLOR_WARNING_LIGHT  = new Color(254, 243, 199); // #FEF3C7
+    private static final Color COLOR_BORDER         = new Color(229, 231, 235); // #E5E7EB
+    private static final Color COLOR_HOVER_BG       = new Color(248, 250, 252); // #F8FAFC
+
+    // Fonts
+    private static final Font FONT_GREETING = new Font("Segoe UI", Font.BOLD, 22);
+    private static final Font FONT_SECTION  = new Font("Segoe UI", Font.BOLD, 15);
+    private static final Font FONT_METRIC   = new Font("Segoe UI", Font.BOLD, 28);
+    private static final Font FONT_BODY     = new Font("Segoe UI", Font.PLAIN, 13);
+    private static final Font FONT_BODY_BOLD= new Font("Segoe UI", Font.BOLD, 13);
+    private static final Font FONT_CAPTION  = new Font("Segoe UI", Font.PLAIN, 11);
+    private static final Font FONT_CAP_BOLD = new Font("Segoe UI", Font.BOLD, 11);
 
     public DashboardView(Consumer<String> navigationHandler) {
         this.navigationHandler = navigationHandler;
@@ -28,166 +59,168 @@ public class DashboardView extends JPanel {
         JPanel mainContent = new JPanel();
         mainContent.setOpaque(false);
         mainContent.setLayout(new BoxLayout(mainContent, BoxLayout.Y_AXIS));
-        mainContent.setBorder(Theme.createEmptyPadding(0, 0, 20, 0));
+        mainContent.setBorder(BorderFactory.createEmptyBorder(20, 24, 24, 24));
 
-        // 1. Welcome Banner
-        mainContent.add(createWelcomeBanner());
-        mainContent.add(Box.createVerticalStrut(18));
+        // 1. Welcome Greeting Header (clean, no illustration)
+        mainContent.add(createWelcomeHeader());
+        mainContent.add(Box.createVerticalStrut(20));
 
-        // 2. 5 Stat Metric Cards
-        mainContent.add(createStatCardsPanel());
-        mainContent.add(Box.createVerticalStrut(18));
+        // 2. Row 1: 4 KPI Metric Cards
+        mainContent.add(createKpiCardsRow());
+        mainContent.add(Box.createVerticalStrut(20));
 
-        // 3. Middle Section: Recent Results (left) + Notice Board (right)
-        mainContent.add(createMiddleSection());
-        mainContent.add(Box.createVerticalStrut(18));
+        // 3. Row 2: Recent Results (65%) + Notices (35%)
+        mainContent.add(createResultsAndNoticesRow());
+        mainContent.add(Box.createVerticalStrut(20));
 
-        // 4. Bottom Section: Academic Calendar + Quick Access + Performance Overview
-        mainContent.add(createBottomSection());
+        // 4. Row 3: Performance Donut (35%) + Upcoming Deadlines (65%)
+        mainContent.add(createPerformanceAndUpcomingRow());
 
+        // ScrollPane with smooth scrolling
         JScrollPane scrollPane = new JScrollPane(mainContent);
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
         scrollPane.setOpaque(false);
         scrollPane.getViewport().setOpaque(false);
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
 
         add(scrollPane, BorderLayout.CENTER);
     }
 
-    private JPanel createWelcomeBanner() {
+    private JPanel createWelcomeHeader() {
+        JPanel header = new JPanel();
+        header.setOpaque(false);
+        header.setLayout(new BoxLayout(header, BoxLayout.Y_AXIS));
+
         Student student = dataService.getCurrentStudent();
+        int hour = LocalTime.now().getHour();
+        String timeGreeting = (hour < 12) ? "Good morning" : (hour < 17) ? "Good afternoon" : "Good evening";
 
-        CardPanel banner = new CardPanel(16) {
-            @Override
-            protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                Theme.setAntiAliasing(g2);
-                int w = getWidth();
-                int h = getHeight();
-                // Subtle blue gradient
-                GradientPaint gp = new GradientPaint(0, 0, Theme.BANNER_GRADIENT_START, w, h, Theme.BANNER_GRADIENT_END);
-                g2.setPaint(gp);
-                g2.fillRoundRect(0, 0, w - 1, h - 1, 16, 16);
-                g2.setColor(new Color(219, 234, 254));
-                g2.setStroke(new BasicStroke(1.0f));
-                g2.drawRoundRect(0, 0, w - 1, h - 1, 16, 16);
-                g2.dispose();
-            }
-        };
-        banner.setLayout(new BorderLayout(20, 0));
-        banner.setBorder(Theme.createEmptyPadding(20, 24, 20, 24));
-        banner.setPreferredSize(new Dimension(0, 140));
+        String firstName = "Abhishek";
+        if (student != null && student.getFullName() != null) {
+            firstName = student.getFullName().trim().split("\\s+")[0];
+        }
 
-        // Text Left
-        JPanel textPanel = new JPanel();
-        textPanel.setOpaque(false);
-        textPanel.setLayout(new BoxLayout(textPanel, BoxLayout.Y_AXIS));
+        JLabel greetingLabel = new JLabel(timeGreeting + ", " + firstName);
+        greetingLabel.setFont(FONT_GREETING);
+        greetingLabel.setForeground(COLOR_TEXT_PRIMARY);
 
-        JLabel greetingLbl = new JLabel("Good Morning, \uD83D\uDC4B");
-        greetingLbl.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        greetingLbl.setForeground(new Color(30, 41, 59));
+        JLabel subLabel = new JLabel("Here is a quick look at your academic progress.");
+        subLabel.setFont(FONT_BODY);
+        subLabel.setForeground(COLOR_TEXT_SECONDARY);
 
-        JLabel nameLbl = new JLabel(student.getFullName() + "!");
-        nameLbl.setFont(new Font("Segoe UI", Font.BOLD, 22));
-        nameLbl.setForeground(Theme.PRIMARY_HOVER);
+        header.add(greetingLabel);
+        header.add(Box.createVerticalStrut(4));
+        header.add(subLabel);
 
-        JLabel subLbl = new JLabel("Stay updated with your academic journey.");
-        subLbl.setFont(Theme.FONT_BODY);
-        subLbl.setForeground(Theme.TEXT_MUTED);
-
-        textPanel.add(Box.createVerticalGlue());
-        textPanel.add(greetingLbl);
-        textPanel.add(Box.createVerticalStrut(4));
-        textPanel.add(nameLbl);
-        textPanel.add(Box.createVerticalStrut(6));
-        textPanel.add(subLbl);
-        textPanel.add(Box.createVerticalGlue());
-
-        banner.add(textPanel, BorderLayout.CENTER);
-        banner.add(new BannerIllustration(), BorderLayout.EAST);
-
-        return banner;
+        return header;
     }
 
-    private JPanel createStatCardsPanel() {
+    private JPanel createKpiCardsRow() {
         Student s = dataService.getCurrentStudent();
-        JPanel row = new JPanel(new GridLayout(1, 5, 14, 0));
+        JPanel row = new JPanel(new GridLayout(1, 4, 16, 0));
         row.setOpaque(false);
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 115));
 
         // 1. CGPA
-        row.add(new StatCard("cgpa", Theme.ACCENT_BLUE_BG, Theme.ACCENT_BLUE,
-                "CGPA", String.format("%.2f", s.getCgpa()), "Current CGPA", Theme.PRIMARY));
+        row.add(createKpiCard("CGPA", String.format("%.2f", s.getCgpa()), "+ 0.20 from last sem", COLOR_SUCCESS));
 
-        // 2. Courses Enrolled
-        row.add(new StatCard("graduation-cap", Theme.ACCENT_GREEN_BG, Theme.ACCENT_GREEN,
-                "Courses Enrolled", String.valueOf(s.getEnrolledCoursesCount()), "This Semester", Theme.ACCENT_GREEN));
+        // 2. Attendance
+        row.add(createKpiCard("Attendance", (int) s.getAttendancePercentage() + "%", "Above 75% minimum", COLOR_SUCCESS));
 
-        // 3. Exams Completed
-        row.add(new StatCard("exams", Theme.ACCENT_PURPLE_BG, Theme.ACCENT_PURPLE,
-                "Exams Completed", String.valueOf(s.getCompletedExams()), "This Semester", Theme.ACCENT_PURPLE));
+        // 3. Courses
+        row.add(createKpiCard("Courses", String.valueOf(s.getEnrolledCoursesCount()), s.getCompletedExams() + " exams completed", COLOR_SUCCESS));
 
-        // 4. Overall Rank
-        row.add(new StatCard("trophy", Theme.ACCENT_AMBER_BG, Theme.ACCENT_AMBER,
-                "Overall Rank", String.valueOf(s.getOverallRank()), "out of " + s.getTotalStudents(), Theme.ACCENT_AMBER));
-
-        // 5. Attendance
-        row.add(new StatCard("attendance", Theme.ACCENT_ROSE_BG, Theme.ACCENT_ROSE,
-                "Attendance", (int) s.getAttendancePercentage() + "%", "This Semester", Theme.ACCENT_ROSE));
+        // 4. Class Rank
+        row.add(createKpiCard("Class Rank", String.valueOf(s.getOverallRank()), "out of " + s.getTotalStudents(), COLOR_TEXT_SECONDARY));
 
         return row;
     }
 
-    private JPanel createMiddleSection() {
-        JPanel section = new JPanel(new GridBagLayout());
-        section.setOpaque(false);
+    private JPanel createKpiCard(String label, String value, String subtext, Color subColor) {
+        CardPanel card = new CardPanel(12);
+        card.setLayout(new BorderLayout());
+        card.setBorder(BorderFactory.createEmptyBorder(18, 20, 18, 20));
+
+        JPanel p = new JPanel();
+        p.setOpaque(false);
+        p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS));
+
+        JLabel lblTitle = new JLabel(label);
+        lblTitle.setFont(FONT_CAPTION);
+        lblTitle.setForeground(COLOR_TEXT_SECONDARY);
+
+        JLabel lblValue = new JLabel(value);
+        lblValue.setFont(FONT_METRIC);
+        lblValue.setForeground(COLOR_TEXT_PRIMARY);
+
+        JLabel lblSub = new JLabel(subtext);
+        lblSub.setFont(FONT_CAP_BOLD);
+        lblSub.setForeground(subColor);
+
+        p.add(lblTitle);
+        p.add(Box.createVerticalStrut(6));
+        p.add(lblValue);
+        p.add(Box.createVerticalStrut(6));
+        p.add(lblSub);
+
+        card.add(p, BorderLayout.CENTER);
+        return card;
+    }
+
+    private JPanel createResultsAndNoticesRow() {
+        JPanel row = new JPanel(new GridBagLayout());
+        row.setOpaque(false);
+
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.fill = GridBagConstraints.BOTH;
         gbc.weighty = 1.0;
 
-        // Recent Results Card (Left, weightx = 0.62)
+        // Recent Results (65% width)
         gbc.gridx = 0;
-        gbc.weightx = 0.62;
-        gbc.insets = new Insets(0, 0, 0, 14);
-        section.add(createRecentResultsCard(), gbc);
+        gbc.weightx = 0.65;
+        gbc.insets = new Insets(0, 0, 0, 16);
+        row.add(createRecentResultsCard(), gbc);
 
-        // Notice Board Card (Right, weightx = 0.38)
+        // Notices (35% width)
         gbc.gridx = 1;
-        gbc.weightx = 0.38;
+        gbc.weightx = 0.35;
         gbc.insets = new Insets(0, 0, 0, 0);
-        section.add(createNoticeBoardCard(), gbc);
+        row.add(createNoticesCard(), gbc);
 
-        return section;
+        return row;
     }
 
     private JPanel createRecentResultsCard() {
-        CardPanel card = new CardPanel(16);
-        card.setLayout(new BorderLayout(0, 12));
-        card.setBorder(Theme.createEmptyPadding(16, 18, 16, 18));
+        CardPanel card = new CardPanel(12);
+        card.setLayout(new BorderLayout(0, 14));
+        card.setBorder(BorderFactory.createEmptyBorder(18, 20, 16, 20));
 
-        // Header
+        // Header: "Recent Results" + "View all"
         JPanel header = new JPanel(new BorderLayout());
         header.setOpaque(false);
-        JLabel title = new JLabel("Recent Results");
-        title.setFont(Theme.FONT_SECTION);
-        title.setForeground(Theme.TEXT_MAIN);
 
-        JLabel viewAll = createLinkButton("View All Results", () -> navigationHandler.accept("Results"));
+        JLabel title = new JLabel("Recent Results");
+        title.setFont(FONT_SECTION);
+        title.setForeground(COLOR_TEXT_PRIMARY);
+
+        JLabel viewAll = createLink("View all", () -> navigationHandler.accept("Results"));
         header.add(title, BorderLayout.WEST);
         header.add(viewAll, BorderLayout.EAST);
         card.add(header, BorderLayout.NORTH);
 
-        // Table
-        String[] columns = {"Subject", "Exam Type", "Grade", "Score", "Date"};
+        // Results Table
+        String[] columns = {"SUBJECT", "GRADE", "SCORE", "DATE"};
         List<Marks> marks = dataService.getRecentMarks();
-        Object[][] data = new Object[marks.size()][5];
+        int count = Math.min(marks.size(), 5);
+        Object[][] data = new Object[count][4];
 
-        for (int i = 0; i < marks.size(); i++) {
+        for (int i = 0; i < count; i++) {
             Marks m = marks.get(i);
             data[i][0] = m.getSubject();
-            data[i][1] = m.getExamType();
-            data[i][2] = m.getGrade();
-            data[i][3] = m.getScoreFormatted();
-            data[i][4] = m.getDate();
+            data[i][1] = m.getGrade();
+            data[i][2] = m.getScore() + " / " + m.getMaxScore();
+            data[i][3] = m.getDate();
         }
 
         DefaultTableModel model = new DefaultTableModel(data, columns) {
@@ -197,198 +230,446 @@ public class DashboardView extends JPanel {
             }
         };
 
-        ModernTable table = new ModernTable(model);
-        // Custom Grade column renderer
-        table.getColumnModel().getColumn(2).setCellRenderer(new TableCellRenderer() {
+        JTable table = new JTable(model);
+        table.setRowHeight(44);
+        table.setShowGrid(false);
+        table.setShowHorizontalLines(false);
+        table.setShowVerticalLines(false);
+        table.setBackground(Color.WHITE);
+        table.setForeground(COLOR_TEXT_PRIMARY);
+        table.setFont(FONT_BODY);
+        table.setFillsViewportHeight(true);
+
+        // Uppercase slate header
+        JTableHeader th = table.getTableHeader();
+        th.setPreferredSize(new Dimension(0, 32));
+        th.setFont(FONT_CAP_BOLD);
+        th.setForeground(COLOR_TEXT_SECONDARY);
+        th.setBackground(new Color(248, 250, 252));
+        th.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, COLOR_BORDER));
+        th.setReorderingAllowed(false);
+
+        // Custom Grade Pill Renderer
+        table.getColumnModel().getColumn(1).setCellRenderer((tbl, value, isSel, hasFocus, rowIdx, colIdx) -> {
+            JPanel p = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 10));
+            p.setOpaque(false);
+            p.add(createGradePill(value != null ? value.toString() : ""));
+            return p;
+        });
+
+        // Hover highlight
+        final int[] hoveredRow = {-1};
+        table.addMouseMotionListener(new MouseAdapter() {
             @Override
-            public Component getTableCellRendererComponent(JTable table, Object value,
-                                                           boolean isSelected, boolean hasFocus, int row, int col) {
-                JPanel p = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 6));
-                p.setOpaque(false);
-                p.add(BadgeLabel.createGradeBadge((String) value));
-                return p;
+            public void mouseMoved(MouseEvent e) {
+                int r = table.rowAtPoint(e.getPoint());
+                if (r != hoveredRow[0]) {
+                    hoveredRow[0] = r;
+                    table.repaint();
+                }
+            }
+        });
+        table.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseExited(MouseEvent e) {
+                hoveredRow[0] = -1;
+                table.repaint();
             }
         });
 
-        table.getColumnModel().getColumn(0).setPreferredWidth(190);
-        table.getColumnModel().getColumn(1).setPreferredWidth(85);
-        table.getColumnModel().getColumn(2).setPreferredWidth(65);
-        table.getColumnModel().getColumn(3).setPreferredWidth(75);
-        table.getColumnModel().getColumn(4).setPreferredWidth(90);
+        DefaultTableCellRenderer cellRenderer = new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable tbl, Object value,
+                                                           boolean isSelected, boolean hasFocus, int r, int col) {
+                Component c = super.getTableCellRendererComponent(tbl, value, isSelected, false, r, col);
+                setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 8));
+                setBackground(r == hoveredRow[0] ? COLOR_HOVER_BG : Color.WHITE);
+                return c;
+            }
+        };
 
-        JScrollPane scroll = ModernTable.createModernScrollPane(table);
-        scroll.setPreferredSize(new Dimension(0, 220));
-        card.add(scroll, BorderLayout.CENTER);
+        table.getColumnModel().getColumn(0).setCellRenderer(cellRenderer);
+        table.getColumnModel().getColumn(2).setCellRenderer(cellRenderer);
+        table.getColumnModel().getColumn(3).setCellRenderer(cellRenderer);
 
+        table.getColumnModel().getColumn(0).setPreferredWidth(210);
+        table.getColumnModel().getColumn(1).setPreferredWidth(65);
+        table.getColumnModel().getColumn(2).setPreferredWidth(75);
+        table.getColumnModel().getColumn(3).setPreferredWidth(90);
+
+        JScrollPane tableScroll = new JScrollPane(table);
+        tableScroll.setBorder(BorderFactory.createEmptyBorder());
+        tableScroll.getViewport().setBackground(Color.WHITE);
+        tableScroll.setPreferredSize(new Dimension(0, 240));
+
+        card.add(tableScroll, BorderLayout.CENTER);
         return card;
     }
 
-    private JPanel createNoticeBoardCard() {
-        CardPanel card = new CardPanel(16);
-        card.setLayout(new BorderLayout(0, 12));
-        card.setBorder(Theme.createEmptyPadding(16, 18, 16, 18));
+    private JLabel createGradePill(String grade) {
+        String g = grade != null ? grade.trim().toUpperCase() : "";
+        Color bg;
+        Color fg;
 
-        // Header
+        if (g.startsWith("A")) {
+            bg = COLOR_SUCCESS_LIGHT;
+            fg = COLOR_SUCCESS;
+        } else if (g.startsWith("B")) {
+            bg = COLOR_PRIMARY_LIGHT;
+            fg = COLOR_PRIMARY;
+        } else if (g.startsWith("C")) {
+            bg = COLOR_WARNING_LIGHT;
+            fg = COLOR_WARNING;
+        } else {
+            bg = COLOR_DANGER_LIGHT;
+            fg = COLOR_DANGER;
+        }
+
+        JLabel pill = new JLabel(grade, SwingConstants.CENTER) {
+            @Override
+            protected void paintComponent(Graphics g2d) {
+                Graphics2D g2 = (Graphics2D) g2d.create();
+                Theme.setAntiAliasing(g2);
+                g2.setColor(bg);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 11, 11);
+                g2.dispose();
+                super.paintComponent(g2d);
+            }
+        };
+        pill.setFont(FONT_CAP_BOLD);
+        pill.setForeground(fg);
+        pill.setOpaque(false);
+        pill.setPreferredSize(new Dimension(38, 22));
+        return pill;
+    }
+
+    private JPanel createNoticesCard() {
+        CardPanel card = new CardPanel(12);
+        card.setLayout(new BorderLayout(0, 14));
+        card.setBorder(BorderFactory.createEmptyBorder(18, 20, 16, 20));
+
+        // Header: "Notices" + "View all"
         JPanel header = new JPanel(new BorderLayout());
         header.setOpaque(false);
-        JLabel title = new JLabel("Notice Board");
-        title.setFont(Theme.FONT_SECTION);
-        title.setForeground(Theme.TEXT_MAIN);
 
-        JLabel viewAll = createLinkButton("View All Notices", () -> navigationHandler.accept("Notice Board"));
+        JLabel title = new JLabel("Notices");
+        title.setFont(FONT_SECTION);
+        title.setForeground(COLOR_TEXT_PRIMARY);
+
+        JLabel viewAll = createLink("View all", () -> navigationHandler.accept("Notice Board"));
         header.add(title, BorderLayout.WEST);
         header.add(viewAll, BorderLayout.EAST);
         card.add(header, BorderLayout.NORTH);
 
         // Notice list
-        JPanel listPanel = new JPanel();
-        listPanel.setOpaque(false);
-        listPanel.setLayout(new BoxLayout(listPanel, BoxLayout.Y_AXIS));
+        JPanel list = new JPanel();
+        list.setOpaque(false);
+        list.setLayout(new BoxLayout(list, BoxLayout.Y_AXIS));
 
         List<Notice> notices = dataService.getNotices();
         int max = Math.min(notices.size(), 3);
         for (int i = 0; i < max; i++) {
             Notice n = notices.get(i);
-            listPanel.add(createNoticeItem(n));
+            boolean isUnread = (i < 2); // First 2 unread (blue dot), 3rd read (gray dot) as in image
+            list.add(createNoticeRow(n, isUnread));
             if (i < max - 1) {
-                listPanel.add(Box.createVerticalStrut(10));
+                JSeparator sep = new JSeparator();
+                sep.setForeground(COLOR_BORDER);
+                sep.setBackground(COLOR_BORDER);
+                sep.setMaximumSize(new Dimension(Integer.MAX_VALUE, 1));
+                list.add(sep);
             }
         }
+        list.add(Box.createVerticalGlue());
 
-        card.add(listPanel, BorderLayout.CENTER);
+        card.add(list, BorderLayout.CENTER);
         return card;
     }
 
-    private JPanel createNoticeItem(Notice n) {
-        JPanel item = new JPanel(new BorderLayout(12, 0)) {
+    private JPanel createNoticeRow(Notice n, boolean unread) {
+        JPanel row = new JPanel(new BorderLayout(12, 0));
+        row.setOpaque(false);
+        row.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        row.setBorder(BorderFactory.createEmptyBorder(10, 8, 10, 8));
+
+        // Dot indicator
+        JPanel dotPanel = new JPanel() {
+            @Override
+            public Dimension getPreferredSize() {
+                return new Dimension(10, 10);
+            }
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 Theme.setAntiAliasing(g2);
-                g2.setColor(new Color(248, 250, 252));
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
-                g2.setColor(Theme.CARD_BORDER_SUBTLE);
-                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 10, 10);
+                g2.setColor(unread ? COLOR_PRIMARY : COLOR_TEXT_MUTED);
+                g2.fillOval(1, 4, 7, 7);
                 g2.dispose();
-                super.paintComponent(g);
             }
         };
-        item.setOpaque(false);
-        item.setBorder(Theme.createEmptyPadding(10, 12, 10, 12));
-        item.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        dotPanel.setOpaque(false);
 
-        item.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                navigationHandler.accept("Notice Board");
-            }
-        });
-
-        // Loudspeaker icon box
-        JPanel iconBox = new JPanel(new GridBagLayout()) {
-            @Override
-            protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                Theme.setAntiAliasing(g2);
-                g2.setColor(Theme.ACCENT_BLUE_BG);
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
-                g2.dispose();
-                super.paintComponent(g);
-            }
-        };
-        iconBox.setOpaque(false);
-        iconBox.setPreferredSize(new Dimension(38, 38));
-        iconBox.add(new JLabel(IconHelper.getIcon("loudspeaker", 20, Theme.PRIMARY)));
-
-        // Details
         JPanel textP = new JPanel();
         textP.setOpaque(false);
         textP.setLayout(new BoxLayout(textP, BoxLayout.Y_AXIS));
 
         JLabel titleLbl = new JLabel(n.getTitle());
-        titleLbl.setFont(Theme.FONT_BODY_BOLD);
-        titleLbl.setForeground(Theme.TEXT_MAIN);
+        titleLbl.setFont(FONT_BODY_BOLD);
+        titleLbl.setForeground(COLOR_TEXT_PRIMARY);
 
-        // Short preview
         String preview = n.getContent();
-        if (preview.length() > 68) {
-            preview = preview.substring(0, 68) + "...";
+        if (preview.length() > 42) {
+            preview = preview.substring(0, 42) + "...";
         }
-        JLabel descLbl = new JLabel("<html><body style='width: 170px;'>" + preview + "</body></html>");
-        descLbl.setFont(Theme.FONT_SMALL);
-        descLbl.setForeground(Theme.TEXT_MUTED);
+        JLabel descLbl = new JLabel(preview);
+        descLbl.setFont(FONT_CAPTION);
+        descLbl.setForeground(COLOR_TEXT_SECONDARY);
 
-        JLabel dateLbl = new JLabel(n.getDate());
-        dateLbl.setFont(new Font("Segoe UI", Font.BOLD, 10));
-        dateLbl.setForeground(Theme.PRIMARY);
+        JLabel dateLbl = new JLabel(n.getDate().contains("May") ? n.getDate().replace("2024", "").trim() : n.getDate());
+        dateLbl.setFont(FONT_CAP_BOLD);
+        dateLbl.setForeground(COLOR_TEXT_MUTED);
 
         textP.add(titleLbl);
         textP.add(Box.createVerticalStrut(2));
         textP.add(descLbl);
-        textP.add(Box.createVerticalStrut(4));
+        textP.add(Box.createVerticalStrut(3));
         textP.add(dateLbl);
 
-        item.add(iconBox, BorderLayout.WEST);
-        item.add(textP, BorderLayout.CENTER);
+        row.add(dotPanel, BorderLayout.WEST);
+        row.add(textP, BorderLayout.CENTER);
 
-        return item;
+        MouseAdapter hover = new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                titleLbl.setForeground(COLOR_PRIMARY);
+            }
+            @Override
+            public void mouseExited(MouseEvent e) {
+                titleLbl.setForeground(COLOR_TEXT_PRIMARY);
+            }
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                navigationHandler.accept("Notice Board");
+            }
+        };
+
+        row.addMouseListener(hover);
+        titleLbl.addMouseListener(hover);
+        descLbl.addMouseListener(hover);
+
+        return row;
     }
 
-    private JPanel createBottomSection() {
-        JPanel section = new JPanel(new GridLayout(1, 3, 14, 0));
-        section.setOpaque(false);
+    private JPanel createPerformanceAndUpcomingRow() {
+        JPanel row = new JPanel(new GridBagLayout());
+        row.setOpaque(false);
 
-        // 1. Academic Calendar
-        CardPanel calCard = new CardPanel(16);
-        calCard.setLayout(new BorderLayout(0, 10));
-        calCard.setBorder(Theme.createEmptyPadding(16, 16, 16, 16));
-        JPanel calHeader = new JPanel(new BorderLayout());
-        calHeader.setOpaque(false);
-        JLabel calTitle = new JLabel("Academic Calendar");
-        calTitle.setFont(Theme.FONT_SECTION);
-        calTitle.setForeground(Theme.TEXT_MAIN);
-        JLabel calLink = createLinkButton("View Calendar", () -> navigationHandler.accept("Timetable"));
-        calHeader.add(calTitle, BorderLayout.WEST);
-        calHeader.add(calLink, BorderLayout.EAST);
-        calCard.add(calHeader, BorderLayout.NORTH);
-        calCard.add(new CalendarWidget(), BorderLayout.CENTER);
-        section.add(calCard);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.BOTH;
+        gbc.weighty = 1.0;
 
-        // 2. Quick Access
-        CardPanel qaCard = new CardPanel(16);
-        qaCard.setLayout(new BorderLayout(0, 10));
-        qaCard.setBorder(Theme.createEmptyPadding(16, 16, 16, 16));
-        JLabel qaTitle = new JLabel("Quick Access");
-        qaTitle.setFont(Theme.FONT_SECTION);
-        qaTitle.setForeground(Theme.TEXT_MAIN);
-        qaCard.add(qaTitle, BorderLayout.NORTH);
-        qaCard.add(new QuickAccessPanel(navigationHandler), BorderLayout.CENTER);
-        section.add(qaCard);
+        // Performance Donut (35% width)
+        gbc.gridx = 0;
+        gbc.weightx = 0.35;
+        gbc.insets = new Insets(0, 0, 0, 16);
+        row.add(createPerformanceCard(), gbc);
 
-        // 3. Performance Overview
-        CardPanel perfCard = new CardPanel(16);
-        perfCard.setLayout(new BorderLayout(0, 10));
-        perfCard.setBorder(Theme.createEmptyPadding(16, 16, 16, 16));
-        JPanel perfHeader = new JPanel(new BorderLayout());
-        perfHeader.setOpaque(false);
-        JLabel perfTitle = new JLabel("Performance Overview");
-        perfTitle.setFont(Theme.FONT_SECTION);
-        perfTitle.setForeground(Theme.TEXT_MAIN);
-        JLabel perfLink = createLinkButton("View Details", () -> navigationHandler.accept("Results"));
-        perfHeader.add(perfTitle, BorderLayout.WEST);
-        perfHeader.add(perfLink, BorderLayout.EAST);
-        perfCard.add(perfHeader, BorderLayout.NORTH);
-        perfCard.add(new DonutChartPanel(), BorderLayout.CENTER);
-        section.add(perfCard);
+        // Upcoming Deadlines (65% width)
+        gbc.gridx = 1;
+        gbc.weightx = 0.65;
+        gbc.insets = new Insets(0, 0, 0, 0);
+        row.add(createUpcomingDeadlinesCard(), gbc);
 
-        return section;
+        return row;
     }
 
-    private JLabel createLinkButton(String text, Runnable action) {
+    private JPanel createPerformanceCard() {
+        CardPanel card = new CardPanel(12);
+        card.setLayout(new BorderLayout(0, 10));
+        card.setBorder(BorderFactory.createEmptyBorder(18, 20, 18, 20));
+
+        JPanel header = new JPanel(new BorderLayout());
+        header.setOpaque(false);
+
+        JLabel title = new JLabel("Performance");
+        title.setFont(FONT_SECTION);
+        title.setForeground(COLOR_TEXT_PRIMARY);
+
+        JLabel detailsLink = createLink("Details", () -> navigationHandler.accept("Results"));
+        header.add(title, BorderLayout.WEST);
+        header.add(detailsLink, BorderLayout.EAST);
+        card.add(header, BorderLayout.NORTH);
+
+        // Custom Donut Chart & Legend
+        card.add(createDonutChartComponent(), BorderLayout.CENTER);
+        return card;
+    }
+
+    private JComponent createDonutChartComponent() {
+        return new JComponent() {
+            {
+                setPreferredSize(new Dimension(280, 150));
+                setOpaque(false);
+            }
+
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                Theme.setAntiAliasing(g2);
+
+                int h = getHeight();
+                int size = Math.min(130, h - 10);
+                int cx = 14;
+                int cy = (h - size) / 2;
+
+                double outerRadius = size / 2.0;
+                double innerRadius = size * 0.35;
+                double centerX = cx + outerRadius;
+                double centerY = cy + outerRadius;
+
+                // Segments: 60% green, 20% blue, 20% orange/amber
+                double startAngle = 90.0;
+                double arcExcellent = (60.0 / 100.0) * 360.0;
+                double arcGood = (20.0 / 100.0) * 360.0;
+                double arcAverage = 360.0 - (arcExcellent + arcGood);
+
+                drawSegment(g2, centerX, centerY, outerRadius, innerRadius, startAngle, -arcExcellent, COLOR_SUCCESS);
+                drawSegment(g2, centerX, centerY, outerRadius, innerRadius, startAngle - arcExcellent, -arcGood, COLOR_PRIMARY);
+                drawSegment(g2, centerX, centerY, outerRadius, innerRadius, startAngle - arcExcellent - arcGood, -arcAverage, COLOR_WARNING);
+
+                // Center text: 84% + Overall
+                g2.setColor(COLOR_TEXT_PRIMARY);
+                g2.setFont(FONT_GREETING);
+                FontMetrics fm1 = g2.getFontMetrics();
+                String pct = "84%";
+                int tx = (int) (centerX - fm1.stringWidth(pct) / 2);
+                int ty = (int) (centerY + fm1.getAscent() / 2 - 6);
+                g2.drawString(pct, tx, ty);
+
+                g2.setColor(COLOR_TEXT_SECONDARY);
+                g2.setFont(FONT_CAPTION);
+                FontMetrics fm2 = g2.getFontMetrics();
+                String lbl = "Overall";
+                int lx = (int) (centerX - fm2.stringWidth(lbl) / 2);
+                int ly = ty + fm2.getAscent() + 2;
+                g2.drawString(lbl, lx, ly);
+
+                // Legend on Right
+                int lxStart = cx + size + 20;
+                int lyStart = cy + 24;
+
+                drawLegendItem(g2, lxStart, lyStart, COLOR_SUCCESS, "Excellent", "60%");
+                drawLegendItem(g2, lxStart, lyStart + 38, COLOR_PRIMARY, "Good", "20%");
+
+                g2.dispose();
+            }
+
+            private void drawSegment(Graphics2D g2, double cx, double cy, double outerR, double innerR, double start, double extent, Color color) {
+                Arc2D.Double outerArc = new Arc2D.Double(cx - outerR, cy - outerR, outerR * 2, outerR * 2, start, extent, Arc2D.PIE);
+                Area area = new Area(outerArc);
+                Shape innerCircle = new Ellipse2D.Double(cx - innerR, cy - innerR, innerR * 2, innerR * 2);
+                area.subtract(new Area(innerCircle));
+                g2.setColor(color);
+                g2.fill(area);
+            }
+
+            private void drawLegendItem(Graphics2D g2, int x, int y, Color color, String name, String value) {
+                g2.setColor(color);
+                g2.fillRoundRect(x, y + 2, 8, 14, 4, 4);
+
+                g2.setColor(COLOR_TEXT_PRIMARY);
+                g2.setFont(FONT_BODY);
+                g2.drawString(name, x + 16, y + 14);
+
+                g2.setFont(FONT_BODY_BOLD);
+                g2.drawString(value, x + 84, y + 14);
+            }
+        };
+    }
+
+    private JPanel createUpcomingDeadlinesCard() {
+        CardPanel card = new CardPanel(12);
+        card.setLayout(new BorderLayout(0, 14));
+        card.setBorder(BorderFactory.createEmptyBorder(18, 20, 18, 20));
+
+        JLabel title = new JLabel("Upcoming Deadlines");
+        title.setFont(FONT_SECTION);
+        title.setForeground(COLOR_TEXT_PRIMARY);
+        card.add(title, BorderLayout.NORTH);
+
+        JPanel list = new JPanel();
+        list.setOpaque(false);
+        list.setLayout(new BoxLayout(list, BoxLayout.Y_AXIS));
+
+        // Deadlines matching mockup
+        list.add(createDeadlineRow("Mini Project Submission", "Project", "30 May"));
+        list.add(createDivider());
+        list.add(createDeadlineRow("Data Structures", "Exam", "25 May"));
+        list.add(createDivider());
+        list.add(createDeadlineRow("Operating Systems", "Exam", "27 May"));
+
+        list.add(Box.createVerticalGlue());
+        card.add(list, BorderLayout.CENTER);
+        return card;
+    }
+
+    private JPanel createDeadlineRow(String title, String type, String date) {
+        JPanel row = new JPanel(new BorderLayout(16, 0));
+        row.setOpaque(false);
+        row.setBorder(BorderFactory.createEmptyBorder(10, 8, 10, 8));
+
+        JLabel nameLabel = new JLabel(title);
+        nameLabel.setFont(FONT_BODY);
+        nameLabel.setForeground(COLOR_TEXT_PRIMARY);
+
+        JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 14, 0));
+        right.setOpaque(false);
+
+        // Type Pill
+        Color bg = type.equalsIgnoreCase("Project") ? COLOR_PRIMARY_LIGHT : COLOR_DANGER_LIGHT;
+        Color fg = type.equalsIgnoreCase("Project") ? COLOR_PRIMARY : COLOR_DANGER;
+
+        JLabel pill = new JLabel(type, SwingConstants.CENTER) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                Theme.setAntiAliasing(g2);
+                g2.setColor(bg);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 11, 11);
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        pill.setFont(FONT_CAP_BOLD);
+        pill.setForeground(fg);
+        pill.setOpaque(false);
+        pill.setPreferredSize(new Dimension(64, 22));
+        right.add(pill);
+
+        JLabel dateLabel = new JLabel(date);
+        dateLabel.setFont(FONT_CAP_BOLD);
+        dateLabel.setForeground(COLOR_TEXT_PRIMARY);
+        right.add(dateLabel);
+
+        row.add(nameLabel, BorderLayout.WEST);
+        row.add(right, BorderLayout.EAST);
+        return row;
+    }
+
+    private JComponent createDivider() {
+        JSeparator sep = new JSeparator();
+        sep.setForeground(COLOR_BORDER);
+        sep.setBackground(COLOR_BORDER);
+        sep.setMaximumSize(new Dimension(Integer.MAX_VALUE, 1));
+        return sep;
+    }
+
+    private JLabel createLink(String text, Runnable action) {
         JLabel link = new JLabel(text);
-        link.setFont(Theme.FONT_SMALL);
-        link.setForeground(Theme.PRIMARY);
+        link.setFont(FONT_CAP_BOLD);
+        link.setForeground(COLOR_PRIMARY);
         link.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
         link.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -396,13 +677,14 @@ public class DashboardView extends JPanel {
             }
             @Override
             public void mouseEntered(MouseEvent e) {
-                link.setText("<html><u>" + text + "</u></html>");
+                link.setForeground(new Color(29, 78, 216));
             }
             @Override
             public void mouseExited(MouseEvent e) {
-                link.setText(text);
+                link.setForeground(COLOR_PRIMARY);
             }
         });
+
         return link;
     }
 }

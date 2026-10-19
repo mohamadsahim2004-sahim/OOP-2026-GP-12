@@ -56,9 +56,6 @@ public class UndergraduateDashboardFrame extends JFrame {
         initViews();
         rightArea.add(cardsPanel, BorderLayout.CENTER);
 
-        // Footer
-        rightArea.add(new FooterPanel(), BorderLayout.SOUTH);
-
         root.add(rightArea, BorderLayout.CENTER);
         setContentPane(root);
     }

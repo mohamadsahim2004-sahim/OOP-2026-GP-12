@@ -10,76 +10,56 @@ import java.util.List;
 import java.util.function.Consumer;
 import javax.swing.*;
 
+/**
+ * Slim modern sidebar matching the exact SRMS undergraduate portal design.
+ */
 public class SidebarPanel extends JPanel {
     private final Consumer<String> navigationCallback;
     private final List<NavItem> navItems = new ArrayList<>();
     private String activeView = "Dashboard";
 
+    private static final Color COLOR_PRIMARY       = new Color(37, 99, 235);   // #2563EB
+    private static final Color COLOR_PRIMARY_LIGHT = new Color(239, 246, 255); // #EFF6FF
+    private static final Color COLOR_TEXT_PRIMARY  = new Color(15, 23, 42);    // #0F172A
+    private static final Color COLOR_TEXT_MUTED    = new Color(100, 116, 139);  // #64748B
+    private static final Color COLOR_BORDER        = new Color(229, 231, 235);  // #E5E7EB
+    private static final Color COLOR_HOVER_BG      = new Color(241, 245, 249);  // #F1F5F9
+
     public SidebarPanel(Consumer<String> navigationCallback) {
         this.navigationCallback = navigationCallback;
-        setPreferredSize(new Dimension(240, 0));
-        setBackground(Theme.SIDEBAR_BG);
+        setPreferredSize(new Dimension(220, 0));
+        setBackground(Color.WHITE);
         setLayout(new BorderLayout());
-        setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, Theme.CARD_BORDER));
+        setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, COLOR_BORDER));
 
-        // Top Logo Banner
-        add(createLogoHeader(), BorderLayout.NORTH);
+        // 1. Top Brand Header
+        add(createBrandHeader(), BorderLayout.NORTH);
 
-        // Navigation Items
+        // 2. Navigation Items
         add(createNavMenu(), BorderLayout.CENTER);
 
-        // Bottom Logout
+        // 3. Bottom Logout
         add(createLogoutSection(), BorderLayout.SOUTH);
     }
 
-    private JPanel createLogoHeader() {
-        JPanel header = new JPanel() {
-            @Override
-            protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                Theme.setAntiAliasing(g2);
-                GradientPaint gp = new GradientPaint(0, 0, new Color(30, 96, 242), getWidth(), getHeight(), new Color(20, 70, 200));
-                g2.setPaint(gp);
-                g2.fillRect(0, 0, getWidth(), getHeight());
-                g2.dispose();
-                super.paintComponent(g);
-            }
-        };
+    private JPanel createBrandHeader() {
+        JPanel header = new JPanel();
         header.setOpaque(false);
-        header.setPreferredSize(new Dimension(240, 150));
-        header.setLayout(new GridBagLayout());
-
-        JPanel box = new JPanel();
-        box.setOpaque(false);
-        box.setLayout(new BoxLayout(box, BoxLayout.Y_AXIS));
-
-        // White graduation cap
-        JLabel iconLbl = new JLabel(IconHelper.getIcon("graduation-cap", 42, Color.WHITE));
-        iconLbl.setAlignmentX(Component.CENTER_ALIGNMENT);
+        header.setLayout(new BoxLayout(header, BoxLayout.Y_AXIS));
+        header.setBorder(BorderFactory.createEmptyBorder(22, 24, 16, 24));
 
         JLabel titleLbl = new JLabel("SRMS");
-        titleLbl.setFont(new Font("Segoe UI", Font.BOLD, 22));
-        titleLbl.setForeground(Color.WHITE);
-        titleLbl.setAlignmentX(Component.CENTER_ALIGNMENT);
+        titleLbl.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        titleLbl.setForeground(COLOR_PRIMARY);
 
-        JLabel subLbl = new JLabel("Student Result");
+        JLabel subLbl = new JLabel("Undergraduate Portal");
         subLbl.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        subLbl.setForeground(new Color(224, 235, 255));
-        subLbl.setAlignmentX(Component.CENTER_ALIGNMENT);
+        subLbl.setForeground(COLOR_TEXT_MUTED);
 
-        JLabel subLbl2 = new JLabel("Management System");
-        subLbl2.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        subLbl2.setForeground(new Color(224, 235, 255));
-        subLbl2.setAlignmentX(Component.CENTER_ALIGNMENT);
+        header.add(titleLbl);
+        header.add(Box.createVerticalStrut(2));
+        header.add(subLbl);
 
-        box.add(iconLbl);
-        box.add(Box.createVerticalStrut(4));
-        box.add(titleLbl);
-        box.add(Box.createVerticalStrut(2));
-        box.add(subLbl);
-        box.add(subLbl2);
-
-        header.add(box);
         return header;
     }
 
@@ -87,24 +67,23 @@ public class SidebarPanel extends JPanel {
         JPanel menu = new JPanel();
         menu.setOpaque(false);
         menu.setLayout(new BoxLayout(menu, BoxLayout.Y_AXIS));
-        menu.setBorder(Theme.createEmptyPadding(14, 12, 14, 12));
+        menu.setBorder(BorderFactory.createEmptyBorder(12, 0, 12, 0));
 
-        // Define nav items matching screenshot and user requirements
-        addNavItem(menu, "Dashboard", "dashboard");
-        addNavItem(menu, "Profile", "profile");
-        addNavItem(menu, "Course Enrollment", "courses");
-        addNavItem(menu, "Course Materials", "downloads");
-        addNavItem(menu, "Results", "results");
-        addNavItem(menu, "Attendance", "attendance");
-        addNavItem(menu, "Medical Records", "medical");
-        addNavItem(menu, "Timetable", "timetable");
-        addNavItem(menu, "Notice Board", "loudspeaker");
+        // Essential menu items matching the image exactly
+        addNavItem(menu, "Dashboard", "dashboard", "Dashboard");
+        addNavItem(menu, "Results", "results", "Results");
+        addNavItem(menu, "Courses", "courses", "Course Enrollment");
+        addNavItem(menu, "Attendance", "attendance", "Attendance");
+        addNavItem(menu, "Timetable", "timetable", "Timetable");
+        addNavItem(menu, "Notices", "loudspeaker", "Notice Board");
+        addNavItem(menu, "Profile", "profile", "Profile");
 
+        menu.add(Box.createVerticalGlue());
         return menu;
     }
 
-    private void addNavItem(JPanel menu, String title, String iconName) {
-        NavItem item = new NavItem(title, iconName);
+    private void addNavItem(JPanel menu, String title, String iconName, String targetView) {
+        NavItem item = new NavItem(title, iconName, targetView);
         navItems.add(item);
         menu.add(item);
         menu.add(Box.createVerticalStrut(4));
@@ -113,69 +92,42 @@ public class SidebarPanel extends JPanel {
     private JPanel createLogoutSection() {
         JPanel bottom = new JPanel(new BorderLayout());
         bottom.setOpaque(false);
-        bottom.setBorder(Theme.createEmptyPadding(12, 16, 20, 16));
+        bottom.setBorder(BorderFactory.createEmptyBorder(16, 24, 24, 24));
 
-        JPanel logoutBtn = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 8)) {
-            private boolean isHovered = false;
+        JLabel logoutLbl = new JLabel("Logout");
+        logoutLbl.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        logoutLbl.setForeground(COLOR_TEXT_MUTED);
+        logoutLbl.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
-            {
-                addMouseListener(new MouseAdapter() {
-                    @Override
-                    public void mouseEntered(MouseEvent e) {
-                        isHovered = true;
-                        repaint();
-                    }
-
-                    @Override
-                    public void mouseExited(MouseEvent e) {
-                        isHovered = false;
-                        repaint();
-                    }
-
-                    @Override
-                    public void mouseClicked(MouseEvent e) {
-                        int res = JOptionPane.showConfirmDialog(SidebarPanel.this,
-                                "Are you sure you want to log out of SRMS?",
-                                "Confirm Logout", JOptionPane.YES_NO_OPTION);
-                        if (res == JOptionPane.YES_OPTION) {
-                            JOptionPane.showMessageDialog(SidebarPanel.this,
-                                    "You have been logged out securely.", "Logged Out", JOptionPane.INFORMATION_MESSAGE);
-                        }
-                    }
-                });
-            }
-
+        logoutLbl.addMouseListener(new MouseAdapter() {
             @Override
-            protected void paintComponent(Graphics g) {
-                if (isHovered) {
-                    Graphics2D g2 = (Graphics2D) g.create();
-                    Theme.setAntiAliasing(g2);
-                    g2.setColor(Theme.ACCENT_ROSE_BG);
-                    g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
-                    g2.dispose();
-                }
-                super.paintComponent(g);
+            public void mouseEntered(MouseEvent e) {
+                logoutLbl.setForeground(new Color(239, 68, 68));
             }
-        };
-        logoutBtn.setOpaque(false);
-        logoutBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            @Override
+            public void mouseExited(MouseEvent e) {
+                logoutLbl.setForeground(COLOR_TEXT_MUTED);
+            }
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                int res = JOptionPane.showConfirmDialog(SidebarPanel.this,
+                        "Are you sure you want to log out of SRMS?",
+                        "Confirm Logout", JOptionPane.YES_NO_OPTION);
+                if (res == JOptionPane.YES_OPTION) {
+                    JOptionPane.showMessageDialog(SidebarPanel.this,
+                            "You have been logged out securely.", "Logged Out", JOptionPane.INFORMATION_MESSAGE);
+                }
+            }
+        });
 
-        JLabel icon = new JLabel(IconHelper.getIcon("logout", 18, Theme.ACCENT_ROSE));
-        JLabel lbl = new JLabel("Logout");
-        lbl.setFont(Theme.FONT_BODY_BOLD);
-        lbl.setForeground(Theme.ACCENT_ROSE);
-
-        logoutBtn.add(icon);
-        logoutBtn.add(lbl);
-        bottom.add(logoutBtn, BorderLayout.CENTER);
-
+        bottom.add(logoutLbl, BorderLayout.WEST);
         return bottom;
     }
 
     public void setActiveView(String viewName) {
         this.activeView = viewName;
         for (NavItem item : navItems) {
-            item.setActive(item.title.equalsIgnoreCase(viewName));
+            item.updateState(viewName);
         }
         repaint();
     }
@@ -183,26 +135,28 @@ public class SidebarPanel extends JPanel {
     private class NavItem extends JPanel {
         private final String title;
         private final String iconName;
+        private final String targetView;
         private boolean isActive = false;
         private boolean isHovered = false;
         private final JLabel iconLbl;
         private final JLabel textLbl;
 
-        public NavItem(String title, String iconName) {
+        public NavItem(String title, String iconName, String targetView) {
             this.title = title;
             this.iconName = iconName;
+            this.targetView = targetView;
             this.isActive = title.equalsIgnoreCase(activeView);
 
             setLayout(new BorderLayout(12, 0));
             setOpaque(false);
             setCursor(new Cursor(Cursor.HAND_CURSOR));
-            setBorder(Theme.createEmptyPadding(8, 14, 8, 14));
+            setBorder(BorderFactory.createEmptyBorder(10, 16, 10, 16));
+            setPreferredSize(new Dimension(220, 42));
             setMaximumSize(new Dimension(220, 42));
-            setPreferredSize(new Dimension(216, 40));
 
             iconLbl = new JLabel();
             textLbl = new JLabel(title);
-            textLbl.setFont(Theme.FONT_BODY_BOLD);
+            textLbl.setFont(new Font("Segoe UI", Font.BOLD, 13));
 
             add(iconLbl, BorderLayout.WEST);
             add(textLbl, BorderLayout.CENTER);
@@ -228,14 +182,22 @@ public class SidebarPanel extends JPanel {
                 public void mouseClicked(MouseEvent e) {
                     setActiveView(title);
                     if (navigationCallback != null) {
-                        navigationCallback.accept(title);
+                        navigationCallback.accept(targetView);
                     }
                 }
             });
         }
 
-        public void setActive(boolean active) {
-            this.isActive = active;
+        public void updateState(String currentView) {
+            if (currentView == null) currentView = "Dashboard";
+            String cv = currentView.toLowerCase();
+            if (title.equalsIgnoreCase("Courses") && (cv.contains("enroll") || cv.contains("course") || cv.contains("material"))) {
+                this.isActive = true;
+            } else if (title.equalsIgnoreCase("Notices") && (cv.contains("notice"))) {
+                this.isActive = true;
+            } else {
+                this.isActive = title.equalsIgnoreCase(currentView) || targetView.equalsIgnoreCase(currentView);
+            }
             updateVisuals();
             repaint();
         }
@@ -243,11 +205,11 @@ public class SidebarPanel extends JPanel {
         private void updateVisuals() {
             Color color;
             if (isActive) {
-                color = Theme.SIDEBAR_ACTIVE_TEXT;
+                color = COLOR_PRIMARY;
             } else if (isHovered) {
-                color = Theme.TEXT_MAIN;
+                color = COLOR_TEXT_PRIMARY;
             } else {
-                color = Theme.SIDEBAR_TEXT;
+                color = COLOR_TEXT_MUTED;
             }
             iconLbl.setIcon(IconHelper.getIcon(iconName, 18, color));
             textLbl.setForeground(color);
@@ -258,12 +220,20 @@ public class SidebarPanel extends JPanel {
             Graphics2D g2 = (Graphics2D) g.create();
             Theme.setAntiAliasing(g2);
 
+            int w = getWidth();
+            int h = getHeight();
+
             if (isActive) {
-                g2.setColor(Theme.SIDEBAR_ACTIVE_BG);
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
+                // Background tint
+                g2.setColor(COLOR_PRIMARY_LIGHT);
+                g2.fillRoundRect(8, 2, w - 16, h - 4, 8, 8);
+
+                // 3px blue vertical accent bar on left
+                g2.setColor(COLOR_PRIMARY);
+                g2.fillRoundRect(2, 6, 3, h - 12, 3, 3);
             } else if (isHovered) {
-                g2.setColor(Theme.SIDEBAR_HOVER_BG);
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
+                g2.setColor(COLOR_HOVER_BG);
+                g2.fillRoundRect(8, 2, w - 16, h - 4, 8, 8);
             }
 
             g2.dispose();
