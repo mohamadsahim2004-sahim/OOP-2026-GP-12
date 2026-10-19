@@ -27,7 +27,7 @@ import java.time.format.TextStyle;
 import java.util.List;
 import java.util.Locale;
 
-/** Admin screen: create / view / update / delete timetable slots, filtered by department and semester. */
+/** Admin screen: create / view / update / delete / search timetable slots, filtered by department and semester. */
 public class TimeTableManagementPanel extends AbstractManagementPanel<TimeTable> {
 
     private static final DayOfWeek[] DAYS = {
@@ -38,7 +38,8 @@ public class TimeTableManagementPanel extends AbstractManagementPanel<TimeTable>
     private final DepartmentService departmentService = new DepartmentService();
     private final CourseService courseService = new CourseService();
 
-    // filter bar (null entry = "All ...")
+    // search / filter bar (null entry = "All ...")
+    private final JTextField searchField = new JTextField(15);
     private final JComboBox<Department> departmentFilter = new JComboBox<>();
     private final JComboBox<Integer> semesterFilter = new JComboBox<>(new Integer[]{null, 1, 2});
 
@@ -73,12 +74,25 @@ public class TimeTableManagementPanel extends AbstractManagementPanel<TimeTable>
     private JPanel buildFilterBar() {
         JPanel bar = new JPanel(new FlowLayout(FlowLayout.LEFT));
         JButton viewButton = new JButton("View");
+        JButton showAllButton = new JButton("Show all");
+
+        bar.add(new JLabel("Search course / hall / day:"));
+        bar.add(searchField);
         bar.add(new JLabel("Department:"));
         bar.add(departmentFilter);
         bar.add(new JLabel("Semester:"));
         bar.add(semesterFilter);
         bar.add(viewButton);
+        bar.add(showAllButton);
+
         viewButton.addActionListener(e -> refresh());
+        searchField.addActionListener(e -> refresh());
+        showAllButton.addActionListener(e -> {
+            searchField.setText("");
+            departmentFilter.setSelectedIndex(0);
+            semesterFilter.setSelectedIndex(0);
+            refresh();
+        });
         return bar;
     }
 
@@ -142,7 +156,8 @@ public class TimeTableManagementPanel extends AbstractManagementPanel<TimeTable>
     protected List<TimeTable> loadItems() throws DatabaseException, AuthorizationException {
         Department department = (Department) departmentFilter.getSelectedItem();
         Integer semester = (Integer) semesterFilter.getSelectedItem();
-        return timeTableService.getTimeTable(department == null ? null : department.getDepartmentId(), semester);
+        return timeTableService.searchTimeTable(searchField.getText(),
+                department == null ? null : department.getDepartmentId(), semester);
     }
 
     @Override

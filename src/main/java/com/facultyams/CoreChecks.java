@@ -268,7 +268,7 @@ public final class CoreChecks {
             "CourseService.getAllCourses", "CourseService.searchCourses", "CourseService.getCoursesByDepartment",
             "CourseService.getCoursesByLecturer", "CourseService.getCourseById", "CourseService.getCourseByCode",
             "NoticeService.getAllNotices", "NoticeService.searchNotices", "NoticeService.getNoticeById",
-            "TimeTableService.getTimeTable", "TimeTableService.getSlotById");
+            "TimeTableService.getTimeTable", "TimeTableService.searchTimeTable", "TimeTableService.getSlotById");
 
     private static Object defaultFor(Class<?> t) {
         if (t == int.class) {
