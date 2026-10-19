@@ -5,278 +5,197 @@ import com.facultyams.exception.DatabaseException;
 import com.facultyams.exception.ValidationException;
 import com.facultyams.model.Course;
 import com.facultyams.model.Department;
-import com.facultyams.model.User;
-import com.facultyams.security.Role;
 import com.facultyams.service.CourseService;
 import com.facultyams.service.DepartmentService;
 import com.facultyams.service.UserService;
 import com.facultyams.util.UIUtil;
 
-import javax.swing.BorderFactory;
+import javax.swing.DefaultListCellRenderer;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
+import javax.swing.JList;
 import javax.swing.JPanel;
-import javax.swing.JSpinner;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
 import javax.swing.JTextField;
-import javax.swing.SpinnerNumberModel;
+import javax.swing.ListSelectionModel;
+import javax.swing.table.DefaultTableModel;
 import java.awt.BorderLayout;
+import java.awt.Component;
 import java.awt.FlowLayout;
-import java.awt.GridBagLayout;
+import java.util.ArrayList;
 import java.util.List;
 
-/** Admin screen: add / view / update / delete / search / filter courses. */
-public class CourseManagementPanel extends AbstractManagementPanel<Course> {
+/**
+ * Admin "Course Management" screen: database-backed table (course code, name, department, credits,
+ * lecturer, actions) with a department filter, search, Add Course, Edit and Delete. All rules (Admin-only
+ * access, course code, credits, department and lecturer validation, safe delete) are in
+ * {@link CourseService}; this class shows data and reports errors.
+ */
+public class CourseManagementPanel extends JPanel implements Refreshable {
 
-    private static final Integer[] LEVELS = {1, 2, 3, 4};
-    private static final Integer[] SEMESTERS = {1, 2};
+    private static final long serialVersionUID = 1L;
+    private static final String[] COLUMNS = {"Course Code", "Course Name", "Department", "Credits", "Lecturer", "Actions"};
+    private static final int ACTIONS_COLUMN = 5;
 
-    private final CourseService courseService = new CourseService();
-    private final DepartmentService departmentService = new DepartmentService();
-    private final UserService userService = new UserService();
+    private final transient CourseService courseService;
+    private final transient DepartmentService departmentService;
+    private final transient UserService userService;
 
-    // search / filter bar
-    private final JTextField searchField = new JTextField(15);
-    private final JComboBox<Department> departmentFilter = new JComboBox<>();
-    private final JComboBox<Integer> levelFilter = new JComboBox<>();
-    private final JComboBox<Integer> semesterFilter = new JComboBox<>();
+    final JComboBox<Department> departmentFilter = new JComboBox<>();
+    final JTextField searchField = new HintTextField("Search course...", 16);
+    final DefaultTableModel tableModel = new DefaultTableModel(COLUMNS, 0) {
+        private static final long serialVersionUID = 1L;
 
-    // form
-    private final JTextField codeField = new JTextField(10);
-    private final JTextField nameField = new JTextField(25);
-    private final JSpinner creditsSpinner = new JSpinner(
-            new SpinnerNumberModel(2, CourseService.MIN_CREDITS, CourseService.MAX_CREDITS, 1));
-    private final JComboBox<Integer> levelCombo = new JComboBox<>(LEVELS);
-    private final JComboBox<Integer> semesterCombo = new JComboBox<>(SEMESTERS);
-    private final JComboBox<Course.CourseType> typeCombo = new JComboBox<>(Course.CourseType.values());
-    private final JComboBox<Department> departmentCombo = new JComboBox<>();
-    private final JComboBox<User> lecturerCombo = new JComboBox<>();
+        @Override
+        public boolean isCellEditable(int row, int column) {
+            return false;
+        }
+    };
+    final JTable table = new JTable(tableModel);
+    final JLabel entriesLabel = new JLabel();
+
+    private transient List<Course> courses = new ArrayList<>();
+    private boolean loadingFilter;
 
     public CourseManagementPanel() {
-        super(new String[]{"ID", "Code", "Name", "Credits", "Level", "Semester", "Type", "Department", "Lecturer"});
-        departmentFilter.setRenderer(nullRenderer("All departments"));
-        departmentFilter.setPrototypeDisplayValue(new Department(0, "DICT", "Department of Information"));
-        levelFilter.setRenderer(nullRenderer("All levels"));
-        semesterFilter.setRenderer(nullRenderer("All semesters"));
-        departmentCombo.setRenderer(nullRenderer("-- Select department --"));
-        lecturerCombo.setRenderer(nullRenderer("-- Not assigned --"));
-
-        levelFilter.addItem(null);
-        for (Integer level : LEVELS) {
-            levelFilter.addItem(level);
-        }
-        semesterFilter.addItem(null);
-        for (Integer semester : SEMESTERS) {
-            semesterFilter.addItem(semester);
-        }
-
-        add(buildSearchBar(), BorderLayout.NORTH);
-        add(buildForm(), BorderLayout.SOUTH);
+        this(new CourseService(), new DepartmentService(), new UserService());
     }
 
-    private JPanel buildSearchBar() {
-        JPanel bar = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        JButton searchButton = new JButton("Search");
-        JButton resetButton = new JButton("Reset");
-        bar.add(new JLabel("Code / name:"));
-        bar.add(searchField);
-        bar.add(departmentFilter);
-        bar.add(levelFilter);
-        bar.add(semesterFilter);
-        bar.add(searchButton);
-        bar.add(resetButton);
-        searchButton.addActionListener(e -> refresh());
-        searchField.addActionListener(e -> refresh());
-        resetButton.addActionListener(e -> {
-            searchField.setText("");
-            departmentFilter.setSelectedItem(null);
-            levelFilter.setSelectedItem(null);
-            semesterFilter.setSelectedItem(null);
-            refresh();
+    public CourseManagementPanel(CourseService courseService, DepartmentService departmentService,
+                                 UserService userService) {
+        super(new BorderLayout(0, 12));
+        this.courseService = courseService;
+        this.departmentService = departmentService;
+        this.userService = userService;
+        departmentFilter.setRenderer(new DefaultListCellRenderer() {
+            private static final long serialVersionUID = 1L;
+
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value, int index,
+                                                          boolean isSelected, boolean cellHasFocus) {
+                return super.getListCellRendererComponent(list, value == null ? "All Departments" : value,
+                        index, isSelected, cellHasFocus);
+            }
         });
+        departmentFilter.addItem(null);
+        add(buildTopBar(), BorderLayout.NORTH);
+        add(buildTable(), BorderLayout.CENTER);
+        entriesLabel.setForeground(AdminTheme.TEXT_MUTED);
+        add(entriesLabel, BorderLayout.SOUTH);
+    }
+
+    private JPanel buildTopBar() {
+        JButton search = new JButton("Search");
+        JButton add = new JButton("+ Add Course");
+        search.addActionListener(e -> refresh());
+        searchField.addActionListener(e -> refresh());
+        departmentFilter.addActionListener(e -> {
+            if (!loadingFilter) {
+                refresh();
+            }
+        });
+        add.addActionListener(e -> addCourse());
+        JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        left.add(new JLabel("Department"));
+        departmentFilter.setPrototypeDisplayValue(new Department(0, "DICT", "Information and Communication"));
+        left.add(departmentFilter);
+        left.add(searchField);
+        left.add(search);
+        JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        right.add(add);
+        JPanel bar = new JPanel(new BorderLayout());
+        bar.add(left, BorderLayout.WEST);
+        bar.add(right, BorderLayout.EAST);
         return bar;
     }
 
-    private JPanel buildForm() {
-        JPanel form = new JPanel(new GridBagLayout());
-        addField(form, 0, 0, "Course code:", codeField);
-        addField(form, 0, 1, "Course name:", nameField);
-        addField(form, 1, 0, "Credits:", creditsSpinner);
-        addField(form, 1, 1, "Type:", typeCombo);
-        addField(form, 2, 0, "Level:", levelCombo);
-        addField(form, 2, 1, "Semester:", semesterCombo);
-        addField(form, 3, 0, "Department:", departmentCombo);
-        addField(form, 3, 1, "Lecturer in charge:", lecturerCombo);
-
-        JButton addButton = new JButton("Add");
-        JButton updateButton = new JButton("Update");
-        JButton deleteButton = new JButton("Delete");
-        JButton clearButton = new JButton("Clear");
-        addButton.addActionListener(e -> addCourse());
-        updateButton.addActionListener(e -> updateCourse());
-        deleteButton.addActionListener(e -> deleteCourse());
-        clearButton.addActionListener(e -> {
-            table.clearSelection();
-            clearForm();
-        });
-
-        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        buttons.add(addButton);
-        buttons.add(updateButton);
-        buttons.add(deleteButton);
-        buttons.add(clearButton);
-
-        JPanel south = new JPanel(new BorderLayout());
-        south.setBorder(BorderFactory.createTitledBorder("Course details"));
-        south.add(form, BorderLayout.CENTER);
-        south.add(buttons, BorderLayout.SOUTH);
-        return south;
+    private JScrollPane buildTable() {
+        table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        table.setRowHeight(34);
+        table.getColumnModel().getColumn(0).setPreferredWidth(95);
+        table.getColumnModel().getColumn(1).setPreferredWidth(230);
+        table.getColumnModel().getColumn(2).setPreferredWidth(200);
+        table.getColumnModel().getColumn(3).setPreferredWidth(60);
+        table.getColumnModel().getColumn(4).setPreferredWidth(150);
+        table.getColumnModel().getColumn(ACTIONS_COLUMN).setPreferredWidth(140);
+        RowActions.install(table, ACTIONS_COLUMN, this::editRow, this::deleteRow);
+        JScrollPane scroll = new JScrollPane(table);
+        scroll.setColumnHeaderView(table.getTableHeader());
+        return scroll;
     }
 
-    @Override
-    protected void loadLookups() throws DatabaseException, AuthorizationException {
-        Department selectedFilter = (Department) departmentFilter.getSelectedItem();
-        List<Department> departments = departmentService.getAllDepartments();
-
-        departmentFilter.removeAllItems();
-        departmentCombo.removeAllItems();
-        departmentFilter.addItem(null);
-        departmentCombo.addItem(null);
-        for (Department d : departments) {
-            departmentFilter.addItem(d);
-            departmentCombo.addItem(d);
-        }
-        departmentFilter.setSelectedItem(selectedFilter != null && departments.contains(selectedFilter)
-                ? selectedFilter : null);
-
-        lecturerCombo.removeAllItems();
-        lecturerCombo.addItem(null);
-        for (User lecturer : userService.getUsersByRole(Role.LECTURER)) {
-            if (lecturer.isActive()) {
-                lecturerCombo.addItem(lecturer);
-            }
-        }
-    }
+    // ------------------------------------------------------------------ data
 
     @Override
-    protected List<Course> loadItems() throws DatabaseException, AuthorizationException {
+    public void refresh() {
+        loadDepartmentFilter();
         Department department = (Department) departmentFilter.getSelectedItem();
-        return courseService.searchCourses(searchField.getText(),
-                department == null ? null : department.getDepartmentId(),
-                (Integer) levelFilter.getSelectedItem(),
-                (Integer) semesterFilter.getSelectedItem());
+        try {
+            courses = courseService.searchCourses(searchField.getText(),
+                    department == null ? null : department.getDepartmentId(), null, null);
+        } catch (AuthorizationException | DatabaseException e) {
+            courses = new ArrayList<>();
+            UIUtil.showException(this, e);
+        }
+        tableModel.setRowCount(0);
+        for (Course c : courses) {
+            tableModel.addRow(new Object[] {c.getCourseCode(), c.getCourseName(), c.getDepartmentName(),
+                    c.getCredits(), c.getLecturerName() == null ? "-" : c.getLecturerName(), ""});
+        }
+        entriesLabel.setText(courses.isEmpty() ? "No courses found"
+                : "Showing " + courses.size() + (courses.size() == 1 ? " course" : " courses"));
     }
 
-    @Override
-    protected Object[] toRow(Course c) {
-        return new Object[]{c.getCourseId(), c.getCourseCode(), c.getCourseName(), c.getCredits(),
-                c.getAcademicLevel(), c.getSemester(), c.getCourseType(), c.getDepartmentName(),
-                c.getLecturerName() == null ? "-" : c.getLecturerName()};
-    }
-
-    @Override
-    protected void fillForm(Course c) {
-        codeField.setText(c.getCourseCode());
-        nameField.setText(c.getCourseName());
-        creditsSpinner.setValue(c.getCredits());
-        levelCombo.setSelectedItem(c.getAcademicLevel());
-        semesterCombo.setSelectedItem(c.getSemester());
-        typeCombo.setSelectedItem(c.getCourseType());
-        selectDepartment(c.getDepartmentId());
-        selectLecturer(c.getLecturerId());
-    }
-
-    @Override
-    protected void clearForm() {
-        codeField.setText("");
-        nameField.setText("");
-        creditsSpinner.setValue(2);
-        levelCombo.setSelectedIndex(0);
-        semesterCombo.setSelectedIndex(0);
-        typeCombo.setSelectedItem(Course.CourseType.THEORY_AND_PRACTICAL);
-        departmentCombo.setSelectedItem(null);
-        lecturerCombo.setSelectedItem(null);
-    }
-
-    private void selectDepartment(int departmentId) {
-        departmentCombo.setSelectedItem(null);
-        for (int i = 0; i < departmentCombo.getItemCount(); i++) {
-            Department d = departmentCombo.getItemAt(i);
-            if (d != null && d.getDepartmentId() == departmentId) {
-                departmentCombo.setSelectedIndex(i);
-                return;
+    /** Reloads the department filter from the database, keeping the current selection. */
+    private void loadDepartmentFilter() {
+        Department keep = (Department) departmentFilter.getSelectedItem();
+        loadingFilter = true;
+        try {
+            departmentFilter.removeAllItems();
+            departmentFilter.addItem(null);
+            for (Department d : departmentService.getAllDepartments()) {
+                departmentFilter.addItem(d);
+                if (d.equals(keep)) {
+                    departmentFilter.setSelectedItem(d);
+                }
             }
+        } catch (AuthorizationException | DatabaseException e) {
+            UIUtil.showException(this, e);
+        } finally {
+            loadingFilter = false;
         }
     }
 
-    private void selectLecturer(Integer lecturerId) {
-        lecturerCombo.setSelectedItem(null);
-        if (lecturerId == null) {
-            return;
-        }
-        for (int i = 0; i < lecturerCombo.getItemCount(); i++) {
-            User u = lecturerCombo.getItemAt(i);
-            if (u != null && u.getUserId() == lecturerId) {
-                lecturerCombo.setSelectedIndex(i);
-                return;
-            }
-        }
-    }
-
-    private Course readForm() {
-        Course c = new Course();
-        c.setCourseCode(codeField.getText());
-        c.setCourseName(nameField.getText());
-        c.setCredits((Integer) creditsSpinner.getValue());
-        c.setAcademicLevel((Integer) levelCombo.getSelectedItem());
-        c.setSemester((Integer) semesterCombo.getSelectedItem());
-        c.setCourseType((Course.CourseType) typeCombo.getSelectedItem());
-        Department d = (Department) departmentCombo.getSelectedItem();
-        c.setDepartmentId(d == null ? 0 : d.getDepartmentId());
-        User lecturer = (User) lecturerCombo.getSelectedItem();
-        c.setLecturerId(lecturer == null ? null : lecturer.getUserId());
-        return c;
-    }
+    // ------------------------------------------------------------------ actions
 
     private void addCourse() {
-        try {
-            Course c = courseService.addCourse(readForm());
-            UIUtil.showInfo(this, "Course " + c.getCourseCode() + " added.");
+        if (CourseFormPanel.showDialog(this, courseService, departmentService, userService, null)) {
             refresh();
-        } catch (ValidationException | AuthorizationException | DatabaseException e) {
-            UIUtil.showException(this, e);
         }
     }
 
-    private void updateCourse() {
-        Course selected = requireSelection("course");
-        if (selected == null) {
+    private void editRow(int row) {
+        if (row < 0 || row >= courses.size()) {
             return;
         }
-        Course c = readForm();
-        c.setCourseId(selected.getCourseId());
-        try {
-            courseService.updateCourse(c);
-            UIUtil.showInfo(this, "Course updated.");
+        if (CourseFormPanel.showDialog(this, courseService, departmentService, userService, courses.get(row))) {
             refresh();
-        } catch (ValidationException | AuthorizationException | DatabaseException e) {
-            UIUtil.showException(this, e);
         }
     }
 
-    @Override
-    protected void deleteSelected() {
-        deleteCourse();
-    }
-
-    private void deleteCourse() {
-        Course selected = requireSelection("course");
-        if (selected == null || !UIUtil.confirm(this, "Delete course " + selected + "?")) {
+    private void deleteRow(int row) {
+        if (row < 0 || row >= courses.size()) {
+            return;
+        }
+        Course course = courses.get(row);
+        if (!UIUtil.confirm(this, "Delete course " + course.getCourseCode() + " - " + course.getCourseName()
+                + "?\nThis cannot be undone. A course with timetable slots or other records cannot be deleted.")) {
             return;
         }
         try {
-            courseService.deleteCourse(selected.getCourseId());
-            UIUtil.showInfo(this, "Course deleted.");
+            courseService.deleteCourse(course.getCourseId());
             refresh();
         } catch (ValidationException | AuthorizationException | DatabaseException e) {
             UIUtil.showException(this, e);

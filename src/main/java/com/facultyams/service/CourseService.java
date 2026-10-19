@@ -83,7 +83,7 @@ public class CourseService {
             throw new ValidationException("Course details are required.");
         }
         course.setCourseId(0);
-        validate(course);
+        validate(course, null);
         courseDAO.insert(course);
         return course;
     }
@@ -93,19 +93,32 @@ public class CourseService {
         if (course == null) {
             throw new ValidationException("Course details are required.");
         }
-        getCourseById(course.getCourseId());
-        validate(course);
+        Course existing = getCourseById(course.getCourseId());
+        validate(course, existing.getLecturerId());
         courseDAO.update(course);
     }
 
-    /** Fails with a clear message if other modules already store data for this course. */
+    /**
+     * Admin only. Refused while the course still has timetable slots (they would be deleted with it) and,
+     * through the database, while other modules store marks, attendance or enrollments for it.
+     */
     public void deleteCourse(int courseId) throws ValidationException, AuthorizationException, DatabaseException {
         Session.requireRole(Role.ADMIN);
-        getCourseById(courseId);
+        Course course = getCourseById(courseId);
+        int slots = courseDAO.countTimetableSlots(courseId);
+        if (slots > 0) {
+            throw new ValidationException("Cannot delete " + course.getCourseCode() + ": it still has " + slots
+                    + " timetable slot(s). Remove them in Timetable Management first.");
+        }
         courseDAO.delete(courseId);
     }
 
     private void validate(Course course) throws ValidationException, DatabaseException {
+        validate(course, null);
+    }
+
+    /** @param unchangedLecturerId the lecturer already assigned before this edit (not re-checked for being active) */
+    private void validate(Course course, Integer unchangedLecturerId) throws ValidationException, DatabaseException {
         String code = ValidationUtil.requireNotBlank(course.getCourseCode(), "Course code").toUpperCase();
         if (!ValidationUtil.isValidCourseCode(code)) {
             throw new ValidationException("Course code must be 2-4 capital letters followed by 4 digits (e.g. ICT2132).");
@@ -134,8 +147,8 @@ public class CourseService {
             if (lecturer == null || lecturer.getRole() != Role.LECTURER) {
                 throw new ValidationException("The selected lecturer does not exist.");
             }
-            if (!lecturer.isActive()) {
-                throw new ValidationException("The selected lecturer's account is deactivated.");
+            if (!lecturer.isActive() && !course.getLecturerId().equals(unchangedLecturerId)) {
+                throw new ValidationException("Cannot assign an inactive lecturer to a course.");
             }
         }
     }

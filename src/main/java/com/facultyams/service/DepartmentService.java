@@ -69,17 +69,23 @@ public class DepartmentService {
             throws ValidationException, AuthorizationException, DatabaseException {
         Session.requireRole(Role.ADMIN);
         Department department = getDepartmentById(departmentId);
-        if (lecturerUserId != null) {
-            User lecturer = userDAO.findById(lecturerUserId);
-            if (lecturer == null || lecturer.getRole() != Role.LECTURER) {
-                throw new ValidationException("The head of a department must be a lecturer.");
-            }
-            if (lecturer.getDepartmentId() == null || lecturer.getDepartmentId() != departmentId) {
-                throw new ValidationException(lecturer.getFullName() + " does not belong to "
-                        + department.getDepartmentCode() + ". Move the lecturer to this department first.");
-            }
-        }
+        requireValidHead(department, lecturerUserId);
         departmentDAO.setHead(departmentId, lecturerUserId);
+    }
+
+    private void requireValidHead(Department department, Integer lecturerUserId)
+            throws ValidationException, DatabaseException {
+        if (lecturerUserId == null) {
+            return;
+        }
+        User lecturer = userDAO.findById(lecturerUserId);
+        if (lecturer == null || lecturer.getRole() != Role.LECTURER) {
+            throw new ValidationException("The head of a department must be a lecturer.");
+        }
+        if (lecturer.getDepartmentId() == null || lecturer.getDepartmentId() != department.getDepartmentId()) {
+            throw new ValidationException(lecturer.getFullName() + " does not belong to "
+                    + department.getDepartmentCode() + ". Move the lecturer to this department first.");
+        }
     }
 
     public Department addDepartment(Department department)
@@ -103,6 +109,24 @@ public class DepartmentService {
         getDepartmentById(department.getDepartmentId());
         validate(department);
         departmentDAO.update(department);
+    }
+
+    /**
+     * Admin only. Updates code, name and head of department together (one database transaction).
+     * Needs migration 002; use {@link #updateDepartment(Department)} when that column is not available.
+     *
+     * @param headUserId the lecturer who heads the department (must belong to it), or null for none
+     */
+    public void updateDepartment(Department department, Integer headUserId)
+            throws ValidationException, AuthorizationException, DatabaseException {
+        Session.requireRole(Role.ADMIN);
+        if (department == null) {
+            throw new ValidationException("Department details are required.");
+        }
+        getDepartmentById(department.getDepartmentId());
+        validate(department);
+        requireValidHead(department, headUserId);
+        departmentDAO.updateWithHead(department, headUserId);
     }
 
     /** Only allowed when no courses or users belong to the department. */

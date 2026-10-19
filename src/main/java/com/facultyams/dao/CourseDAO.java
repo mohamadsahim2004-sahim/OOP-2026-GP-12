@@ -24,6 +24,8 @@ public class CourseDAO {
                     + "JOIN departments d ON d.department_id = c.department_id "
                     + "LEFT JOIN users u ON u.user_id = c.lecturer_id ";
 
+    private static final String DUPLICATE_MESSAGE = "Another course already uses this course code.";
+
     public List<Course> findAll() throws DatabaseException {
         return findMany(SELECT + "ORDER BY c.academic_level, c.semester, c.course_code");
     }
@@ -90,6 +92,26 @@ public class CourseDAO {
         }
     }
 
+    /**
+     * Timetable slots of this course. They are deleted automatically with the course (ON DELETE CASCADE),
+     * so the service refuses to delete a course that still has slots. 0 if the timetables table does not
+     * exist yet (migration 001 not applied).
+     */
+    public int countTimetableSlots(int courseId) throws DatabaseException {
+        try (Connection con = DatabaseConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement("SELECT COUNT(*) FROM timetables WHERE course_id = ?")) {
+            ps.setInt(1, courseId);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? rs.getInt(1) : 0;
+            }
+        } catch (SQLException e) {
+            if ("42S02".equals(e.getSQLState())) {
+                return 0;
+            }
+            throw new DatabaseException("Could not check the timetable of this course. " + e.getMessage(), e);
+        }
+    }
+
     public int countAll() throws DatabaseException {
         try (Connection con = DatabaseConnection.getConnection();
              PreparedStatement ps = con.prepareStatement("SELECT COUNT(*) FROM courses");
@@ -113,6 +135,8 @@ public class CourseDAO {
                 }
             }
             return course.getCourseId();
+        } catch (SQLIntegrityConstraintViolationException e) {
+            throw new DatabaseException(DUPLICATE_MESSAGE, e);
         } catch (SQLException e) {
             throw new DatabaseException("Failed to add course: " + e.getMessage(), e);
         }
@@ -126,6 +150,8 @@ public class CourseDAO {
             fill(ps, course);
             ps.setInt(9, course.getCourseId());
             ps.executeUpdate();
+        } catch (SQLIntegrityConstraintViolationException e) {
+            throw new DatabaseException(DUPLICATE_MESSAGE, e);
         } catch (SQLException e) {
             throw new DatabaseException("Failed to update course: " + e.getMessage(), e);
         }

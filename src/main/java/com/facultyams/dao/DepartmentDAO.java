@@ -8,7 +8,9 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.SQLIntegrityConstraintViolationException;
 import java.sql.Statement;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -19,6 +21,8 @@ public class DepartmentDAO {
 
     private static final String SELECT =
             "SELECT department_id, department_code, department_name FROM departments ";
+
+    private static final String DUPLICATE_MESSAGE = "Another department already has this code or name.";
 
     public List<Department> findAll() throws DatabaseException {
         return findMany(SELECT + "ORDER BY department_code");
@@ -78,6 +82,8 @@ public class DepartmentDAO {
                 }
             }
             return department.getDepartmentId();
+        } catch (SQLIntegrityConstraintViolationException e) {
+            throw new DatabaseException(DUPLICATE_MESSAGE, e);
         } catch (SQLException e) {
             throw new DatabaseException("Failed to add department: " + e.getMessage(), e);
         }
@@ -91,8 +97,44 @@ public class DepartmentDAO {
             ps.setString(2, department.getDepartmentName());
             ps.setInt(3, department.getDepartmentId());
             ps.executeUpdate();
+        } catch (SQLIntegrityConstraintViolationException e) {
+            throw new DatabaseException(DUPLICATE_MESSAGE, e);
         } catch (SQLException e) {
             throw new DatabaseException("Failed to update department: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Updates code, name and head of department in ONE transaction: either all of it is saved or none.
+     * Needs database/migrations/002_department_head.sql (departments.head_user_id).
+     *
+     * @param headUserId the lecturer who heads the department, or null for no head
+     */
+    public void updateWithHead(Department department, Integer headUserId) throws DatabaseException {
+        String sql = "UPDATE departments SET department_code = ?, department_name = ?, head_user_id = ? "
+                + "WHERE department_id = ?";
+        try (Connection con = DatabaseConnection.getConnection()) {
+            con.setAutoCommit(false);
+            try (PreparedStatement ps = con.prepareStatement(sql)) {
+                ps.setString(1, department.getDepartmentCode());
+                ps.setString(2, department.getDepartmentName());
+                if (headUserId == null) {
+                    ps.setNull(3, Types.INTEGER);
+                } else {
+                    ps.setInt(3, headUserId);
+                }
+                ps.setInt(4, department.getDepartmentId());
+                ps.executeUpdate();
+                con.commit();
+            } catch (SQLException e) {
+                con.rollback();
+                throw e;
+            }
+        } catch (SQLIntegrityConstraintViolationException e) {
+            throw new DatabaseException(DUPLICATE_MESSAGE, e);
+        } catch (SQLException e) {
+            throw new DatabaseException("Failed to update department: " + e.getMessage()
+                    + " (Has database/migrations/002_department_head.sql been run?)", e);
         }
     }
 
@@ -101,6 +143,9 @@ public class DepartmentDAO {
              PreparedStatement ps = con.prepareStatement("DELETE FROM departments WHERE department_id = ?")) {
             ps.setInt(1, departmentId);
             ps.executeUpdate();
+        } catch (SQLIntegrityConstraintViolationException e) {
+            throw new DatabaseException("This department cannot be deleted because other records "
+                    + "(courses, users, ...) still belong to it.", e);
         } catch (SQLException e) {
             throw new DatabaseException("Failed to delete department: " + e.getMessage(), e);
         }

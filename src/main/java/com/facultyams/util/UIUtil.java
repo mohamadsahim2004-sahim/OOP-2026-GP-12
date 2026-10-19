@@ -7,6 +7,7 @@ import com.facultyams.exception.ValidationException;
 
 import javax.swing.JOptionPane;
 import java.awt.Component;
+import java.awt.GraphicsEnvironment;
 
 /**
  * Small Swing helpers shared by all screens so error handling looks the same everywhere.
@@ -35,6 +36,12 @@ public final class UIUtil {
      * Database errors are also logged to stderr for debugging.
      */
     public static void showException(Component parent, Exception e) {
+        if (GraphicsEnvironment.isHeadless()) {
+            // no screen (automated checks): log instead of opening a dialog
+            System.err.println("[headless] " + e.getClass().getSimpleName() + ": " + e.getMessage());
+            return;
+        }
+
         if (e instanceof ValidationException) {
             JOptionPane.showMessageDialog(parent, e.getMessage(), "Invalid input", JOptionPane.WARNING_MESSAGE);
         } else if (e instanceof AuthenticationException) {
