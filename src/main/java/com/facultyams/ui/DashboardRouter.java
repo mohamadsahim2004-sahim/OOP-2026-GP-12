@@ -33,7 +33,7 @@ public final class DashboardRouter {
                 throw new IllegalStateException("Please log in to continue.");
             }
             frame = switch (user.getRole()) {
-                case ADMIN -> new AdminDashboardFrame(user);
+                case ADMIN -> new AdminDashboardFrame();
                 case LECTURER -> new PlaceholderDashboardFrame(user, "Lecturer module (Member 2)");
                 case TECHNICAL_OFFICER -> new PlaceholderDashboardFrame(user, "Technical Officer module (Member 3)");
                 case STUDENT -> new PlaceholderDashboardFrame(user, "Undergraduate module (Member 4)");

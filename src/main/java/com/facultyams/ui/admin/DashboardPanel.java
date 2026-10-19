@@ -83,11 +83,16 @@ public class DashboardPanel extends JPanel implements Refreshable {
     @Override
     public void refresh() {
         try {
-            Map<String, Integer> summary = adminService.getDashboardSummary();
-            usersCard.setValue(String.valueOf(summary.get("Total Users")));
-            departmentsCard.setValue(String.valueOf(summary.get("Departments")));
-            coursesCard.setValue(String.valueOf(summary.get("Courses")));
-            noticesCard.setValue(String.valueOf(summary.get("Notices")));
+            Map<String, Integer> summary = adminService.getDashboardStatistics();
+            int totalUsers = summary.getOrDefault("Admins", 0)
+                    + summary.getOrDefault("Lecturers", 0)
+                    + summary.getOrDefault("Technical Officers", 0)
+                    + summary.getOrDefault("Students", 0);
+            usersCard.setValue(String.valueOf(totalUsers));
+            departmentsCard.setValue(String.valueOf(summary.getOrDefault("Departments", 0)));
+            coursesCard.setValue(String.valueOf(summary.getOrDefault("Courses", 0)));
+            // Notice statistics are not currently implemented by AdminService.
+            noticesCard.setValue("N/A");
         } catch (DatabaseException | AuthorizationException e) {
             usersCard.setValue("-");
             departmentsCard.setValue("-");

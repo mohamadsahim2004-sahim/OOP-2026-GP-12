@@ -2,7 +2,6 @@ package com.facultyams.ui.admin;
 
 import com.facultyams.exception.AuthorizationException;
 import com.facultyams.exception.DatabaseException;
-import com.facultyams.ui.Refreshable;
 import com.facultyams.util.UIUtil;
 
 import javax.swing.BorderFactory;
