@@ -23,6 +23,9 @@ public class Lecturer extends User{//lecturer inherits common fields from User
     public String getDesignation(){
         return designation;
     }
+    public void setDesignation(String designation){
+        this.designation = designation;
+    }
     public String getSpecialisation(){
         return specialisation;
     }
