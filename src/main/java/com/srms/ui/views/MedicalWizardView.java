@@ -182,26 +182,47 @@ public class MedicalWizardView extends JPanel {
         JLabel sumTitle = new JLabel("Date Selection Summary");
         sumTitle.setFont(Theme.FONT_SUBTITLE);
         sumTitle.setForeground(Theme.TEXT_MAIN);
+        sumTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        rangeSummaryLbl.setFont(Theme.FONT_BODY);
+        rangeSummaryLbl.setFont(Theme.FONT_BODY_BOLD);
         rangeSummaryLbl.setForeground(Theme.PRIMARY);
+        rangeSummaryLbl.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         daysCountLbl.setFont(Theme.FONT_SECTION);
         daysCountLbl.setForeground(Theme.TEXT_MAIN);
+        daysCountLbl.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         absentCountLbl.setFont(Theme.FONT_SECTION);
         absentCountLbl.setForeground(Theme.DANGER);
+        absentCountLbl.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         stack.add(sumTitle);
-        stack.add(Box.createVerticalStrut(16));
-        stack.add(new JLabel("Selected Period:"));
-        stack.add(Box.createVerticalStrut(4));
+        stack.add(Box.createVerticalStrut(18));
+
+        JLabel l1 = new JLabel("Selected Period");
+        l1.setFont(Theme.FONT_TINY);
+        l1.setForeground(Theme.TEXT_MUTED);
+        l1.setAlignmentX(Component.LEFT_ALIGNMENT);
+        stack.add(l1);
+        stack.add(Box.createVerticalStrut(3));
         stack.add(rangeSummaryLbl);
         stack.add(Box.createVerticalStrut(16));
-        stack.add(new JLabel("Duration:"));
+
+        JLabel l2 = new JLabel("Duration");
+        l2.setFont(Theme.FONT_TINY);
+        l2.setForeground(Theme.TEXT_MUTED);
+        l2.setAlignmentX(Component.LEFT_ALIGNMENT);
+        stack.add(l2);
+        stack.add(Box.createVerticalStrut(3));
         stack.add(daysCountLbl);
         stack.add(Box.createVerticalStrut(16));
-        stack.add(new JLabel("Absent Sessions in Period:"));
+
+        JLabel l3 = new JLabel("Absent Sessions in Period");
+        l3.setFont(Theme.FONT_TINY);
+        l3.setForeground(Theme.TEXT_MUTED);
+        l3.setAlignmentX(Component.LEFT_ALIGNMENT);
+        stack.add(l3);
+        stack.add(Box.createVerticalStrut(3));
         stack.add(absentCountLbl);
         stack.add(Box.createVerticalGlue());
 
@@ -525,31 +546,45 @@ public class MedicalWizardView extends JPanel {
         // Left Form & DropZone
         Ui.Card formCard = new Ui.Card();
         formCard.setLayout(new BoxLayout(formCard, BoxLayout.Y_AXIS));
-        formCard.setBorder(BorderFactory.createEmptyBorder(18, 20, 18, 20));
+        formCard.setBorder(BorderFactory.createEmptyBorder(20, 24, 20, 24));
 
         JLabel titleLbl = new JLabel("Medical Certificate Details");
         titleLbl.setFont(Theme.FONT_SUBTITLE);
         titleLbl.setForeground(Theme.TEXT_MAIN);
+        titleLbl.setAlignmentX(Component.LEFT_ALIGNMENT);
         formCard.add(titleLbl);
-        formCard.add(Box.createVerticalStrut(14));
+        formCard.add(Box.createVerticalStrut(16));
 
-        formCard.add(createFormField("Reason Category:", reasonCombo));
-        formCard.add(Box.createVerticalStrut(10));
-        formCard.add(createFormField("Doctor / Hospital Name:", doctorField));
-        formCard.add(Box.createVerticalStrut(10));
-        formCard.add(createFormField("Certificate Number:", certNoField));
-        formCard.add(Box.createVerticalStrut(10));
+        JPanel f1 = createFormField("Reason Category:", reasonCombo);
+        f1.setAlignmentX(Component.LEFT_ALIGNMENT);
+        formCard.add(f1);
+        formCard.add(Box.createVerticalStrut(12));
+
+        JPanel f2 = createFormField("Doctor / Hospital Name:", doctorField);
+        f2.setAlignmentX(Component.LEFT_ALIGNMENT);
+        formCard.add(f2);
+        formCard.add(Box.createVerticalStrut(12));
+
+        JPanel f3 = createFormField("Certificate Number:", certNoField);
+        f3.setAlignmentX(Component.LEFT_ALIGNMENT);
+        formCard.add(f3);
+        formCard.add(Box.createVerticalStrut(12));
 
         notesArea.setFont(Theme.FONT_BODY);
         notesArea.setLineWrap(true);
         notesArea.setWrapStyleWord(true);
+        notesArea.setBorder(BorderFactory.createEmptyBorder(6, 8, 6, 8));
         JScrollPane notesScroll = new JScrollPane(notesArea);
-        notesScroll.setPreferredSize(new Dimension(300, 50));
-        formCard.add(createFormField("Optional Notes:", notesScroll));
-        formCard.add(Box.createVerticalStrut(14));
+        notesScroll.setPreferredSize(new Dimension(300, 60));
+        notesScroll.setBorder(BorderFactory.createLineBorder(Theme.CARD_BORDER, 1));
+        JPanel f4 = createFormField("Optional Notes:", notesScroll);
+        f4.setAlignmentX(Component.LEFT_ALIGNMENT);
+        formCard.add(f4);
+        formCard.add(Box.createVerticalStrut(16));
 
         // Certificate Upload Zone
         dropZone = new DropZone(List.of("pdf", "jpg", "png"), MedicalPolicy.MAX_FILES, MedicalPolicy.MAX_FILE_MB);
+        dropZone.setAlignmentX(Component.LEFT_ALIGNMENT);
         dropZone.setOnError(err -> {
             if (err != null) {
                 step3ErrorLbl.setText(err);
@@ -560,18 +595,20 @@ public class MedicalWizardView extends JPanel {
             validateCurrentStep();
         });
         formCard.add(dropZone);
-        formCard.add(Box.createVerticalStrut(12));
+        formCard.add(Box.createVerticalStrut(14));
 
         // Declaration check
         confirmBox.setFont(Theme.FONT_SMALL);
         confirmBox.setForeground(Theme.TEXT_MAIN);
         confirmBox.setOpaque(false);
+        confirmBox.setAlignmentX(Component.LEFT_ALIGNMENT);
         confirmBox.addActionListener(e -> validateCurrentStep());
         formCard.add(confirmBox);
 
         step3ErrorLbl.setFont(Theme.FONT_TINY);
         step3ErrorLbl.setForeground(Theme.DANGER);
         step3ErrorLbl.setVisible(false);
+        step3ErrorLbl.setAlignmentX(Component.LEFT_ALIGNMENT);
         formCard.add(Box.createVerticalStrut(6));
         formCard.add(step3ErrorLbl);
 
@@ -581,35 +618,43 @@ public class MedicalWizardView extends JPanel {
 
         // Right Review Panel
         Ui.Card reviewCard = new Ui.Card();
-        reviewCard.setPreferredSize(new Dimension(300, 420));
+        reviewCard.setPreferredSize(new Dimension(320, 440));
         reviewCard.setLayout(new BorderLayout());
-        reviewCard.setBorder(BorderFactory.createEmptyBorder(18, 18, 18, 18));
+        reviewCard.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
         reviewPanel.setLayout(new BoxLayout(reviewPanel, BoxLayout.Y_AXIS));
         reviewPanel.setOpaque(false);
-        reviewCard.add(reviewPanel, BorderLayout.CENTER);
+
+        JScrollPane reviewScroll = new JScrollPane(reviewPanel);
+        Ui.applyThinScrollBar(reviewScroll);
+        reviewCard.add(reviewScroll, BorderLayout.CENTER);
         p.add(reviewCard, BorderLayout.EAST);
 
         return p;
     }
 
     private JPanel createFormField(String label, JComponent comp) {
-        JPanel p = new JPanel(new BorderLayout(10, 4));
+        JPanel p = new JPanel(new BorderLayout(14, 0));
         p.setOpaque(false);
-        p.setMaximumSize(new Dimension(Short.MAX_VALUE, 40));
+        int h = comp instanceof JScrollPane ? 64 : 36;
+        p.setMaximumSize(new Dimension(Short.MAX_VALUE, h));
+        p.setPreferredSize(new Dimension(500, h));
 
         JLabel l = new JLabel(label);
-        l.setFont(Theme.FONT_SMALL);
+        l.setFont(Theme.FONT_BODY_BOLD);
         l.setForeground(Theme.TEXT_MUTED);
-        l.setPreferredSize(new Dimension(170, 26));
+        l.setPreferredSize(new Dimension(170, h));
 
         comp.setFont(Theme.FONT_BODY);
         if (comp instanceof JTextField tf) {
-            tf.setPreferredSize(new Dimension(200, 32));
+            tf.setPreferredSize(new Dimension(200, 36));
             tf.setBorder(BorderFactory.createCompoundBorder(
                     BorderFactory.createLineBorder(Theme.CARD_BORDER, 1),
-                    BorderFactory.createEmptyBorder(4, 8, 4, 8)
+                    BorderFactory.createEmptyBorder(4, 10, 4, 10)
             ));
+        } else if (comp instanceof JComboBox<?> cb) {
+            cb.setPreferredSize(new Dimension(200, 36));
+            cb.setBackground(Color.WHITE);
         }
         p.add(l, BorderLayout.WEST);
         p.add(comp, BorderLayout.CENTER);
@@ -622,39 +667,58 @@ public class MedicalWizardView extends JPanel {
         JLabel title = new JLabel("Submission Review");
         title.setFont(Theme.FONT_SUBTITLE);
         title.setForeground(Theme.TEXT_MAIN);
+        title.setAlignmentX(Component.LEFT_ALIGNMENT);
         reviewPanel.add(title);
+        reviewPanel.add(Box.createVerticalStrut(18));
+
+        String rangeStr = calendar.getRangeStart().format(DATE_FMT) + " to " + calendar.getRangeEnd().format(DATE_FMT);
+        reviewPanel.add(createReviewItem("Date Range", rangeStr));
         reviewPanel.add(Box.createVerticalStrut(14));
 
-        reviewPanel.add(createReviewItem("Date Range:", calendar.getRangeStart().format(DATE_FMT) + " to " + calendar.getRangeEnd().format(DATE_FMT)));
-        reviewPanel.add(createReviewItem("Covered Sessions:", selectedSessionIds.size() + " sessions"));
+        reviewPanel.add(createReviewItem("Covered Sessions", selectedSessionIds.size() + " absent sessions"));
+        reviewPanel.add(Box.createVerticalStrut(14));
 
-        Set<String> courses = new HashSet<>();
+        Set<String> courses = new LinkedHashSet<>();
         for (SessionAttendance sa : loadedSessions) {
             if (selectedSessionIds.contains(sa.session().id())) {
                 courses.add(sa.session().courseCode());
             }
         }
-        reviewPanel.add(createReviewItem("Courses:", String.join(", ", courses)));
-        reviewPanel.add(createReviewItem("Doctor/Hospital:", doctorField.getText().trim().isEmpty() ? "Not specified" : doctorField.getText().trim()));
-        reviewPanel.add(createReviewItem("Certificate No:", certNoField.getText().trim().isEmpty() ? "Not specified" : certNoField.getText().trim()));
+        String coursesStr = courses.isEmpty() ? "None" : String.join(", ", courses);
+        reviewPanel.add(createReviewItem("Courses", coursesStr));
+        reviewPanel.add(Box.createVerticalStrut(14));
+
+        String doc = doctorField.getText().trim().isEmpty() ? "Not specified" : doctorField.getText().trim();
+        reviewPanel.add(createReviewItem("Doctor / Hospital", doc));
+        reviewPanel.add(Box.createVerticalStrut(14));
+
+        String cert = certNoField.getText().trim().isEmpty() ? "Not specified" : certNoField.getText().trim();
+        reviewPanel.add(createReviewItem("Certificate Number", cert));
+        reviewPanel.add(Box.createVerticalGlue());
 
         reviewPanel.revalidate();
         reviewPanel.repaint();
     }
 
     private JPanel createReviewItem(String key, String val) {
-        JPanel p = new JPanel(new BorderLayout(6, 2));
+        JPanel p = new JPanel();
+        p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS));
         p.setOpaque(false);
-        p.setMaximumSize(new Dimension(Short.MAX_VALUE, 32));
+        p.setAlignmentX(Component.LEFT_ALIGNMENT);
+
         JLabel k = new JLabel(key);
         k.setFont(Theme.FONT_TINY);
         k.setForeground(Theme.TEXT_MUTED);
-        JLabel v = new JLabel(val);
+        k.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        JLabel v = new JLabel("<html><body style='width: 230px;'>" + val + "</body></html>");
         v.setFont(Theme.FONT_BODY_BOLD);
         v.setForeground(Theme.TEXT_MAIN);
-        p.add(k, BorderLayout.NORTH);
-        p.add(v, BorderLayout.SOUTH);
-        p.setBorder(BorderFactory.createEmptyBorder(4, 0, 8, 0));
+        v.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        p.add(k);
+        p.add(Box.createVerticalStrut(3));
+        p.add(v);
         return p;
     }
 

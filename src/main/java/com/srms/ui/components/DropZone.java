@@ -30,9 +30,11 @@ public class DropZone extends JPanel {
         this.maxFiles = maxFiles > 0 ? maxFiles : 5;
         this.maxFileMb = maxFileMb > 0 ? maxFileMb : 20;
 
-        setLayout(new BorderLayout(10, 12));
+        setLayout(new BorderLayout(10, 10));
         setOpaque(false);
-        setBorder(BorderFactory.createEmptyBorder(24, 20, 20, 20));
+        setBorder(BorderFactory.createEmptyBorder(16, 20, 16, 20));
+        setPreferredSize(new Dimension(480, 150));
+        setMaximumSize(new Dimension(Short.MAX_VALUE, 160));
 
         initUI();
         initTransferHandler();

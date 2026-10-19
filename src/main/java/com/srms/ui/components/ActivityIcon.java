@@ -26,6 +26,8 @@ public class ActivityIcon extends JComponent {
         this.type = type;
         this.fileType = fileType;
         setPreferredSize(new Dimension(28, 28));
+        setMaximumSize(new Dimension(28, 28));
+        setMinimumSize(new Dimension(24, 24));
         setOpaque(false);
     }
 
@@ -37,7 +39,7 @@ public class ActivityIcon extends JComponent {
 
         int w = getWidth();
         int h = getHeight();
-        int size = Math.min(w, h) - 4;
+        int size = Math.min(22, Math.min(w, h) - 4);
         int x = (w - size) / 2;
         int y = (h - size) / 2;
 
