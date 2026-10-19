@@ -10,11 +10,11 @@ import java.util.function.Consumer;
 import javax.swing.*;
 
 /**
- * Moodle-style CourseCard with procedural/image banner (160px), semester pill,
- * course code/title, "⋮" menu, 4px completion bar, and hover states.
+ * Beautiful, minimal course card matching the reference grid design.
  */
 public class CourseCard extends Ui.Card {
-    private static final int BANNER_HEIGHT = 160;
+    public static final int CARD_HEIGHT = 245;
+    private static final int BANNER_HEIGHT = 135;
 
     private final Course course;
     private final Consumer<Course> onOpen;
@@ -28,14 +28,16 @@ public class CourseCard extends Ui.Card {
 
         setLayout(new BorderLayout());
         setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        setPreferredSize(new Dimension(300, 275));
+        setPreferredSize(new Dimension(320, CARD_HEIGHT));
+        setMinimumSize(new Dimension(240, CARD_HEIGHT));
+        setMaximumSize(new Dimension(Short.MAX_VALUE, CARD_HEIGHT));
 
         initUI();
         initListeners();
     }
 
     private void initUI() {
-        // Top banner container (160px)
+        // 1. Top Cover Banner (135px)
         JPanel bannerPanel = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
@@ -45,19 +47,19 @@ public class CourseCard extends Ui.Card {
                 g2.dispose();
             }
         };
-        bannerPanel.setLayout(new FlowLayout(FlowLayout.LEFT, 12, 12));
+        bannerPanel.setLayout(new FlowLayout(FlowLayout.LEFT, 12, 10));
         bannerPanel.setPreferredSize(new Dimension(300, BANNER_HEIGHT));
         bannerPanel.setOpaque(false);
 
         // Dark pill badge for semester on the banner
-        Ui.Pill semesterPill = new Ui.Pill(course.semester(), new Color(15, 23, 42, 180), Color.WHITE);
+        Ui.Pill semesterPill = new Ui.Pill(course.semester(), new Color(15, 23, 42, 210), Color.WHITE);
         bannerPanel.add(semesterPill);
         add(bannerPanel, BorderLayout.NORTH);
 
-        // Details Panel
-        JPanel detailsPanel = new JPanel(new BorderLayout(8, 6));
+        // 2. Details Panel (White surface)
+        JPanel detailsPanel = new JPanel(new BorderLayout(8, 4));
         detailsPanel.setOpaque(false);
-        detailsPanel.setBorder(BorderFactory.createEmptyBorder(12, 14, 10, 14));
+        detailsPanel.setBorder(BorderFactory.createEmptyBorder(10, 14, 10, 14));
 
         JPanel textStack = new JPanel();
         textStack.setLayout(new BoxLayout(textStack, BoxLayout.Y_AXIS));
@@ -67,20 +69,20 @@ public class CourseCard extends Ui.Card {
         codeLbl.setFont(Theme.FONT_SMALL);
         codeLbl.setForeground(Theme.TEXT_MUTED);
 
-        JLabel titleLbl = new JLabel("<html><body style='width: 220px;'>" + course.title() + "</body></html>");
-        titleLbl.setFont(Theme.FONT_BODY_BOLD);
-        titleLbl.setForeground(Theme.TEXT_MAIN);
+        JLabel titleLbl = new JLabel("<html><body style='width: 200px;'>" + course.title() + "</body></html>");
+        titleLbl.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        titleLbl.setForeground(new Color(14, 116, 144)); // Dark Cyan / Blue tint matching reference
 
         textStack.add(codeLbl);
-        textStack.add(Box.createVerticalStrut(4));
+        textStack.add(Box.createVerticalStrut(3));
         textStack.add(titleLbl);
         detailsPanel.add(textStack, BorderLayout.CENTER);
 
-        // Bottom Bar (Progress + Menu button)
-        JPanel bottomBar = new JPanel(new BorderLayout(8, 0));
+        // 3. Bottom Row: Progress + Menu Button
+        JPanel bottomBar = new JPanel(new BorderLayout(10, 0));
         bottomBar.setOpaque(false);
 
-        // 4px progress line + label
+        // Progress bar + completion text
         JPanel progressStack = new JPanel();
         progressStack.setLayout(new BoxLayout(progressStack, BoxLayout.Y_AXIS));
         progressStack.setOpaque(false);
@@ -94,23 +96,33 @@ public class CourseCard extends Ui.Card {
         progressBar.setPreferredSize(new Dimension(140, 4));
         progressBar.setMaximumSize(new Dimension(Short.MAX_VALUE, 4));
         progressBar.setForeground(Theme.PRIMARY);
-        progressBar.setBackground(new Color(229, 231, 235));
+        progressBar.setBackground(new Color(226, 232, 240));
         progressBar.setBorderPainted(false);
 
         progressStack.add(progressLbl);
-        progressStack.add(Box.createVerticalStrut(3));
+        progressStack.add(Box.createVerticalStrut(2));
         progressStack.add(progressBar);
         bottomBar.add(progressStack, BorderLayout.CENTER);
 
-        // "⋮" menu button
-        JButton menuBtn = new JButton("⋮");
-        menuBtn.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        menuBtn.setForeground(Theme.TEXT_MUTED);
+        // "⋮" menu button with round dark badge
+        JButton menuBtn = new JButton("⋮") {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                Theme.setAntiAliasing(g2);
+                g2.setColor(new Color(15, 118, 110)); // Deep teal round button like reference
+                g2.fillOval(1, 1, getWidth() - 2, getHeight() - 2);
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        menuBtn.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        menuBtn.setForeground(Color.WHITE);
+        menuBtn.setPreferredSize(new Dimension(24, 24));
         menuBtn.setFocusPainted(false);
         menuBtn.setBorderPainted(false);
         menuBtn.setContentAreaFilled(false);
         menuBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        menuBtn.setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 4));
 
         JPopupMenu popup = new JPopupMenu();
         JMenuItem itemOpen = new JMenuItem("Open");
@@ -166,9 +178,5 @@ public class CourseCard extends Ui.Card {
 
     public Course getCourse() {
         return course;
-    }
-
-    public boolean isFavourite() {
-        return isFavourite;
     }
 }

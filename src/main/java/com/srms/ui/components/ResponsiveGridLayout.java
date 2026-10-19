@@ -6,7 +6,7 @@ import java.util.List;
 
 /**
  * Responsive grid layout that reflows 3, 2, or 1 columns depending on the
- * available container width. Avoids fixed card widths so cards smoothly resize.
+ * available container width. Ensures course cards are always beautifully aligned.
  */
 public class ResponsiveGridLayout implements LayoutManager {
     private final int hgap;
@@ -21,7 +21,7 @@ public class ResponsiveGridLayout implements LayoutManager {
     }
 
     public ResponsiveGridLayout() {
-        this(20, 20, 275);
+        this(20, 20, CourseCard.CARD_HEIGHT);
     }
 
     @Override
@@ -36,9 +36,9 @@ public class ResponsiveGridLayout implements LayoutManager {
         components.remove(comp);
     }
 
-    private int computeCols(int width) {
-        if (width >= 960) return 3;
-        if (width >= 620) return 2;
+    public int computeCols(int width) {
+        if (width >= 780) return 3;
+        if (width >= 520) return 2;
         return 1;
     }
 
@@ -47,7 +47,11 @@ public class ResponsiveGridLayout implements LayoutManager {
         synchronized (parent.getTreeLock()) {
             Insets insets = parent.getInsets();
             int width = parent.getWidth();
-            if (width <= 0) width = 1000;
+            if (width <= 0) {
+                Container p = parent.getParent();
+                if (p != null && p.getWidth() > 0) width = p.getWidth();
+                else width = 1050;
+            }
             int usableWidth = width - (insets.left + insets.right);
             int cols = Math.max(1, computeCols(usableWidth));
 
@@ -60,8 +64,8 @@ public class ResponsiveGridLayout implements LayoutManager {
             }
 
             int rows = (count + cols - 1) / cols;
-            int height = insets.top + insets.bottom + (rows * cardHeight) + ((rows - 1) * vgap);
-            return new Dimension(width, height);
+            int height = insets.top + insets.bottom + (rows * cardHeight) + ((rows - 1) * vgap) + 24;
+            return new Dimension(usableWidth, height);
         }
     }
 
@@ -76,6 +80,8 @@ public class ResponsiveGridLayout implements LayoutManager {
             Insets insets = parent.getInsets();
             int width = parent.getWidth();
             int usableWidth = width - (insets.left + insets.right);
+            if (usableWidth <= 0) return;
+
             int cols = Math.max(1, computeCols(usableWidth));
 
             List<Component> visible = new ArrayList<>();
