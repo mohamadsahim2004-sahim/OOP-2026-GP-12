@@ -125,10 +125,12 @@ public class LecturerDashboard extends JFrame {
                 "Notices"
         };
 
-        for (String section : sections) {
+        for (String section : sections) { // to connect exam eligibility menu for new screen
             if (section.equals("Marks, Grades and GPA")) {
                 mainContent.add(createMarksViewPanel(), section);
-            } else {
+            } else if(section.equals("Exam Eligibility")) {
+                mainContent.add(createExamEligibilityPanel(), section);
+            }else{
                 mainContent.add(createPlaceholder(section), section);
             }
         }
@@ -387,5 +389,57 @@ public class LecturerDashboard extends JFrame {
         return panel;
 
 
+    }
+    private JPanel createExamEligibilityPanel() { //clculates exam eligibility
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setBackground(backgroundColor);
+        panel.setBorder(new EmptyBorder(25, 25, 25, 25));
+
+        JLabel heading = new JLabel("Exam Eligibility");
+        heading.setFont(new Font("Arial", Font.BOLD, 23));
+        heading.setForeground(navy);
+
+        JTextField caField = new JTextField(10);
+        JTextField attendanceField = new JTextField(10);
+        JButton checkButton = new JButton("Check Eligibility");
+        JLabel resultLabel = new JLabel("Enter marks and attendance.");
+
+        JPanel form = new JPanel(new GridLayout(3, 2, 10, 10));
+        form.add(new JLabel("CA Marks (0-100):"));
+        form.add(caField);
+        form.add(new JLabel("Attendance (0-100%):"));
+        form.add(attendanceField);
+        form.add(new JLabel(""));
+        form.add(checkButton);
+
+        checkButton.addActionListener(e -> {
+            try {
+                double ca = Double.parseDouble(caField.getText().trim());
+                double attendance = Double.parseDouble(
+                        attendanceField.getText().trim());
+
+                boolean eligible =
+                        marksService.isExamEligiblity(ca, attendance);
+
+                resultLabel.setText(eligible
+                        ? "Eligible for final examination"
+                        : "Not eligible for final examination");
+
+            } catch (NumberFormatException ex) {
+                resultLabel.setText("Enter valid numeric values.");
+            } catch (IllegalArgumentException ex) {
+                resultLabel.setText(ex.getMessage());
+            }
+        });
+
+        JPanel top = new JPanel(new BorderLayout(0, 15));
+        top.setOpaque(false);
+        top.add(heading, BorderLayout.NORTH);
+        top.add(form, BorderLayout.CENTER);
+
+        panel.add(top, BorderLayout.NORTH);
+        panel.add(resultLabel, BorderLayout.CENTER);
+
+        return panel;
     }
 }
