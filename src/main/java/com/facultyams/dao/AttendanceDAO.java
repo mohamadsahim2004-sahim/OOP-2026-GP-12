@@ -55,4 +55,25 @@ public class AttendanceDAO {
         }
         return list;
     }
+    public int countPresent(int userId, int componentId) {
+        String sql = "SELECT COUNT(*) FROM ATTENDANCE "
+                   + "WHERE user_id = ? AND component_id = ? AND status = 'present'";
+
+        try (Connection con = DatabaseConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setInt(1, userId);
+            ps.setInt(2, componentId);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+
+        } catch (SQLException e) {
+            System.out.println("Error: " + e.getMessage());
+        }
+        return 0;
+    }
+
+
 }

@@ -75,4 +75,25 @@ public class MedicalDAO {
             System.out.println("Error: " + e.getMessage());
         }
     }
+
+    public int countApproved(int userId, int componentId) {
+        String sql = "SELECT COUNT(*) FROM MEDICAL m "
+                   + "JOIN ATTENDANCE a ON m.attendance_id = a.attendance_id "
+                   + "WHERE a.user_id = ? AND a.component_id = ? AND m.approval_status = 'approved'";
+
+        try (Connection con = DatabaseConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setInt(1, userId);
+            ps.setInt(2, componentId);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+
+        } catch (SQLException e) {
+            System.out.println("Error: " + e.getMessage());
+        }
+        return 0;
+    }
 }
