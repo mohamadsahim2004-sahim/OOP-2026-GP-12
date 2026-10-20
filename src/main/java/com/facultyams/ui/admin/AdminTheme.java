@@ -17,6 +17,7 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.Container;
 import java.awt.Cursor;
+import java.awt.Dimension;
 import java.awt.Font;
 
 /**
@@ -82,6 +83,45 @@ public final class AdminTheme {
         b.setBorderPainted(false);
         b.setBorder(BorderFactory.createEmptyBorder(7, 16, 7, 16));
         b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+    }
+
+    /**
+     * Wrapping, read-only red text for load/validation problems shown inside a page (instead of a pop-up).
+     * Empty text means "no problem"; callers hide it with setVisible(false).
+     */
+    public static JTextArea errorText() {
+        JTextArea area = new JTextArea() {
+            private static final long serialVersionUID = 1L;
+            private int laidOutWidth;
+
+            /** Wrapped text is as tall as its width allows, and the width is only known after a layout pass. */
+            @Override
+            public Dimension getPreferredSize() {
+                if (getWidth() <= 0) {
+                    return new Dimension(100, getFontMetrics(getFont()).getHeight());
+                }
+                return super.getPreferredSize();
+            }
+
+            /** Once the real width is assigned, lay out again so the height matches the wrapped text. */
+            @Override
+            public void setBounds(int x, int y, int width, int height) {
+                super.setBounds(x, y, width, height);
+                if (width != laidOutWidth) {
+                    laidOutWidth = width;
+                    revalidate();
+                }
+            }
+        };
+        area.setEditable(false);
+        area.setFocusable(false);
+        area.setLineWrap(true);
+        area.setWrapStyleWord(true);
+        area.setOpaque(false);
+        area.setFont(FONT);
+        area.setForeground(DANGER);
+        area.setBorder(BorderFactory.createEmptyBorder(0, 0, 4, 0)); // room for the descenders of the last line
+        return area;
     }
 
     public static JLabel title(String text) {

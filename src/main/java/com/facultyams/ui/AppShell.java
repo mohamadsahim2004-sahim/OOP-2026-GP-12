@@ -61,6 +61,7 @@ public abstract class AppShell extends JPanel {
     private final JLabel sidebarName = new JLabel();
     private final JFrame owner;
     private String firstPage;
+    private String currentPage;
 
     /**
      * @param owner        the window that hosts this shell (closed on logout)
@@ -123,12 +124,18 @@ public abstract class AppShell extends JPanel {
             return;
         }
         cards.show(content, key);
+        currentPage = key;
         navButtons.forEach((k, b) -> {
             if (!LOGOUT.equals(k)) {
                 b.setBackground(k.equals(key) ? AdminTheme.NAVY_ACTIVE : AdminTheme.NAVY);
             }
         });
         pages.get(key).refresh();
+    }
+
+    /** Key of the page being shown, or null before the first page is opened. */
+    public String getCurrentPage() {
+        return currentPage;
     }
 
     /** Re-reads the current user from the session (e.g. after a profile update) and updates the name labels. */
@@ -211,7 +218,7 @@ public abstract class AppShell extends JPanel {
         b.setAlignmentX(0f);
         b.addActionListener(e -> {
             if (LOGOUT.equals(key)) {
-                logout();
+                requestLogout();
             } else {
                 showPage(key);
             }
@@ -237,8 +244,11 @@ public abstract class AppShell extends JPanel {
         return header;
     }
 
-    /** Asks for confirmation, then ends the session and returns to the login window. */
-    private void logout() {
+    /**
+     * Asks for confirmation, then ends the session, closes this window and returns to the login window.
+     * Used by the sidebar Logout button and by any page that offers its own Logout button.
+     */
+    protected final void requestLogout() {
         if (UIUtil.confirm(this, "Are you sure you want to log out?")) {
             DashboardRouter.logout(owner);
         }

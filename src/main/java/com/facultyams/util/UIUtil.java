@@ -19,14 +19,27 @@ public final class UIUtil {
     }
 
     public static void showInfo(Component parent, String message) {
+        if (GraphicsEnvironment.isHeadless()) {
+            System.err.println("[headless] INFO: " + message);
+            return;
+        }
         JOptionPane.showMessageDialog(parent, message, "Information", JOptionPane.INFORMATION_MESSAGE);
     }
 
     public static void showError(Component parent, String message) {
+        if (GraphicsEnvironment.isHeadless()) {
+            System.err.println("[headless] ERROR: " + message);
+            return;
+        }
         JOptionPane.showMessageDialog(parent, message, "Error", JOptionPane.ERROR_MESSAGE);
     }
 
     public static boolean confirm(Component parent, String message) {
+        if (GraphicsEnvironment.isHeadless()) {
+            // nobody can answer: treat as "No" so a headless run never performs a destructive action
+            System.err.println("[headless] CONFIRM (answered No): " + message);
+            return false;
+        }
         return JOptionPane.showConfirmDialog(parent, message, "Please confirm",
                 JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE) == JOptionPane.YES_OPTION;
     }

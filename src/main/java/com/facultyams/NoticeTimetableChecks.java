@@ -1,10 +1,5 @@
 package com.facultyams;
 
-public class NoticeTimetableChecks {
-    
-}
-package com.facultyams;
-
 import com.facultyams.dao.CourseDAO;
 import com.facultyams.dao.NoticeDAO;
 import com.facultyams.dao.TimeTableDAO;

@@ -121,6 +121,28 @@ public class UserService {
         userDAO.updatePassword(userId, PasswordUtil.hashPassword(newPassword));
     }
 
+    /**
+     * Admin only (passwords are never self-editable for other roles). Changes the logged-in administrator's
+     * own password after checking the current one, so an unattended session cannot be used to take over the
+     * account. Use {@link #resetPassword} for somebody else's account.
+     */
+    public void changeOwnPassword(String currentPassword, String newPassword)
+            throws ValidationException, AuthorizationException, DatabaseException {
+        Session.requireRole(Role.ADMIN);
+        User me = getUserById(Session.getCurrentUser().getUserId());
+        if (currentPassword == null || currentPassword.isEmpty()) {
+            throw new ValidationException("Current password is required.");
+        }
+        if (!PasswordUtil.verifyPassword(currentPassword, me.getPasswordHash())) {
+            throw new ValidationException("The current password is incorrect.");
+        }
+        ValidationUtil.requireValidPassword(newPassword);
+        if (newPassword.equals(currentPassword)) {
+            throw new ValidationException("The new password must be different from the current password.");
+        }
+        userDAO.updatePassword(me.getUserId(), PasswordUtil.hashPassword(newPassword));
+    }
+
     /** Deactivated users cannot log in, but their records are kept. */
     public void setUserActive(int userId, boolean active)
             throws ValidationException, AuthorizationException, DatabaseException {
