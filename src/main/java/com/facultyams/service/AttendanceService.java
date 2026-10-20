@@ -8,5 +8,10 @@ public class AttendanceService {
         }
         double percentage = 100.0 * (present + approvedMedical) / totalSessions;
         return percentage;
+
+    }
+
+    public boolean isEligible(double percentage){
+        return percentage >=80;
     }
 }
