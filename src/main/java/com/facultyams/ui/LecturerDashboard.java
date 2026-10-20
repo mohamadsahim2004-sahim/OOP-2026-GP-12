@@ -4,8 +4,12 @@ package com.facultyams.ui;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import com.facultyams.model.Marks;
+import com.facultyams.service.MarksService;
+import javax.swing.Box;
 
 public class LecturerDashboard extends JFrame {
+    private final MarksService marksService = new MarksService();
 
     private final CardLayout cardLayout = new CardLayout();
     private final JPanel mainContent = new JPanel(cardLayout);
@@ -122,7 +126,11 @@ public class LecturerDashboard extends JFrame {
         };
 
         for (String section : sections) {
-            mainContent.add(createPlaceholder(section), section);
+            if (section.equals("Marks, Grades and GPA")) {
+                mainContent.add(createMarksViewPanel(), section);
+            } else {
+                mainContent.add(createPlaceholder(section), section);
+            }
         }
 
         add(mainContent, BorderLayout.CENTER);
@@ -148,7 +156,10 @@ public class LecturerDashboard extends JFrame {
         top.add(welcome);
 
         JPanel cards = new JPanel(new GridLayout(2, 2, 15, 15));
-        cards.setOpaque(false);
+        cards.setPreferredSize(new Dimension(650, 350));
+        cards.setMaximumSize(new Dimension(650, 350));
+        cards.setMinimumSize(new Dimension(650, 350)); cards.setPreferredSize(new Dimension(650, 350));
+        cards.setMaximumSize(new Dimension(650, 350)); cards.setOpaque(false);
 
         addDashboardCard(cards, "Course Materials");
         addDashboardCard(cards, "Upload Exam Marks");
@@ -156,8 +167,12 @@ public class LecturerDashboard extends JFrame {
         addDashboardCard(cards, "Marks, Grades and GPA");
 
         panel.add(top, BorderLayout.NORTH);
-        panel.add(cards, BorderLayout.CENTER);
 
+        JPanel cardsContainer = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 10));
+        cardsContainer.setOpaque(false);
+        cardsContainer.add(cards);
+
+        panel.add(cardsContainer, BorderLayout.CENTER);
         return panel;
     }
 
@@ -232,63 +247,43 @@ public class LecturerDashboard extends JFrame {
         form.add(new JLabel("Grade:"));
         form.add(gradeField);
 
-        JButton validateButton = new JButton("Validate Marks");
+        JButton validateButton = new JButton("Save Marks");
 
-        validateButton.addActionListener(e -> {
-            try {
-                int marksID = Integer.parseInt(
-                        marksIdField.getText().trim()
-                );
+            validateButton.addActionListener(e -> {
+                try {
+                    int marksID = Integer.parseInt(marksIdField.getText().trim());
+                    double caMarks = Double.parseDouble(caMarksField.getText().trim());
+                    double finalMarks = Double.parseDouble(finalMarksField.getText().trim());
+                    String grade = gradeField.getText().trim();
 
-                double caMarks = Double.parseDouble(
-                        caMarksField.getText().trim()
-                );
+                    if (marksID <= 0 || grade.isEmpty()) {
+                        throw new IllegalArgumentException("Enter a valid Marks ID and grade.");
+                    }
 
-                double finalMarks = Double.parseDouble(
-                        finalMarksField.getText().trim()
-                );
+                    if (!marksService.isValidateMarks(caMarks)
+                            || !marksService.isValidateMarks(finalMarks)) {
+                        throw new IllegalArgumentException("Marks must be between 0 and 100.");
+                    }
 
-                if (marksID <= 0) {
-                    throw new IllegalArgumentException(
-                            "Marks ID must be greater than zero."
+                    Marks marks = new Marks(
+                            marksID, caMarks, finalMarks, grade,
+                            marksService.isCAEligible(caMarks)
                     );
+
+                    marksService.saveMarks(marks);
+
+                    JOptionPane.showMessageDialog(panel, "Marks saved successfully.");
+
+                } catch (NumberFormatException ex) {
+                    JOptionPane.showMessageDialog(panel,
+                            "Enter valid numeric values.", "Invalid Input",
+                            JOptionPane.ERROR_MESSAGE);
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(panel,
+                            "Could not save marks: " + ex.getMessage(),
+                            "Error", JOptionPane.ERROR_MESSAGE);
                 }
-
-                if (caMarks < 0 || caMarks > 100
-                        || finalMarks < 0 || finalMarks > 100) {
-                    throw new IllegalArgumentException(
-                            "Marks must be between 0 and 100."
-                    );
-                }
-
-                if (gradeField.getText().trim().isEmpty()) {
-                    throw new IllegalArgumentException(
-                            "Please enter a grade."
-                    );
-                }
-
-                JOptionPane.showMessageDialog(
-                        panel,
-                        "Marks input validated successfully."
-                );
-
-            } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(
-                        panel,
-                        "Enter a valid Marks ID and numeric marks.",
-                        "Invalid Input",
-                        JOptionPane.ERROR_MESSAGE
-                );
-
-            } catch (IllegalArgumentException ex) {
-                JOptionPane.showMessageDialog(
-                        panel,
-                        ex.getMessage(),
-                        "Invalid Input",
-                        JOptionPane.ERROR_MESSAGE
-                );
-            }
-        });
+            });
 
         JPanel bottom = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         bottom.setOpaque(false);
@@ -335,5 +330,62 @@ public class LecturerDashboard extends JFrame {
             LecturerDashboard dashboard = new LecturerDashboard();
             dashboard.setVisible(true);
         });
+    }
+    private JPanel createMarksViewPanel() {
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setBorder(new EmptyBorder(25, 25, 25, 25));
+        panel.setBackground(backgroundColor);
+
+        JLabel heading = new JLabel("Marks, Grades and GPA");
+        heading.setFont(new Font("Arial", Font.BOLD, 23));
+        heading.setForeground(navy);
+
+        JTextField marksIdField = new JTextField(10);
+        JButton searchButton = new JButton("Search Marks");
+        JTextArea resultArea = new JTextArea(8, 30);
+        resultArea.setEditable(false);
+
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        searchPanel.add(new JLabel("Marks ID:"));
+        searchPanel.add(marksIdField);
+        searchPanel.add(searchButton);
+
+        JPanel topPanel = new JPanel(new BorderLayout(0, 15));
+        topPanel.setOpaque(false);
+
+        JPanel headingPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        headingPanel.setOpaque(false);
+        headingPanel.add(heading);
+
+        topPanel.add(headingPanel, BorderLayout.NORTH);
+        topPanel.add(searchPanel, BorderLayout.CENTER);
+
+
+        searchButton.addActionListener(e -> {
+            try {
+                int id = Integer.parseInt(marksIdField.getText().trim());
+                Marks marks = marksService.findMarksById(id);
+
+                if (marks == null) {
+                    resultArea.setText("No marks found.");
+                } else {
+                    resultArea.setText(
+                            "Marks ID: " + marks.getMarksId()
+                                    + "\nCA Marks: " + marks.getObtainMarks()
+                                    + "\nFinal Marks: " + marks.getFinalMarks()
+                                    + "\nGrade: " + marks.getGrade()
+                                    + "\nEligible: " + marks.isEligible()
+                    );
+                }
+            } catch (Exception ex) {
+                resultArea.setText("Error: " + ex.getMessage());
+            }
+        });
+        panel.add(topPanel, BorderLayout.NORTH);
+        panel.add(new JScrollPane(resultArea), BorderLayout.CENTER);
+
+        return panel;
+
+
     }
 }

@@ -63,6 +63,15 @@ public class MarksService {
 
         return marksDAO.findMarksById(marksID);
     }
+     public void saveMarks(Marks marks){
+        validateMarksObject(marks);
+        try{
+            marksDAO.saveMarks(marks);
+        }catch (SQLException e){
+            throw new RuntimeException("Failed t save marks.",e);
+
+        }
+     }
         }
 
         //code for validate marks and check exam eligibility
