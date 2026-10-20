@@ -65,6 +65,25 @@ public final class PasswordUtil {
         return matches(plainPassword, hashedPassword);
     }
 
+    // ---------------- NEW: start ----------------
+    /**
+     * Command-line helper used by database/sample_data.sql:
+     * {@code java -cp target/classes com.facultyams.security.PasswordUtil <password>} prints a hash to paste into SQL.
+     */
+    public static void main(String[] args) {
+        if (args.length != 1) {
+            System.err.println("Usage: java -cp target/classes com.facultyams.security.PasswordUtil <password>");
+            System.exit(1);
+        }
+        try {
+            System.out.println(hashPassword(args[0]));
+        } catch (IllegalArgumentException e) {
+            System.err.println(e.getMessage());
+            System.exit(1);
+        }
+    }
+    // ---------------- NEW: end ----------------
+
     private static byte[] derive(char[] password, byte[] salt, int iterations) {
         PBEKeySpec spec = new PBEKeySpec(password, salt, iterations, KEY_BITS);
         try {

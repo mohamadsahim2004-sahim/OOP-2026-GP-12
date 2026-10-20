@@ -31,7 +31,13 @@ public class AuthService {
             throw new ValidationException("Password is required.");
         }
 
-        User user = userDAO.findByUsername(username.trim());
+        User user;
+        try {                                                   // NEW
+            user = userDAO.findByUsername(username.trim());     // NEW
+        } catch (DatabaseException e) {                         // NEW
+            Session.end(); // a failed attempt must never leave an earlier session active
+            throw e;                                            // NEW
+        }                                                       // NEW
         if (user == null || !PasswordUtil.verifyPassword(password, user.getPasswordHash())) {
             Session.end();
             throw new AuthenticationException("Invalid username or password.");
