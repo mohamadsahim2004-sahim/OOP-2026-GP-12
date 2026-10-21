@@ -13,8 +13,11 @@ public class LecturerDAO {
 
     public Lecturer findByLecturerID(int lecturerID) {
 
-        String sql = "SELECT lecturerID, userID, designation, specialisation "
-                + "FROM lecturers WHERE lecturerID = ?";
+        String sql = "SELECT l.lecturerID, l.userID, l.designation, l.specialisation, "
+                + "u.full_name, u.email, u.phone "
+                + "FROM lecturers l "
+                + "JOIN users u ON l.userID = u.user_id "
+                + "WHERE l.lecturerID = ?";
 
         try (Connection connection = DatabaseConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -29,9 +32,9 @@ public class LecturerDAO {
                             "",
                             "",
                             "Lecturer",
-                            "",
-                            "",
-                            "",
+                            resultSet.getString("full_name"),
+                            resultSet.getString("email"),
+                            resultSet.getString("phone"),
                             "",
                             0,
                             resultSet.getInt("lecturerID"),
