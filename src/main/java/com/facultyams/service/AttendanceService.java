@@ -1,14 +1,18 @@
 package com.facultyams.service;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.facultyams.dao.AttendanceDAO;
 import com.facultyams.dao.MedicalDAO;
+import com.facultyams.model.AttendanceSummary;
 
 public class AttendanceService {
 
     public static final int TOTAL_SESSIONS = 15;
 
-    private final AttendanceDAO attendanceDAO = new AttendanceDAO();
-    private final MedicalDAO medicalDAO = new MedicalDAO();
+    private AttendanceDAO attendanceDAO = new AttendanceDAO();
+    private MedicalDAO medicalDAO = new MedicalDAO();
 
     public double calculatePercentage(int present, int approvedMedical, int totalSessions) {
         if (totalSessions <= 0) {
@@ -27,7 +31,23 @@ public class AttendanceService {
         return calculatePercentage(present, approved, TOTAL_SESSIONS);
     }
 
-    public boolean isStudentEligible(int userId, int componentId) {
-        return isEligible(getStudentPercentage(userId, componentId));
+    public double getCombinedPercentage(int userId, int theoryId, int practicalId) {
+        int present = attendanceDAO.countPresent(userId, theoryId)
+                    + attendanceDAO.countPresent(userId, practicalId);
+        int approved = medicalDAO.countApproved(userId, theoryId)
+                     + medicalDAO.countApproved(userId, practicalId);
+        return calculatePercentage(present, approved, TOTAL_SESSIONS * 2);
+    }
+
+    public List<AttendanceSummary> getBatchSummary(int componentId) {
+        List<AttendanceSummary> list = new ArrayList<>();
+        List<Integer> ids = attendanceDAO.getStudentIdsByComponent(componentId);
+
+        for (int id : ids) {
+            double percentage = getStudentPercentage(id, componentId);
+            boolean eligible = isEligible(percentage);
+            list.add(new AttendanceSummary(id, percentage, eligible));
+        }
+        return list;
     }
 }

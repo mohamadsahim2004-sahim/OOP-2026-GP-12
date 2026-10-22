@@ -74,6 +74,23 @@ public class AttendanceDAO {
         }
         return 0;
     }
+    public List<Integer> getStudentIdsByComponent(int componentId) {
+        List<Integer> ids = new ArrayList<>();
+        String sql = "SELECT DISTINCT user_id FROM ATTENDANCE WHERE component_id = ?";
 
+        try (Connection con = DatabaseConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setInt(1, componentId);
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                ids.add(rs.getInt("user_id"));
+            }
+
+        } catch (SQLException e) {
+            System.out.println("Error: " + e.getMessage());
+        }
+        return ids;
+    }
 
 }
