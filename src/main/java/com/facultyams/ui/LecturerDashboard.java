@@ -268,9 +268,99 @@ public class LecturerDashboard extends JFrame {
             profilePanel.add(new JLabel("Unable to load lecturer profile."));
             profilePanel.add(new JLabel(e.getMessage()));
         }
-
         panel.add(heading, BorderLayout.NORTH);
         panel.add(profilePanel, BorderLayout.CENTER);
+
+        JButton updateButton = new JButton("Edit Profile");
+
+        updateButton.addActionListener(e -> {
+
+            JTextField nameField = new JTextField();
+            JTextField emailField = new JTextField();
+            JTextField phoneField = new JTextField();
+
+            try {
+
+                Lecturer lecturer = lecturerService.findByLecturerID(1);
+
+                nameField.setText(lecturer.getFullName());
+                emailField.setText(lecturer.getEmail());
+                phoneField.setText(lecturer.getPhone());
+
+            } catch (Exception ex) {
+
+                JOptionPane.showMessageDialog(
+                        panel,
+                        "Unable to load profile: " + ex.getMessage(),
+                        "Error",
+                        JOptionPane.ERROR_MESSAGE
+                );
+
+                return;
+            }
+
+            JPanel form = new JPanel(new GridLayout(3, 2, 10, 10));
+
+            form.add(new JLabel("Name:"));
+            form.add(nameField);
+
+            form.add(new JLabel("Email:"));
+            form.add(emailField);
+
+            form.add(new JLabel("Phone:"));
+            form.add(phoneField);
+
+            int result = JOptionPane.showConfirmDialog(
+                    panel,
+                    form,
+                    "Edit Profile",
+                    JOptionPane.OK_CANCEL_OPTION
+            );
+
+            if (result == JOptionPane.OK_OPTION) {
+
+                try {
+
+                    Lecturer lecturer = lecturerService.findByLecturerID(1);
+
+                    lecturerService.updateProfile(
+                            lecturer.getUserID(),
+                            nameField.getText(),
+                            emailField.getText(),
+                            phoneField.getText(),
+                            lecturer.getProfilePicture()
+                    );
+
+                    JOptionPane.showMessageDialog(
+                            panel,
+                            "Profile updated successfully."
+                    );
+
+                } catch (Exception ex) {
+
+                    JOptionPane.showMessageDialog(
+                            panel,
+                            "Could not update profile: " + ex.getMessage(),
+                            "Error",
+                            JOptionPane.ERROR_MESSAGE
+                    );
+                }
+            }
+        });
+
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT,0,5));
+        buttonPanel.setOpaque(false);
+        buttonPanel.add(updateButton);
+
+        JPanel profileContainer = new JPanel();
+        profileContainer.setLayout(new BoxLayout(profileContainer, BoxLayout.Y_AXIS));
+        profileContainer.setOpaque(false);
+
+        profileContainer.add(profilePanel);
+        profileContainer.add(Box.createVerticalStrut(10));
+        profileContainer.add(buttonPanel);
+
+        panel.add(profileContainer, BorderLayout.CENTER);
 
         return panel;
     }
@@ -367,6 +457,13 @@ public class LecturerDashboard extends JFrame {
 
                     JOptionPane.showMessageDialog(panel, "Marks saved successfully.");
 
+                    mainContent.remove(1);
+                    mainContent.add(createProfilePanel(), "My Profile");
+
+                    mainContent.revalidate();
+                    mainContent.repaint();
+
+                    showSection("My Profile");
                 } catch (NumberFormatException ex) {
                     JOptionPane.showMessageDialog(panel,
                             "Enter valid numeric values.", "Invalid Input",
