@@ -10,6 +10,9 @@ public class LecturerDAOTest {
             System.out.println("Lecturer ID: " + lecturer.getLecturerID());
             System.out.println("Designation: " + lecturer.getDesignation());
             System.out.println("Specialisation: " + lecturer.getSpecialisation());
+            System.out.println("Name: " + lecturer.getFullName());
+            System.out.println("Email: " + lecturer.getEmail());
+            System.out.println("Phone: " + lecturer.getPhone());
         } else {
             System.out.println("Lecturer not found");
         }

@@ -6,10 +6,13 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import com.facultyams.model.Marks;
 import com.facultyams.service.MarksService;
+import com.facultyams.service.LecturerService;//lecturerDashboard to use lectuerService
+import com.facultyams.model.Lecturer;//to allow the dashboard to hold lecturer information in Lecturer object
 import javax.swing.Box;
 
 public class LecturerDashboard extends JFrame {
     private final MarksService marksService = new MarksService();
+    private final LecturerService lecturerService = new LecturerService();
 
     private final CardLayout cardLayout = new CardLayout();
     private final JPanel mainContent = new JPanel(cardLayout);
@@ -194,8 +197,11 @@ public class LecturerDashboard extends JFrame {
 
         panel.add(card);
     }
+//Dashboard -> LecturerService -> LecturerDAO -> MySQL
+
 
     private JPanel createProfilePanel() {
+
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(backgroundColor);
         panel.setBorder(new EmptyBorder(25, 25, 25, 25));
@@ -204,20 +210,96 @@ public class LecturerDashboard extends JFrame {
         heading.setFont(new Font("Arial", Font.BOLD, 23));
         heading.setForeground(navy);
 
-        JLabel message = new JLabel(
-                "Lecturer profile details will appear here."
-        );
-        message.setFont(new Font("Arial", Font.PLAIN, 14));
+        JPanel profilePanel = new JPanel();
+        profilePanel.setLayout(new BoxLayout(profilePanel, BoxLayout.Y_AXIS));
+        profilePanel.setBackground(Color.WHITE);
+        profilePanel.setBorder(new EmptyBorder(25, 25, 25, 25));
 
-        JPanel content = new JPanel(new GridLayout(2, 1, 0, 12));
-        content.setOpaque(false);
-        content.add(heading);
-        content.add(message);
+        try {
 
-        panel.add(content, BorderLayout.NORTH);
+            Lecturer lecturer = lecturerService.findByLecturerID(1);
+
+            profilePanel.add(createProfileRow(
+                    "Lecturer ID:",
+                    String.valueOf(lecturer.getLecturerID())
+            ));
+
+            profilePanel.add(Box.createVerticalStrut(6));
+
+            profilePanel.add(createProfileRow(
+                    "Name:",
+                    lecturer.getFullName()
+            ));
+
+            profilePanel.add(Box.createVerticalStrut(6));
+
+            profilePanel.add(createProfileRow(
+                    "Email:",
+                    lecturer.getEmail()
+            ));
+
+            profilePanel.add(Box.createVerticalStrut(6));
+
+            profilePanel.add(createProfileRow(
+                    "Phone:",
+                    lecturer.getPhone()
+            ));
+
+            profilePanel.add(Box.createVerticalStrut(6));
+
+            profilePanel.add(createProfileRow(
+                    "Designation:",
+                    lecturer.getDesignation()
+            ));
+
+            profilePanel.add(Box.createVerticalStrut(6));
+
+            profilePanel.add(createProfileRow(
+                    "Specialisation:",
+                    lecturer.getSpecialisation()
+            ));
+
+        } catch (Exception e) {
+
+            profilePanel.add(new JLabel("Unable to load lecturer profile."));
+            profilePanel.add(new JLabel(e.getMessage()));
+        }
+
+        panel.add(heading, BorderLayout.NORTH);
+        panel.add(profilePanel, BorderLayout.CENTER);
 
         return panel;
     }
+
+    private JPanel createProfileRow(String labelText, String valueText) {
+
+        JPanel row = new JPanel(new BorderLayout());
+        row.setOpaque(false);
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
+
+        JLabel label = new JLabel(labelText);
+        label.setPreferredSize(new Dimension(120, 30));
+
+        JLabel value = new JLabel(valueText);
+
+        row.add(label, BorderLayout.WEST);
+        row.add(value, BorderLayout.CENTER);
+
+        return row;
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     private JPanel createUploadMarksPanel() {
         JPanel panel = new JPanel(new BorderLayout(0, 15));
