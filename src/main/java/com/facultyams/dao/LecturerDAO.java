@@ -51,4 +51,28 @@ public class LecturerDAO {
 
         return null;
     }
+    public void updateProfile(int userID, String fullName, String email,
+                              String phone, String profilePicture) {
+
+        String sql = "UPDATE users SET full_name = ?, email = ?, "
+                + "phone = ?, profilePicture = ? "
+                + "WHERE user_id = ?";
+
+        try (Connection connection = DatabaseConnection.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+
+            statement.setString(1, fullName);
+            statement.setString(2, email);
+            statement.setString(3, phone);
+            statement.setString(4, profilePicture);
+            statement.setInt(5, userID);
+
+            statement.executeUpdate();
+
+        } catch (SQLException e) {
+            throw new RuntimeException(
+                    "Failed to update lecturer profile.", e);
+        }
+    }
 }
+

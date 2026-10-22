@@ -23,10 +23,38 @@ public class LecturerService {
 
         return lecturer;
     }
+        public void updateProfile(int userID, String fullName, String email,
+                String phone, String profilePicture) {
 
+            if (userID <= 0) {
+                throw new IllegalArgumentException("Invalid User ID");
+            }
 
+            if (fullName == null || fullName.trim().isEmpty()) {
+                throw new IllegalArgumentException("Name cannot be empty");
+            }
 
+            if (email == null || email.trim().isEmpty()) {
+                throw new IllegalArgumentException("Email cannot be empty");
+            }
 
+            if (phone == null || phone.trim().isEmpty()) {
+                throw new IllegalArgumentException("Phone cannot be empty");
+            }
+
+            lecturerDAO.updateProfile(
+                    userID,
+                    fullName.trim(),
+                    email.trim(),
+                    phone.trim(),
+                    profilePicture
+            );
+        }
     }
+
+
+
+
+    
 
 //This is act as a middle layer between dashboard and database access

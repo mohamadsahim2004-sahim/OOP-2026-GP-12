@@ -4,6 +4,10 @@ package com.facultyams.ui;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+
+import com.facultyams.config.DatabaseConnection;
 import com.facultyams.model.Marks;
 import com.facultyams.service.MarksService;
 import com.facultyams.service.LecturerService;//lecturerDashboard to use lectuerService
@@ -287,6 +291,11 @@ public class LecturerDashboard extends JFrame {
 
         return row;
     }
+
+
+
+
+
 
 
 
