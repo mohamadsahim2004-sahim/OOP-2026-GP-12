@@ -336,6 +336,16 @@ public class LecturerDashboard extends JFrame {
                             "Profile updated successfully."
                     );
 
+                    mainContent.remove(panel);
+
+                    JPanel refreshedProfile = createProfilePanel();
+                    mainContent.add(refreshedProfile, "My Profile");
+
+                    mainContent.revalidate();
+                    mainContent.repaint();
+
+                    showSection("My Profile");
+
                 } catch (Exception ex) {
 
                     JOptionPane.showMessageDialog(
@@ -457,13 +467,7 @@ public class LecturerDashboard extends JFrame {
 
                     JOptionPane.showMessageDialog(panel, "Marks saved successfully.");
 
-                    mainContent.remove(1);
-                    mainContent.add(createProfilePanel(), "My Profile");
 
-                    mainContent.revalidate();
-                    mainContent.repaint();
-
-                    showSection("My Profile");
                 } catch (NumberFormatException ex) {
                     JOptionPane.showMessageDialog(panel,
                             "Enter valid numeric values.", "Invalid Input",
