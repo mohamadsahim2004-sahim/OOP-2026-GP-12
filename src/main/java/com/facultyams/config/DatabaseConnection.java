@@ -1,6 +1,5 @@
 package com.facultyams.config;
 
-<<<<<<< HEAD
 import com.facultyams.exception.DatabaseException;
 
 import java.io.IOException;
@@ -259,22 +258,3 @@ public final class DatabaseConnection {
         }
     }
 }
-=======
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-public class DatabaseConnection {
-    private static final String URL =
-            "jdbc:mysql://localhost:3306/facultyams_temp";
-    private static final String USER = "root";
-    private static final String PASSWORD = "";
-
-    public static Connection getConnection() {
-        try {
-            return DriverManager.getConnection(URL, USER, PASSWORD);
-        } catch (SQLException e) {
-            throw new RuntimeException("Database connection failed!", e);
-        }
-    }
-}
->>>>>>> fc07b96a5c3817cfb514f28c12f1cc88d2f61b95
