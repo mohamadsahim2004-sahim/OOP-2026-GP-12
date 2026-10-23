@@ -78,23 +78,10 @@ public class CoursesContainerView extends JPanel {
         JPanel wrapper = new JPanel(new BorderLayout(0, 10));
         wrapper.setOpaque(false);
 
-        JPanel topBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 8));
-        topBar.setOpaque(false);
-
-        JLabel backLink = new JLabel("< Back to Course Overview");
-        backLink.setFont(Theme.FONT_BODY_BOLD);
-        backLink.setForeground(Theme.PRIMARY);
-        backLink.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        backLink.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                courseController.navigateToOverview();
-            }
-        });
-        topBar.add(backLink);
-        wrapper.add(topBar, BorderLayout.NORTH);
-
         if (legacyComponent != null) {
+            if (legacyComponent instanceof com.facultyams.ui.views.CourseEnrollmentView enrollmentView) {
+                enrollmentView.setBackAction(courseController::navigateToOverview);
+            }
             wrapper.add(legacyComponent, BorderLayout.CENTER);
         }
         return wrapper;

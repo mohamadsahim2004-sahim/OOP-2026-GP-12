@@ -25,6 +25,16 @@ public class Theme {
     public static final int PROFILE_LABEL_GAP = 6;
     public static final int PROFILE_FIELD_HEIGHT = 44;
     public static final int PROFILE_FIELD_INSET = 12;
+    public static final int ENROLLMENT_PAGE_PADDING = 24;
+    public static final int ENROLLMENT_SECTION_GAP = 16;
+    public static final int ENROLLMENT_CARD_PADDING = 24;
+    public static final int ENROLLMENT_ROW_HEIGHT = 52;
+    public static final int ENROLLMENT_HEADER_HEIGHT = 40;
+    public static final int ENROLLMENT_CELL_PADDING_X = 16;
+    public static final int ENROLLMENT_CONTROL_HEIGHT = 40;
+    public static final int ENROLLMENT_BUTTON_HEIGHT = 32;
+    public static final int ENROLLMENT_CARD_RADIUS = 16;
+    public static final int ENROLLMENT_CONTROL_RADIUS = 8;
     public static final Font FONT_TINY = new Font("Segoe UI", Font.PLAIN, 10);
     // Primary Brand Colors
     public static final Color PRIMARY = new Color(37, 99, 235);        // #2563EB Vibrant Blue
@@ -56,6 +66,26 @@ public class Theme {
     public static final Color TEXT_MAIN = new Color(15, 23, 42);      // Slate 900
     public static final Color TEXT_MUTED = new Color(100, 116, 139);   // Slate 500
     public static final Color TEXT_SUBTLE = new Color(148, 163, 184); // Slate 400
+    public static final Color ENROLLMENT_TEXT = new Color(17, 24, 39);
+    public static final Color ENROLLMENT_MUTED = new Color(107, 114, 128);
+    public static final Color ENROLLMENT_BORDER = new Color(229, 231, 235);
+    public static final Color ENROLLMENT_ROW_HOVER = new Color(249, 250, 251);
+    public static final Color ENROLLMENT_SUCCESS = new Color(22, 163, 74);
+    public static final Color ENROLLMENT_SUCCESS_BG = new Color(220, 252, 231);
+    public static final Color ENROLLMENT_DANGER = new Color(220, 38, 38);
+    public static final Color ENROLLMENT_DANGER_BG = new Color(254, 226, 226);
+    public static final Color ENROLLMENT_WARNING = new Color(217, 119, 6);
+    public static final Color ENROLLMENT_WARNING_BG = new Color(254, 243, 199);
+    public static final Color ENROLLMENT_CORE_BG = new Color(219, 234, 254);
+    public static final Color ENROLLMENT_CORE_TEXT = new Color(29, 78, 216);
+    public static final Color ENROLLMENT_ELECTIVE_BG = new Color(237, 233, 254);
+    public static final Color ENROLLMENT_ELECTIVE_TEXT = new Color(109, 40, 217);
+    public static final Font ENROLLMENT_PAGE_TITLE = new Font("Segoe UI", Font.BOLD, 22);
+    public static final Font ENROLLMENT_SECTION_TITLE = new Font("Segoe UI", Font.BOLD, 16);
+    public static final Font ENROLLMENT_BODY = new Font("Segoe UI", Font.PLAIN, 14);
+    public static final Font ENROLLMENT_BODY_BOLD = new Font("Segoe UI", Font.BOLD, 14);
+    public static final Font ENROLLMENT_SMALL = new Font("Segoe UI", Font.PLAIN, 12);
+    public static final Font ENROLLMENT_SMALL_BOLD = new Font("Segoe UI", Font.BOLD, 12);
 
     // Metric Accents
     public static final Color ACCENT_BLUE_BG = new Color(235, 243, 255);
