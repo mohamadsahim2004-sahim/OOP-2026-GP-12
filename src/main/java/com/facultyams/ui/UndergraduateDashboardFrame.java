@@ -27,6 +27,7 @@ public class UndergraduateDashboardFrame extends JFrame {
     private StudentMedicalView medicalView;
     private TimetableView timetableView;
     private NoticesView noticesView;
+    private String currentView = "Dashboard";
 
     public UndergraduateDashboardFrame() {
         setTitle("Student Result Management System (SRMS) - Undergraduate Portal");
@@ -76,6 +77,8 @@ public class UndergraduateDashboardFrame extends JFrame {
         modernAttendanceView = new com.srms.ui.views.AttendanceView();
         medicalView = new StudentMedicalView();
         timetableView = new TimetableView();
+        timetableView.setNotificationIntegration(topBarPanel::setNotificationCount, timetableView::showReminders);
+        timetableView.setClearSearchAction(topBarPanel::clearSearch);
         noticesView = new NoticesView();
 
         cardsPanel.add(dashboardView, "Dashboard");
@@ -100,7 +103,13 @@ public class UndergraduateDashboardFrame extends JFrame {
             modernAttendanceView.resetToOverview();
         }
         topBarPanel.setTitle(normalized);
+        currentView = normalized;
         sidebarPanel.setActiveView(normalized);
+        if ("Timetable".equals(normalized)) {
+            topBarPanel.setNotificationAction(timetableView::openReminderPanel);
+        } else {
+            topBarPanel.setNotificationAction(() -> navigateTo("Notice Board"));
+        }
         cardLayout.show(cardsPanel, normalized);
     }
 
@@ -127,6 +136,10 @@ public class UndergraduateDashboardFrame extends JFrame {
     }
 
     private void handleSearch(String query) {
+        if ("Timetable".equals(currentView)) {
+            timetableView.setSearchQuery(query);
+            return;
+        }
         navigateTo("Notice Board");
         JOptionPane.showMessageDialog(this,
                 "Searched for: '" + query + "'\nShowing results in Notice Board & Course Materials.",

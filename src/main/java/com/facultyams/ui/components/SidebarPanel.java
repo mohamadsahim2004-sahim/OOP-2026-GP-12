@@ -18,12 +18,12 @@ public class SidebarPanel extends JPanel {
     private final List<NavItem> navItems = new ArrayList<>();
     private String activeView = "Dashboard";
 
-    private static final Color COLOR_PRIMARY       = new Color(37, 99, 235);   // #2563EB
-    private static final Color COLOR_PRIMARY_LIGHT = new Color(239, 246, 255); // #EFF6FF
-    private static final Color COLOR_TEXT_PRIMARY  = new Color(15, 23, 42);    // #0F172A
-    private static final Color COLOR_TEXT_MUTED    = new Color(100, 116, 139);  // #64748B
-    private static final Color COLOR_BORDER        = new Color(229, 231, 235);  // #E5E7EB
-    private static final Color COLOR_HOVER_BG      = new Color(241, 245, 249);  // #F1F5F9
+    private static final Color COLOR_PRIMARY = Theme.PRIMARY;
+    private static final Color COLOR_PRIMARY_LIGHT = Theme.PRIMARY_LIGHT;
+    private static final Color COLOR_TEXT_PRIMARY = Theme.TEXT_MAIN;
+    private static final Color COLOR_TEXT_MUTED = Theme.TEXT_MUTED;
+    private static final Color COLOR_BORDER = Theme.CONTROL_BORDER;
+    private static final Color COLOR_HOVER_BG = Theme.SIDEBAR_HOVER_BG;
 
     public SidebarPanel(Consumer<String> navigationCallback) {
         this.navigationCallback = navigationCallback;
@@ -150,9 +150,9 @@ public class SidebarPanel extends JPanel {
             setLayout(new BorderLayout(12, 0));
             setOpaque(false);
             setCursor(new Cursor(Cursor.HAND_CURSOR));
-            setBorder(BorderFactory.createEmptyBorder(10, 16, 10, 16));
-            setPreferredSize(new Dimension(220, 42));
-            setMaximumSize(new Dimension(220, 42));
+            setBorder(BorderFactory.createEmptyBorder(9, 16, 9, 16));
+            setPreferredSize(new Dimension(220, 40));
+            setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
 
             iconLbl = new JLabel();
             textLbl = new JLabel(title);

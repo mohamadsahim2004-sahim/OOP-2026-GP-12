@@ -18,18 +18,27 @@ import javax.swing.*;
 public class TopBarPanel extends JPanel {
     private final JLabel titleLabel;
     private final Consumer<String> navigationCallback;
+    private final Consumer<String> searchCallback;
+    private Runnable notificationAction;
+    private int notificationCount;
+    private JPanel notificationBell;
+    private JTextField searchField;
 
-    private static final Color COLOR_TEXT_PRIMARY   = new Color(15, 23, 42);    // #0F172A
-    private static final Color COLOR_TEXT_SECONDARY = new Color(100, 116, 139);  // #64748B
-    private static final Color COLOR_TEXT_MUTED     = new Color(148, 163, 184); // #94A3B8
-    private static final Color COLOR_PRIMARY        = new Color(37, 99, 235);   // #2563EB
-    private static final Color COLOR_DANGER         = new Color(220, 38, 38);   // #DC2626
-    private static final Color COLOR_BORDER         = new Color(229, 231, 235); // #E5E7EB
-    private static final Color COLOR_BG_FIELD       = new Color(248, 250, 252); // #F8FAFC
+    private static final Color COLOR_TEXT_PRIMARY = Theme.TEXT_MAIN;
+    private static final Color COLOR_TEXT_SECONDARY = Theme.TEXT_MUTED;
+    private static final Color COLOR_TEXT_MUTED = Theme.TEXT_SUBTLE;
+    private static final Color COLOR_PRIMARY = Theme.PRIMARY;
+    private static final Color COLOR_DANGER = Theme.NOTIFICATION_RED;
+    private static final Color COLOR_BORDER = Theme.CONTROL_BORDER;
+    private static final Color COLOR_BG_FIELD = Theme.TOPBAR_FIELD_BG;
 
     public TopBarPanel(String initialTitle, Runnable hamburgerToggle,
                        Consumer<String> searchCallback, Consumer<String> navigationCallback) {
         this.navigationCallback = navigationCallback;
+        this.searchCallback = searchCallback;
+        this.notificationAction = () -> {
+            if (navigationCallback != null) navigationCallback.accept("Notice Board");
+        };
 
         setPreferredSize(new Dimension(0, 64));
         setBackground(Color.WHITE);
@@ -65,6 +74,31 @@ public class TopBarPanel extends JPanel {
         titleLabel.setText(title);
     }
 
+    public void setNotificationAction(Runnable action) {
+        notificationAction = action;
+    }
+
+    public void setNotificationCount(int count) {
+        notificationCount = Math.max(0, count);
+        if (notificationBell != null) notificationBell.repaint();
+    }
+
+    public void setSearchText(String text) {
+        if (searchField != null && !searchField.getText().equals(text)) {
+            searchField.setText(text);
+            searchField.setForeground(COLOR_TEXT_PRIMARY);
+            searchField.repaint();
+        }
+    }
+
+    public void clearSearch() {
+        if (searchField != null) {
+            searchField.setText("");
+            searchField.setForeground(COLOR_TEXT_MUTED);
+            searchField.repaint();
+        }
+    }
+
     private JPanel createSearchField() {
         JPanel pill = new JPanel(new BorderLayout(8, 0)) {
             @Override
@@ -80,69 +114,77 @@ public class TopBarPanel extends JPanel {
             }
         };
         pill.setOpaque(false);
-        pill.setPreferredSize(new Dimension(240, 36));
-        pill.setBorder(BorderFactory.createEmptyBorder(0, 12, 0, 12));
+        pill.setPreferredSize(new Dimension(300, 36));
+        pill.setBorder(BorderFactory.createEmptyBorder(0, 10, 0, 10));
 
-        JTextField tf = new JTextField("Search results, courses...");
+        JTextField tf = new JTextField() {
+            @Override protected void paintComponent(Graphics graphics) {
+                super.paintComponent(graphics);
+                if (getText().isEmpty()) {
+                    Graphics2D g = (Graphics2D) graphics.create();
+                    Theme.setAntiAliasing(g);
+                    g.setColor(COLOR_TEXT_MUTED);
+                    g.setFont(getFont());
+                    g.drawString("Search courses, lecturers, venues...", 0,
+                            getHeight() / 2 + g.getFontMetrics().getAscent() / 2 - 1);
+                    g.dispose();
+                }
+            }
+        };
+        searchField = tf;
         tf.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         tf.setForeground(COLOR_TEXT_MUTED);
         tf.setBorder(BorderFactory.createEmptyBorder());
         tf.setOpaque(false);
 
-        tf.addFocusListener(new FocusAdapter() {
-            @Override
-            public void focusGained(FocusEvent e) {
-                if (tf.getText().equals("Search results, courses...")) {
-                    tf.setText("");
-                    tf.setForeground(COLOR_TEXT_PRIMARY);
-                }
-            }
-            @Override
-            public void focusLost(FocusEvent e) {
-                if (tf.getText().trim().isEmpty()) {
-                    tf.setText("Search results, courses...");
-                    tf.setForeground(COLOR_TEXT_MUTED);
-                }
+        tf.addActionListener(e -> {
+            if (searchCallback != null) {
+                searchCallback.accept(tf.getText().trim());
             }
         });
 
+        JLabel searchIcon = new JLabel(new TimetableIcon(TimetableIcon.Shape.SEARCH, COLOR_TEXT_MUTED, 16));
+        pill.add(searchIcon, BorderLayout.WEST);
         pill.add(tf, BorderLayout.CENTER);
         return pill;
     }
 
     private JPanel createNotificationBell() {
-        JPanel bellContainer = new JPanel() {
+        notificationBell = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
                 Graphics2D g2 = (Graphics2D) g.create();
                 Theme.setAntiAliasing(g2);
 
-                // Red notification badge matching screenshot
-                g2.setColor(COLOR_DANGER);
-                g2.fillOval(getWidth() - 13, 1, 12, 12);
-                g2.setColor(Color.WHITE);
-                g2.setFont(new Font("Segoe UI", Font.BOLD, 9));
-                g2.drawString("3", getWidth() - 9, 10);
+                if (notificationCount > 0) {
+                    String count = notificationCount > 9 ? "9+" : Integer.toString(notificationCount);
+                    int badgeWidth = count.length() > 1 ? 18 : 13;
+                    g2.setColor(COLOR_DANGER);
+                    g2.fillRoundRect(getWidth() - badgeWidth, 0, badgeWidth, 14, 12, 12);
+                    g2.setColor(Color.WHITE);
+                    g2.setFont(new Font("Segoe UI", Font.BOLD, 9));
+                    g2.drawString(count, getWidth() - badgeWidth + 3, 10);
+                }
                 g2.dispose();
             }
         };
-        bellContainer.setOpaque(false);
-        bellContainer.setPreferredSize(new Dimension(34, 34));
-        bellContainer.setLayout(new GridBagLayout());
-        bellContainer.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        notificationBell.setOpaque(false);
+        notificationBell.setPreferredSize(new Dimension(34, 34));
+        notificationBell.setLayout(new GridBagLayout());
+        notificationBell.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
         JLabel bell = new JLabel(IconHelper.getIcon("bell", 18, COLOR_TEXT_SECONDARY));
-        bellContainer.add(bell);
+        notificationBell.add(bell);
 
-        bellContainer.addMouseListener(new MouseAdapter() {
+        notificationBell.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                if (navigationCallback != null) navigationCallback.accept("Notice Board");
+                if (notificationAction != null) notificationAction.run();
             }
         });
 
-        return bellContainer;
+        return notificationBell;
     }
 
     private JPanel createProfileLabel() {

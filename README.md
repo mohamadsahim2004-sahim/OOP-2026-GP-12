@@ -31,9 +31,9 @@ Modern Java Swing Academic Management System with a SaaS dashboard aesthetic bas
    - Read full circulars in a clean reader dialog.
 
 5. **Timetable**
-   - Interactive day-by-day weekly schedule tabs (Monday through Friday).
-   - Session cards showing time slots, venue (lecture halls & labs), lecturer, and session type.
-   - Schedule PDF export action.
+   - Compact day pills, live session state/countdown, search, and class-type filtering.
+   - Persisted personal events and reminder preferences, clash warnings, and scheduled notifications.
+   - Export of the selected day or full week to PDF without requiring an external PDF library.
 
 6. **Student Results**
    - Cumulative GPA breakdown & honors standing ("Dean's List").
@@ -55,6 +55,36 @@ Modern Java Swing Academic Management System with a SaaS dashboard aesthetic bas
 
 ---
 
+## Timetable implementation
+
+The timetable is implemented in `com.facultyams.ui.views.TimetableView` and leaves the other dashboard views unchanged. Its model and service code is in `com.facultyams.model.timetable` and `com.facultyams.service.timetable`; `FileTimetableService` supplies the CS301/CS305/CS306 sample week and persists personal events/reminder preferences to `${user.home}/.srms/timetable.properties`. The `TimetableService` interface is the replacement point for a future JDBC implementation.
+
+The reminder scheduler uses a daemon executor and posts Swing updates on the EDT. PDF export is implemented by `PdfScheduleExporter`; no additional dependencies are required.
+
+### Timetable classes
+
+```text
+TimetableView -> TimetableController -> TimetableService
+                                |         `- FileTimetableService
+                                |             `- ClassSession
+                                |                 |- Lecture
+                                |                 |- Practical
+                                |                 |- Tutorial
+                                |                 `- PersonalEvent
+                                |- ReminderService -> ScheduledReminderService -> ReminderListener
+                                `- Exportable -> PdfScheduleExporter
+```
+
+Build and launch from the project root with Java 17:
+
+```powershell
+$files = Get-ChildItem -Path .\src\main\java -Recurse -Filter *.java | ForEach-Object { $_.FullName }
+javac -encoding UTF-8 -d .\bin $files
+if ($LASTEXITCODE -eq 0) { java -cp .\bin com.facultyams.App }
+```
+
+The existing MySQL connector dependency is unchanged; the timetable implementation adds no external dependency.
+
 ## 🚀 How to Run
 
 ### Option 1: Run Direct Dashboard
@@ -64,7 +94,9 @@ java -cp bin com.facultyams.App
 ```
 Or to compile and run:
 ```powershell
-$files = (Get-ChildItem -Recurse -Filter "*.java" src\main\java).FullName | ForEach-Object { '"{0}"' -f $_.Replace('\', '/') }; [System.IO.File]::WriteAllLines("sources.txt", $files); cmd /c "javac -d bin @sources.txt"; Remove-Item sources.txt; java -cp bin com.facultyams.App
+$files = Get-ChildItem -Path .\src\main\java -Recurse -Filter *.java | ForEach-Object { $_.FullName }
+javac -encoding UTF-8 -d .\bin $files
+if ($LASTEXITCODE -eq 0) { java -cp .\bin com.facultyams.App }
 ```
 
 ### Option 2: Run with Login Screen
