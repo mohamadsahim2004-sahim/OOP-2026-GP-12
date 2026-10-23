@@ -13,10 +13,14 @@ import com.facultyams.service.MarksService;
 import com.facultyams.service.LecturerService;//lecturerDashboard to use lectuerService
 import com.facultyams.model.Lecturer;//to allow the dashboard to hold lecturer information in Lecturer object
 import javax.swing.Box;
+import com.facultyams.model.CourseMaterial;
+import com.facultyams.service.CourseMaterialService;
+import java.util.List;
 
 public class LecturerDashboard extends JFrame {
     private final MarksService marksService = new MarksService();
     private final LecturerService lecturerService = new LecturerService();
+    private final CourseMaterialService courseMaterialService = new CourseMaterialService();
 
     private final CardLayout cardLayout = new CardLayout();
     private final JPanel mainContent = new JPanel(cardLayout);
@@ -135,9 +139,9 @@ public class LecturerDashboard extends JFrame {
         for (String section : sections) { // to connect exam eligibility menu for new screen
             if (section.equals("Marks, Grades and GPA")) {
                 mainContent.add(createMarksViewPanel(), section);
-            } else if(section.equals("Exam Eligibility")) {
-                mainContent.add(createExamEligibilityPanel(), section);
-            }else{
+            } else if (section.equals("Course Materials")) {
+                mainContent.add(createCourseMaterialsPanel(), section);
+            } else {
                 mainContent.add(createPlaceholder(section), section);
             }
         }
@@ -631,6 +635,237 @@ public class LecturerDashboard extends JFrame {
 
         panel.add(top, BorderLayout.NORTH);
         panel.add(resultLabel, BorderLayout.CENTER);
+
+        return panel;
+    }
+    private JPanel createCourseMaterialsPanel() {
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setBackground(backgroundColor);
+        panel.setBorder(new EmptyBorder(25, 25, 25, 25));
+
+        JLabel heading = new JLabel("Course Materials");
+        heading.setFont(new Font("Arial", Font.BOLD, 23));
+        heading.setForeground(navy);
+
+        JTextArea materialsArea = new JTextArea();
+        materialsArea.setEditable(false);
+        materialsArea.setFont(new Font("Arial", Font.PLAIN, 14));
+
+        JButton refreshButton = new JButton("Refresh Materials");
+        JButton addButton = new JButton("Add Material");//to add new course materials
+        JButton updateButton = new JButton("Update Material");
+        updateButton.addActionListener(e -> {
+            JTextField materialIdField = new JTextField();
+            JTextField courseIdField = new JTextField();
+            JTextField descriptionField = new JTextField();
+            JTextField notesField = new JTextField();
+            JTextField referencesField = new JTextField();
+
+            JPanel form = new JPanel(new GridLayout(0, 2, 8, 8));
+
+            form.add(new JLabel("Material ID:"));
+            form.add(materialIdField);
+
+            form.add(new JLabel("Course ID:"));
+            form.add(courseIdField);
+
+            form.add(new JLabel("Description:"));
+            form.add(descriptionField);
+
+            form.add(new JLabel("Notes:"));
+            form.add(notesField);
+
+            form.add(new JLabel("References:"));
+            form.add(referencesField);
+
+            int result = JOptionPane.showConfirmDialog(
+                    panel,
+                    form,
+                    "Update Course Material",
+                    JOptionPane.OK_CANCEL_OPTION,
+                    JOptionPane.PLAIN_MESSAGE
+            );
+
+            if (result == JOptionPane.OK_OPTION) {
+                try {
+                    int materialID = Integer.parseInt(
+                            materialIdField.getText().trim()
+                    );
+
+                    int courseID = Integer.parseInt(
+                            courseIdField.getText().trim()
+                    );
+
+                    if (materialID <= 0 || courseID <= 0) {
+                        throw new IllegalArgumentException(
+                                "Material ID and Course ID must be greater than zero."
+                        );
+                    }
+
+                    CourseMaterial material = new CourseMaterial(
+                            materialID,
+                            courseID,
+                            descriptionField.getText().trim(),
+                            notesField.getText().trim(),
+                            referencesField.getText().trim()
+                    );
+
+                    boolean updated =
+                            courseMaterialService.updateMaterial(material);
+
+                    if (updated) {
+                        JOptionPane.showMessageDialog(
+                                panel,
+                                "Course material updated successfully."
+                        );
+                        refreshButton.doClick();
+                    } else {
+                        JOptionPane.showMessageDialog(
+                                panel,
+                                "No material was updated. Check the Material ID."
+                        );
+                    }
+
+                } catch (NumberFormatException ex) {
+                    JOptionPane.showMessageDialog(
+                            panel,
+                            "Please enter valid numeric IDs."
+                    );
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(
+                            panel,
+                            "Could not update material: " + ex.getMessage(),
+                            "Error",
+                            JOptionPane.ERROR_MESSAGE
+                    );
+                }
+            }
+        });
+        addButton.addActionListener(e -> {// a from to add material details
+            JTextField courseIdField = new JTextField();
+            JTextField descriptionField = new JTextField();
+            JTextField notesField = new JTextField();
+            JTextField referencesField = new JTextField();
+
+            JPanel form = new JPanel(new GridLayout(0, 2, 8, 8));
+
+            form.add(new JLabel("Course ID:"));
+            form.add(courseIdField);
+
+            form.add(new JLabel("Description:"));
+            form.add(descriptionField);
+
+            form.add(new JLabel("Notes:"));
+            form.add(notesField);
+
+            form.add(new JLabel("References:"));
+            form.add(referencesField);
+
+            int result = JOptionPane.showConfirmDialog(
+                    panel,
+                    form,
+                    "Add Course Material",
+                    JOptionPane.OK_CANCEL_OPTION,
+                    JOptionPane.PLAIN_MESSAGE
+            );
+
+            if (result == JOptionPane.OK_OPTION) {
+                try {
+                    int courseID = Integer.parseInt(
+                            courseIdField.getText().trim()
+                    );
+
+                    if (courseID <= 0) {
+                        throw new IllegalArgumentException(
+                                "Course ID must be greater than zero."
+                        );
+                    }
+
+                    CourseMaterial material = new CourseMaterial(
+                            0,
+                            courseID,
+                            descriptionField.getText().trim(),
+                            notesField.getText().trim(),
+                            referencesField.getText().trim()
+                    );
+
+                    boolean saved = courseMaterialService.addMaterial(material);
+
+                    if (saved) {
+                        JOptionPane.showMessageDialog(
+                                panel,
+                                "Course material added successfully."
+                        );
+                    }
+
+                } catch (NumberFormatException ex) {
+                    JOptionPane.showMessageDialog(
+                            panel,
+                            "Please enter a valid numeric Course ID."
+                    );
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(
+                            panel,
+                            "Could not add material: " + ex.getMessage(),
+                            "Error",
+                            JOptionPane.ERROR_MESSAGE
+                    );
+                }
+            }
+        });
+
+
+
+
+
+
+        refreshButton.addActionListener(e -> {
+            try {
+                List<CourseMaterial> materials =
+                        courseMaterialService.getAllMaterials();
+
+                materialsArea.setText("");
+
+                if (materials.isEmpty()) {
+                    materialsArea.setText("No course materials found.");
+                } else {
+                    for (CourseMaterial material : materials) {
+                        materialsArea.append(
+                                "Material ID: " + material.getMaterialID() + "\n"
+                                        + "Course ID: " + material.getCourseID() + "\n"
+                                        + "Description: " + material.getDescription() + "\n"
+                                        + "Notes: " + material.getNotes() + "\n"
+                                        + "References: " + material.getReferenceText() + "\n"
+                                        + "----------------------------------------\n"
+                        );
+                    }
+                }
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(
+                        panel,
+                        "Could not load materials: " + ex.getMessage(),
+                        "Error",
+                        JOptionPane.ERROR_MESSAGE
+                );
+            }
+        });
+
+        JPanel top = new JPanel(new BorderLayout());
+        top.setOpaque(false);
+
+        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        buttons.setOpaque(false);
+        buttons.add(addButton);
+        buttons.add(updateButton);
+        buttons.add(refreshButton);
+
+        top.add(heading, BorderLayout.WEST);
+        top.add(buttons, BorderLayout.EAST);
+
+        panel.add(top, BorderLayout.NORTH);
+        panel.add(new JScrollPane(materialsArea), BorderLayout.CENTER);
+
+        refreshButton.doClick();
 
         return panel;
     }
