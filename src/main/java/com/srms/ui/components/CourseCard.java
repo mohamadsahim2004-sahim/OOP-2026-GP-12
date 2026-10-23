@@ -9,174 +9,184 @@ import java.awt.event.MouseEvent;
 import java.util.function.Consumer;
 import javax.swing.*;
 
-/**
- * Beautiful, minimal course card matching the reference grid design.
- */
+/** Compact themed course card used only by the course overview. */
 public class CourseCard extends Ui.Card {
-    public static final int CARD_HEIGHT = 245;
-    private static final int BANNER_HEIGHT = 135;
-
+    public static final int CARD_HEIGHT = 224;
+    private static final Color[] TINTS = {
+        new Color(219, 234, 254), new Color(220, 252, 231), new Color(254, 243, 199),
+        new Color(255, 228, 230), new Color(237, 233, 254), new Color(204, 251, 241)
+    };
     private final Course course;
-    private final Consumer<Course> onOpen;
-    private boolean hover = false;
-    private boolean isFavourite = false;
+    private boolean hover;
 
     public CourseCard(Course course, Consumer<Course> onOpen) {
-        super(12, Theme.CARD_BG, Theme.CARD_BORDER);
+        this(course, onOpen, null);
+    }
+
+    public CourseCard(Course course, Consumer<Course> onOpen, Runnable onManageEnrollment) {
+        super(16, Color.WHITE, Theme.CARD_BORDER);
         this.course = course;
-        this.onOpen = onOpen;
-
         setLayout(new BorderLayout());
-        setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        setPreferredSize(new Dimension(320, CARD_HEIGHT));
-        setMinimumSize(new Dimension(240, CARD_HEIGHT));
-        setMaximumSize(new Dimension(Short.MAX_VALUE, CARD_HEIGHT));
+        setOpaque(false);
+        setPreferredSize(new Dimension(280, CARD_HEIGHT));
+        setMinimumSize(new Dimension(220, CARD_HEIGHT));
+        setBorder(BorderFactory.createEmptyBorder(16, 16, 14, 16));
 
-        initUI();
-        initListeners();
-    }
+        JPanel content = new JPanel();
+        content.setOpaque(false);
+        content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
 
-    private void initUI() {
-        // 1. Top Cover Banner (135px)
-        JPanel bannerPanel = new JPanel() {
+        JPanel top = new JPanel(new BorderLayout(8, 0));
+        top.setOpaque(false);
+        JPanel codeGroup = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        codeGroup.setOpaque(false);
+        JLabel icon = new JLabel(course.code().isEmpty() ? "C" : course.code().substring(0, 1).toUpperCase());
+        icon.setHorizontalAlignment(SwingConstants.CENTER);
+        icon.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        icon.setForeground(Theme.PRIMARY);
+        icon.setOpaque(true);
+        icon.setBackground(tint(course));
+        icon.setPreferredSize(new Dimension(32, 32));
+        codeGroup.add(icon);
+        JLabel code = new JLabel(course.code().toUpperCase());
+        code.setFont(Theme.FONT_SMALL);
+        code.setForeground(Theme.TEXT_MUTED);
+        codeGroup.add(code);
+        top.add(codeGroup, BorderLayout.WEST);
+
+        JLabel semester = new Ui.Pill(shortSemester(course.semester()), new Color(243, 244, 246), Theme.TEXT_MUTED);
+        semester.setFont(Theme.FONT_SMALL);
+        top.add(semester, BorderLayout.EAST);
+        content.add(top);
+        content.add(Box.createVerticalStrut(12));
+
+        JLabel title = new JLabel("<html><body style='width: 220px'>" + escape(course.title()) + "</body></html>");
+        title.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        title.setForeground(Theme.TEXT_MAIN);
+        title.setAlignmentX(Component.LEFT_ALIGNMENT);
+        content.add(title);
+        content.add(Box.createVerticalStrut(8));
+
+        String lecturer = course.lecturerName() == null || course.lecturerName().isBlank()
+                ? "Lecturer not listed" : course.lecturerName();
+        JLabel details = new JLabel(lecturer + " · " + course.credits() + " credits");
+        details.setFont(Theme.FONT_SMALL);
+        details.setForeground(Theme.TEXT_MUTED);
+        content.add(details);
+        content.add(Box.createVerticalGlue());
+
+        JPanel progressRow = new JPanel(new BorderLayout(8, 0));
+        progressRow.setOpaque(false);
+        JProgressBar progress = new JProgressBar(0, 100);
+        progress.setValue(0);
+        progress.setPreferredSize(new Dimension(100, 6));
+        progress.setBorderPainted(false);
+        progress.setBackground(Theme.CARD_BORDER);
+        progress.setForeground(tint(course).darker());
+        progress.setUI(new javax.swing.plaf.basic.BasicProgressBarUI() {
             @Override
-            protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
-                Graphics2D g2 = (Graphics2D) g.create();
-                CoverPainter.paintBanner(g2, getWidth(), getHeight(), course.code(), course.coverPath(), 12);
-                g2.dispose();
-            }
-        };
-        bannerPanel.setLayout(new FlowLayout(FlowLayout.LEFT, 12, 10));
-        bannerPanel.setPreferredSize(new Dimension(300, BANNER_HEIGHT));
-        bannerPanel.setOpaque(false);
-
-        // Dark pill badge for semester on the banner
-        Ui.Pill semesterPill = new Ui.Pill(course.semester(), new Color(15, 23, 42, 210), Color.WHITE);
-        bannerPanel.add(semesterPill);
-        add(bannerPanel, BorderLayout.NORTH);
-
-        // 2. Details Panel (White surface)
-        JPanel detailsPanel = new JPanel(new BorderLayout(8, 4));
-        detailsPanel.setOpaque(false);
-        detailsPanel.setBorder(BorderFactory.createEmptyBorder(10, 14, 10, 14));
-
-        JPanel textStack = new JPanel();
-        textStack.setLayout(new BoxLayout(textStack, BoxLayout.Y_AXIS));
-        textStack.setOpaque(false);
-
-        JLabel codeLbl = new JLabel(course.code());
-        codeLbl.setFont(Theme.FONT_SMALL);
-        codeLbl.setForeground(Theme.TEXT_MUTED);
-
-        JLabel titleLbl = new JLabel("<html><body style='width: 200px;'>" + course.title() + "</body></html>");
-        titleLbl.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        titleLbl.setForeground(new Color(14, 116, 144)); // Dark Cyan / Blue tint matching reference
-
-        textStack.add(codeLbl);
-        textStack.add(Box.createVerticalStrut(3));
-        textStack.add(titleLbl);
-        detailsPanel.add(textStack, BorderLayout.CENTER);
-
-        // 3. Bottom Row: Progress + Menu Button
-        JPanel bottomBar = new JPanel(new BorderLayout(10, 0));
-        bottomBar.setOpaque(false);
-
-        // Progress bar + completion text
-        JPanel progressStack = new JPanel();
-        progressStack.setLayout(new BoxLayout(progressStack, BoxLayout.Y_AXIS));
-        progressStack.setOpaque(false);
-
-        JLabel progressLbl = new JLabel(course.progressPercent() + "% complete");
-        progressLbl.setFont(Theme.FONT_TINY);
-        progressLbl.setForeground(Theme.TEXT_MUTED);
-
-        JProgressBar progressBar = new JProgressBar(0, 100);
-        progressBar.setValue(course.progressPercent());
-        progressBar.setPreferredSize(new Dimension(140, 4));
-        progressBar.setMaximumSize(new Dimension(Short.MAX_VALUE, 4));
-        progressBar.setForeground(Theme.PRIMARY);
-        progressBar.setBackground(new Color(226, 232, 240));
-        progressBar.setBorderPainted(false);
-
-        progressStack.add(progressLbl);
-        progressStack.add(Box.createVerticalStrut(2));
-        progressStack.add(progressBar);
-        bottomBar.add(progressStack, BorderLayout.CENTER);
-
-        // "⋮" menu button with round dark badge
-        JButton menuBtn = new JButton("⋮") {
-            @Override
-            protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
+            protected void paintDeterminate(Graphics graphics, JComponent component) {
+                Graphics2D g2 = (Graphics2D) graphics.create();
                 Theme.setAntiAliasing(g2);
-                g2.setColor(new Color(15, 118, 110)); // Deep teal round button like reference
-                g2.fillOval(1, 1, getWidth() - 2, getHeight() - 2);
+                int y = component.getHeight() / 2 - 3;
+                g2.setColor(Theme.CARD_BORDER);
+                g2.fillRoundRect(0, y, component.getWidth(), 6, 6, 6);
+                int filled = (int) (component.getWidth() * progress.getPercentComplete());
+                g2.setColor(tint(course).darker());
+                g2.fillRoundRect(0, y, filled, 6, 6, 6);
                 g2.dispose();
-                super.paintComponent(g);
             }
-        };
-        menuBtn.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        menuBtn.setForeground(Color.WHITE);
-        menuBtn.setPreferredSize(new Dimension(24, 24));
-        menuBtn.setFocusPainted(false);
-        menuBtn.setBorderPainted(false);
-        menuBtn.setContentAreaFilled(false);
-        menuBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        });
+        JLabel percent = new JLabel(course.progressPercent() + "%");
+        percent.setFont(Theme.FONT_TINY);
+        percent.setForeground(Theme.TEXT_MAIN);
+        progressRow.add(progress, BorderLayout.CENTER);
+        progressRow.add(percent, BorderLayout.EAST);
+        content.add(progressRow);
+        add(content, BorderLayout.CENTER);
 
+        JButton menu = new JButton("⋯");
+        menu.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        menu.setForeground(Theme.TEXT_MUTED);
+        menu.setFocusPainted(false);
+        menu.setBorderPainted(false);
+        menu.setContentAreaFilled(false);
+        menu.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        menu.setPreferredSize(new Dimension(30, 30));
         JPopupMenu popup = new JPopupMenu();
-        JMenuItem itemOpen = new JMenuItem("Open");
-        itemOpen.addActionListener(e -> {
-            if (onOpen != null) onOpen.accept(course);
+        JMenuItem open = new JMenuItem("View course");
+        open.addActionListener(e -> onOpen.accept(course));
+        JMenuItem materials = new JMenuItem("Materials");
+        materials.addActionListener(e -> onOpen.accept(course));
+        popup.add(open);
+        popup.add(materials);
+        if (onManageEnrollment != null) {
+            JMenuItem unenroll = new JMenuItem("Unenroll");
+            unenroll.addActionListener(e -> onManageEnrollment.run());
+            popup.addSeparator();
+            popup.add(unenroll);
+        }
+        menu.addActionListener(e -> popup.show(menu, 0, menu.getHeight()));
+        JPanel topRight = new JPanel(new BorderLayout());
+        topRight.setOpaque(false);
+        topRight.add(menu, BorderLayout.EAST);
+        add(topRight, BorderLayout.NORTH);
+
+        Timer animation = new Timer(16, null);
+        animation.addActionListener(e -> {
+            int value = Math.min(course.progressPercent(), progress.getValue() + 5);
+            progress.setValue(value);
+            if (value >= course.progressPercent()) animation.stop();
         });
-        JMenuItem itemFav = new JMenuItem("Mark as favourite");
-        itemFav.addActionListener(e -> {
-            isFavourite = !isFavourite;
-            itemFav.setText(isFavourite ? "Remove from favourites" : "Mark as favourite");
-            JOptionPane.showMessageDialog(this,
-                    isFavourite ? "Marked as favourite!" : "Removed from favourites.",
-                    course.code(), JOptionPane.INFORMATION_MESSAGE);
-        });
-        JMenuItem itemHide = new JMenuItem("Hide");
-        itemHide.addActionListener(e -> setVisible(false));
-
-        popup.add(itemOpen);
-        popup.add(itemFav);
-        popup.add(itemHide);
-
-        menuBtn.addActionListener(e -> popup.show(menuBtn, 0, menuBtn.getHeight()));
-        bottomBar.add(menuBtn, BorderLayout.EAST);
-
-        detailsPanel.add(bottomBar, BorderLayout.SOUTH);
-        add(detailsPanel, BorderLayout.CENTER);
+        animation.start();
+        installHover(this, onOpen);
     }
 
-    private void initListeners() {
-        addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseEntered(MouseEvent e) {
+    @Override
+    protected void paintComponent(Graphics graphics) {
+        Graphics2D shadow = (Graphics2D) graphics.create();
+        Theme.setAntiAliasing(shadow);
+        shadow.setColor(hover ? new Color(15, 23, 42, 18) : new Color(15, 23, 42, 8));
+        shadow.fillRoundRect(1, 3, getWidth() - 3, getHeight() - 4, 16, 16);
+        shadow.dispose();
+        super.paintComponent(graphics);
+    }
+
+    private void installHover(Component component, Consumer<Course> onOpen) {
+        component.addMouseListener(new MouseAdapter() {
+            @Override public void mouseEntered(MouseEvent e) {
                 hover = true;
-                setBorderColor(Theme.PRIMARY);
+                setBorderColor(Theme.PRIMARY_BORDER);
+                setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
                 repaint();
             }
-
-            @Override
-            public void mouseExited(MouseEvent e) {
-                hover = false;
-                setBorderColor(Theme.CARD_BORDER);
-                repaint();
-            }
-
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                if (onOpen != null) {
-                    onOpen.accept(course);
+            @Override public void mouseExited(MouseEvent e) {
+                Point p = SwingUtilities.convertPoint(component, e.getPoint(), CourseCard.this);
+                if (!contains(p)) {
+                    hover = false;
+                    setBorderColor(Theme.CARD_BORDER);
+                    setCursor(Cursor.getDefaultCursor());
+                    repaint();
                 }
             }
+            @Override public void mouseClicked(MouseEvent e) {
+                if (!(component instanceof JButton) && onOpen != null) onOpen.accept(course);
+            }
         });
+        if (component instanceof Container container) {
+            for (Component child : container.getComponents()) installHover(child, onOpen);
+        }
     }
 
-    public Course getCourse() {
-        return course;
+    private static Color tint(Course course) {
+        return TINTS[Math.floorMod(course.code().hashCode(), TINTS.length)];
+    }
+
+    private static String shortSemester(String value) {
+        return value.replace("Semester", "Sem");
+    }
+
+    private static String escape(String value) {
+        return value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
     }
 }

@@ -19,12 +19,12 @@ public class MockCourseService implements CourseService {
 
     private void seedData() {
         // Course catalog
-        Course c1 = new Course("c1", "ENG2112_ICT", "English III (ICT)", "2025/2026 Semester I", "pink_seed", 75);
-        Course c2 = new Course("c2", "ICT2113", "Data Structures and Algorithms", "2025/2026 Semester I", "dsa_seed", 42);
-        Course c3 = new Course("c3", "ICT2122", "Object Oriented Programming", "2025/2026 Semester I", "oop_seed", 60);
-        Course c4 = new Course("c4", "ICT2132", "Object Oriented Programming Practicum", "2025/2026 Semester I", "practicum_seed", 30);
-        Course c5 = new Course("c5", "ICT2142", "E-Business Systems", "2025/2026 Semester I", "ebiz_seed", 85);
-        Course c6 = new Course("c6", "ICT2152", "Object Oriented Analysis and Design", "2025/2026 Semester I", "ooad_seed", 50);
+        Course c1 = new Course("c1", "ENG2112_ICT", "English III (ICT)", "2025/2026 Semester I", "pink_seed", 75, null, 3, "Dr. Perera");
+        Course c2 = new Course("c2", "ICT2113", "Data Structures and Algorithms", "2025/2026 Semester I", "dsa_seed", 42, null, 3, "Dr. Fernando");
+        Course c3 = new Course("c3", "ICT2122", "Object Oriented Programming", "2025/2026 Semester I", "oop_seed", 60, null, 3, "Prof. Silva");
+        Course c4 = new Course("c4", "ICT2132", "Object Oriented Programming Practicum", "2025/2026 Semester I", "practicum_seed", 30, null, 2, "Mr. Kumara");
+        Course c5 = new Course("c5", "ICT2142", "E-Business Systems", "2025/2026 Semester I", "ebiz_seed", 85, null, 3, "Dr. Mendis");
+        Course c6 = new Course("c6", "ICT2152", "Object Oriented Analysis and Design", "2025/2026 Semester I", "ooad_seed", 50, null, 3, "Dr. Rajapakse");
 
         courses.addAll(List.of(c1, c2, c3, c4, c5, c6));
 
