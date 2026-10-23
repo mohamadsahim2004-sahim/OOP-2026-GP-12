@@ -304,7 +304,7 @@ public class StudentResultsView extends JPanel {
     private void showSelectedView() {
         selectedViewPanel.removeAll();
         switch (selectedView) {
-            case "GPA Calculator" -> selectedViewPanel.add(createCalculator(), BorderLayout.CENTER);
+            case "GPA Calculator" -> selectedViewPanel.add(new GpaCalculatorPanel(), BorderLayout.CENTER);
             case "Performance" -> selectedViewPanel.add(createPerformance(), BorderLayout.CENTER);
             default -> selectedViewPanel.add(createResultsView(), BorderLayout.CENTER);
         }
