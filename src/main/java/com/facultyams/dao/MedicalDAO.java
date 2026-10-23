@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.facultyams.config.DatabaseConnection;
+import com.facultyams.exception.DatabaseException;
 import com.facultyams.model.Medical;
 
 public class MedicalDAO {
@@ -23,7 +24,7 @@ public class MedicalDAO {
             ps.setString(4, m.getReason());
             ps.setString(5, m.getApprovalStatus());
             ps.executeUpdate();
-        } catch (SQLException e) {
+        } catch (SQLException | DatabaseException e) {
             System.out.println("Error: " + e.getMessage());
         }
     }
@@ -51,7 +52,7 @@ public class MedicalDAO {
                 list.add(m);
             }
 
-        } catch (SQLException e) {
+        } catch (SQLException | DatabaseException e) {
             System.out.println("Error: " + e.getMessage());
         }
         return list;
@@ -71,7 +72,7 @@ public class MedicalDAO {
             ps.setInt(3, medicalId);
             ps.executeUpdate();
 
-        } catch (SQLException e) {
+        } catch (SQLException | DatabaseException e) {
             System.out.println("Error: " + e.getMessage());
         }
     }
@@ -91,7 +92,7 @@ public class MedicalDAO {
                 return rs.getInt(1);
             }
 
-        } catch (SQLException e) {
+        } catch (SQLException | DatabaseException e)  {
             System.out.println("Error: " + e.getMessage());
         }
         return 0;

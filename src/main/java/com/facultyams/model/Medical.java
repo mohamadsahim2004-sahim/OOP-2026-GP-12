@@ -14,7 +14,7 @@ public class Medical {
 
     public Medical(int attendanceId, int reviewedId, LocalDate submittedDate,String reason,String approvalStatus ){
         this.attendanceId=attendanceId;
-        this.reviewId=reviewedId;
+        this.reviewedId=reviewedId;
         this.submittedDate=submittedDate;
         this.reason=reason;
         setApprovalStatus(approvalStatus);
@@ -22,7 +22,7 @@ public class Medical {
     public Medical(int medicalId,int attendanceId, int reviewedId, LocalDate submittedDate,String reason,String approvalStatus ){
          this.medicalId=medicalId;
          this.attendanceId=attendanceId;
-        this.reviewId=reviewedId;
+        this.reviewedId=reviewedId;
         this.submittedDate=submittedDate;
         this.reason=reason;
         setApprovalStatus(approvalStatus);

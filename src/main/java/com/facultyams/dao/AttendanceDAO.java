@@ -5,6 +5,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
 import com.facultyams.config.DatabaseConnection;
+import com.facultyams.exception.DatabaseException;
 import com.facultyams.model.Attendance;
 
 import java.util.ArrayList;
@@ -25,7 +26,7 @@ public class AttendanceDAO {
             ps.setString(5, a.getStatus());
             ps.executeUpdate();
 
-        } catch (SQLException e) {
+        } catch (SQLException | DatabaseException e) {
             System.out.println("Error: " + e.getMessage());
         }
     }
@@ -50,7 +51,7 @@ public class AttendanceDAO {
                 list.add(a);
             }
 
-        } catch (SQLException e) {
+        } catch (SQLException | DatabaseException e) {
             System.out.println("Error: " + e.getMessage());
         }
         return list;
@@ -69,7 +70,7 @@ public class AttendanceDAO {
                 return rs.getInt(1);
             }
 
-        } catch (SQLException e) {
+        } catch (SQLException | DatabaseException e) {
             System.out.println("Error: " + e.getMessage());
         }
         return 0;
@@ -87,7 +88,7 @@ public class AttendanceDAO {
                 ids.add(rs.getInt("user_id"));
             }
 
-        } catch (SQLException e) {
+        } catch (SQLException | DatabaseException e) {
             System.out.println("Error: " + e.getMessage());
         }
         return ids;
