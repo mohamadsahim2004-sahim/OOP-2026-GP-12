@@ -14,23 +14,25 @@ import java.sql.ResultSet;
 
 public class AttendanceDAO {
 
-    public void addAttendance(Attendance a) {
-        String sql = "INSERT INTO ATTENDANCE (user_id, component_id, session_no, date, status) VALUES (?, ?, ?, ?, ?)";
+        public boolean addAttendance(Attendance a) {
+        String sql="INSERT INTO ATTENDANCE (user_id, component_id, session_no, date, status) VALUES (?, ?, ?, ?, ?)";
 
-        try (Connection con = DatabaseConnection.getConnection();
-                PreparedStatement ps = con.prepareStatement(sql)) {
+        try (Connection con=DatabaseConnection.getConnection();
+             PreparedStatement ps=con.prepareStatement(sql)) {
             ps.setInt(1, a.getUserId());
             ps.setInt(2, a.getComponentId());
             ps.setInt(3, a.getSessionNo());
             ps.setDate(4, java.sql.Date.valueOf(a.getDate()));
             ps.setString(5, a.getStatus());
             ps.executeUpdate();
+            return true;
 
         } catch (SQLException | DatabaseException e) {
             System.out.println("Error: " + e.getMessage());
+            return false;
         }
     }
-
+   
     public List<Attendance> getAttendanceByUser(int userId) {
         List<Attendance> list = new ArrayList<>();
         String sql = "SELECT * FROM ATTENDANCE WHERE user_id=?";
