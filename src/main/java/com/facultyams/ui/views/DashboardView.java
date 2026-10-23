@@ -4,6 +4,7 @@ import com.facultyams.model.Marks;
 import com.facultyams.model.Notice;
 import com.facultyams.model.Student;
 import com.facultyams.service.DataService;
+import com.facultyams.service.ResultService;
 import com.facultyams.ui.components.CardPanel;
 import com.facultyams.ui.theme.Theme;
 import com.facultyams.util.Constants;
@@ -125,7 +126,8 @@ public class DashboardView extends JPanel {
         row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 115));
 
         // 1. CGPA
-        row.add(createKpiCard("CGPA", String.format("%.2f", s.getCgpa()),
+        row.add(createKpiCard("CGPA", String.format(Locale.ROOT, "%.2f",
+                        ResultService.getInstance().getSummary().cgpa()),
                 "Out of " + String.format(Locale.ROOT, "%.2f", Constants.MAX_GPA) + " scale", COLOR_SUCCESS));
 
         // 2. Attendance

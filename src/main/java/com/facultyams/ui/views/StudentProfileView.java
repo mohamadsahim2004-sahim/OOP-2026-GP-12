@@ -3,6 +3,7 @@ package com.facultyams.ui.views;
 import com.facultyams.model.Student;
 import com.facultyams.model.profile.StudentStatus;
 import com.facultyams.service.DataService;
+import com.facultyams.service.ResultService;
 import com.facultyams.service.profile.InMemoryStudentProfileService;
 import com.facultyams.service.profile.StudentProfileService;
 import com.facultyams.service.profile.validation.PersonalEmailValidator;
@@ -247,11 +248,12 @@ public final class StudentProfileView extends JPanel {
 
         JPanel summaryRows = new JPanel(new GridBagLayout());
         summaryRows.setOpaque(false);
-        double cgpa = student.getCgpa();
+        ResultService.Summary results = ResultService.getInstance().getSummary();
+        double cgpa = results.cgpa().doubleValue();
         addSummaryRow(summaryRows, createCgpaRow(cgpa), 0, false);
         addSummaryRow(summaryRows, createSummaryRow("Department", student.getDepartment()), 1, true);
         addSummaryRow(summaryRows, createAdvisorRow(student.getAcademicAdvisor()), 2, true);
-        addSummaryRow(summaryRows, createSummaryRow("Credits completed", Integer.toString(student.getCreditsCompleted())), 3, true);
+        addSummaryRow(summaryRows, createSummaryRow("Credits completed", Integer.toString(results.earnedCredits())), 3, true);
         addSummaryRow(summaryRows, createSummaryRow("Attendance", String.format("%.0f%%", student.getAttendancePercentage())), 4, true);
         completeness.setFont(Theme.FONT_SMALL.deriveFont(Font.BOLD));
         completeness.setForeground(Theme.TEXT_MUTED);
