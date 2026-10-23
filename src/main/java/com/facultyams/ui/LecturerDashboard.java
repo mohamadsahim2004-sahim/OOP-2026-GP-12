@@ -401,19 +401,6 @@ public class LecturerDashboard extends JFrame {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
     private JPanel createUploadMarksPanel() {
         JPanel panel = new JPanel(new BorderLayout(0, 15));
         panel.setBackground(backgroundColor);
