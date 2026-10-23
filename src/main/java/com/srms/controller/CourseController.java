@@ -80,6 +80,41 @@ public class CourseController {
         navigator.pushView("CoursePage");
     }
 
+    public boolean openCourseByCode(String courseCode) {
+        Course course = courseService.findCourses(studentId).stream()
+                .filter(item -> item.code().equalsIgnoreCase(courseCode))
+                .findFirst().orElse(null);
+        if (course == null) return false;
+        openCourse(course);
+        return true;
+    }
+
+    public boolean showSubmission(String courseCode, String submissionId) {
+        Course course = courseService.findCourses(studentId).stream()
+                .filter(item -> item.code().equalsIgnoreCase(courseCode))
+                .findFirst().orElse(null);
+        if (course == null) return false;
+
+        Assignment matchingAssignment = null;
+        for (var section : courseService.sections(course.id())) {
+            for (var activity : courseService.activities(section.id())) {
+                if (activity instanceof Assignment assignment && assignment.id().equals(submissionId)) {
+                    matchingAssignment = assignment;
+                    break;
+                }
+            }
+            if (matchingAssignment != null) break;
+        }
+        if (matchingAssignment == null) return false;
+
+        currentCourse = course;
+        pageView.loadCourse(course);
+        assignmentView.loadAssignment(course, matchingAssignment);
+        assignmentView.highlightCurrentSubmission();
+        navigator.pushView("AssignmentPage");
+        return true;
+    }
+
     public void openAssignment(Assignment assignment) {
         if (assignmentView != null && currentCourse != null) {
             assignmentView.loadAssignment(currentCourse, assignment);

@@ -58,6 +58,7 @@ public class AssignmentView extends JPanel {
     private final JButton cancelBtn = new JButton("Cancel");
 
     private Timer countdownTimer;
+    private Timer submissionFlashTimer;
 
     public AssignmentView(SubmissionService submissionService, String studentId,
                           Runnable onNavigateToCourses, Runnable onNavigateToCoursePage) {
@@ -285,6 +286,19 @@ public class AssignmentView extends JPanel {
         // Refresh submission state
         refreshStatus();
         startCountdownTimer();
+    }
+
+    public void highlightCurrentSubmission() {
+        if (submissionFlashTimer != null) submissionFlashTimer.stop();
+        assignmentTitleLbl.setOpaque(true);
+        assignmentTitleLbl.setBackground(Theme.INFO_BG);
+        submissionFlashTimer = new Timer(1500, event -> {
+            assignmentTitleLbl.setOpaque(false);
+            assignmentTitleLbl.repaint();
+            submissionFlashTimer.stop();
+        });
+        submissionFlashTimer.setRepeats(false);
+        submissionFlashTimer.start();
     }
 
     public void refreshStatus() {

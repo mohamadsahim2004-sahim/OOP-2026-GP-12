@@ -8,6 +8,10 @@ import com.facultyams.service.ResultService;
 import com.facultyams.ui.components.CardPanel;
 import com.facultyams.ui.theme.Theme;
 import com.facultyams.util.Constants;
+import com.srms.controller.NavigationListener;
+import com.srms.service.DeadlineService;
+import com.srms.service.MockCourseService;
+import com.srms.ui.components.UpcomingDeadlinesPanel;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -28,6 +32,7 @@ import javax.swing.table.JTableHeader;
  */
 public class DashboardView extends JPanel {
     private final Consumer<String> navigationHandler;
+    private final NavigationListener deadlineNavigation;
     private final DataService dataService = DataService.getInstance();
 
     // Design Tokens
@@ -54,8 +59,9 @@ public class DashboardView extends JPanel {
     private static final Font FONT_CAPTION  = new Font("Segoe UI", Font.PLAIN, 11);
     private static final Font FONT_CAP_BOLD = new Font("Segoe UI", Font.BOLD, 11);
 
-    public DashboardView(Consumer<String> navigationHandler) {
+    public DashboardView(Consumer<String> navigationHandler, NavigationListener deadlineNavigation) {
         this.navigationHandler = navigationHandler;
+        this.deadlineNavigation = deadlineNavigation;
         setOpaque(false);
         setLayout(new BorderLayout());
 
@@ -593,80 +599,7 @@ public class DashboardView extends JPanel {
     }
 
     private JPanel createUpcomingDeadlinesCard() {
-        CardPanel card = new CardPanel(12);
-        card.setLayout(new BorderLayout(0, 14));
-        card.setBorder(BorderFactory.createEmptyBorder(18, 20, 18, 20));
-
-        JLabel title = new JLabel("Upcoming Deadlines");
-        title.setFont(FONT_SECTION);
-        title.setForeground(COLOR_TEXT_PRIMARY);
-        card.add(title, BorderLayout.NORTH);
-
-        JPanel list = new JPanel();
-        list.setOpaque(false);
-        list.setLayout(new BoxLayout(list, BoxLayout.Y_AXIS));
-
-        // Deadlines matching mockup
-        list.add(createDeadlineRow("Mini Project Submission", "Project", "30 May"));
-        list.add(createDivider());
-        list.add(createDeadlineRow("Data Structures", "Exam", "25 May"));
-        list.add(createDivider());
-        list.add(createDeadlineRow("Operating Systems", "Exam", "27 May"));
-
-        list.add(Box.createVerticalGlue());
-        card.add(list, BorderLayout.CENTER);
-        return card;
-    }
-
-    private JPanel createDeadlineRow(String title, String type, String date) {
-        JPanel row = new JPanel(new BorderLayout(16, 0));
-        row.setOpaque(false);
-        row.setBorder(BorderFactory.createEmptyBorder(10, 8, 10, 8));
-
-        JLabel nameLabel = new JLabel(title);
-        nameLabel.setFont(FONT_BODY);
-        nameLabel.setForeground(COLOR_TEXT_PRIMARY);
-
-        JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 14, 0));
-        right.setOpaque(false);
-
-        // Type Pill
-        Color bg = type.equalsIgnoreCase("Project") ? COLOR_PRIMARY_LIGHT : COLOR_DANGER_LIGHT;
-        Color fg = type.equalsIgnoreCase("Project") ? COLOR_PRIMARY : COLOR_DANGER;
-
-        JLabel pill = new JLabel(type, SwingConstants.CENTER) {
-            @Override
-            protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                Theme.setAntiAliasing(g2);
-                g2.setColor(bg);
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 11, 11);
-                g2.dispose();
-                super.paintComponent(g);
-            }
-        };
-        pill.setFont(FONT_CAP_BOLD);
-        pill.setForeground(fg);
-        pill.setOpaque(false);
-        pill.setPreferredSize(new Dimension(64, 22));
-        right.add(pill);
-
-        JLabel dateLabel = new JLabel(date);
-        dateLabel.setFont(FONT_CAP_BOLD);
-        dateLabel.setForeground(COLOR_TEXT_PRIMARY);
-        right.add(dateLabel);
-
-        row.add(nameLabel, BorderLayout.WEST);
-        row.add(right, BorderLayout.EAST);
-        return row;
-    }
-
-    private JComponent createDivider() {
-        JSeparator sep = new JSeparator();
-        sep.setForeground(COLOR_BORDER);
-        sep.setBackground(COLOR_BORDER);
-        sep.setMaximumSize(new Dimension(Integer.MAX_VALUE, 1));
-        return sep;
+        return new UpcomingDeadlinesPanel(new DeadlineService(new MockCourseService()), deadlineNavigation);
     }
 
     private JLabel createLink(String text, Runnable action) {

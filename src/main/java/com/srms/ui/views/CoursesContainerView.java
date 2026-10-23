@@ -90,4 +90,12 @@ public class CoursesContainerView extends JPanel {
     public void resetToOverview() {
         courseController.navigateToOverview();
     }
+
+    public boolean openCourse(String courseCode) {
+        return courseController.openCourseByCode(courseCode);
+    }
+
+    public boolean showSubmission(String courseCode, String submissionId) {
+        return courseController.showSubmission(courseCode, submissionId);
+    }
 }

@@ -19,6 +19,8 @@ public final class Theme {
     public static final int CONTROL_HEIGHT = 40;
     public static final int RADIUS_CARD = 16;
     public static final int RADIUS_CONTROL = 8;
+    public static final int DEADLINE_ROW_HEIGHT = 64;
+    public static final int DEADLINE_CARD_PADDING = 24;
 
     public static final Color COURSE_PAGE_BG = new Color(245, 247, 251);
     public static final Color COURSE_TEXT_MAIN = new Color(17, 24, 39);

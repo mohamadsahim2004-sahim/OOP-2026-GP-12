@@ -5,10 +5,12 @@ import com.facultyams.ui.components.SidebarPanel;
 import com.facultyams.ui.components.TopBarPanel;
 import com.facultyams.ui.theme.Theme;
 import com.facultyams.ui.views.*;
+import com.srms.controller.NavigationListener;
+import com.srms.ui.components.Toast;
 import java.awt.*;
 import javax.swing.*;
 
-public class UndergraduateDashboardFrame extends JFrame {
+public class UndergraduateDashboardFrame extends JFrame implements NavigationListener {
     private final CardLayout cardLayout = new CardLayout();
     private final JPanel cardsPanel = new JPanel(cardLayout);
     private SidebarPanel sidebarPanel;
@@ -67,7 +69,7 @@ public class UndergraduateDashboardFrame extends JFrame {
         cardsPanel.setOpaque(false);
         cardsPanel.setBorder(Theme.createEmptyPadding(20, 24, 16, 24));
 
-        dashboardView = new DashboardView(this::navigateTo);
+        dashboardView = new DashboardView(this::navigateTo, this);
         profileView = new StudentProfileView();
         courseEnrollmentView = new CourseEnrollmentView();
         coursesContainerView = new com.srms.ui.views.CoursesContainerView(courseEnrollmentView);
@@ -149,6 +151,27 @@ public class UndergraduateDashboardFrame extends JFrame {
         JOptionPane.showMessageDialog(this,
                 "Searched for: '" + query + "'\nShowing results in Notice Board & Course Materials.",
                 "Search", JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    @Override
+    public void openCourse(String courseCode) {
+        navigateTo("Course Enrollment");
+        if (!coursesContainerView.openCourse(courseCode)) {
+            Toast.show(cardsPanel, "Course not found");
+        }
+    }
+
+    @Override
+    public void openSubmission(String courseCode, String submissionId) {
+        navigateTo("Course Enrollment");
+        if (!coursesContainerView.showSubmission(courseCode, submissionId)) {
+            Toast.show(cardsPanel, "Submission not found");
+        }
+    }
+
+    @Override
+    public void openTimetable() {
+        navigateTo("Timetable");
     }
 
     public static void main(String[] args) {
