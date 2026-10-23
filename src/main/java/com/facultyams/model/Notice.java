@@ -1,5 +1,12 @@
 package com.facultyams.model;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+
 public class Notice {
     private int id;
     private String title;
@@ -8,6 +15,9 @@ public class Notice {
     private String category;
     private String publisher;
     private boolean isImportant;
+    private boolean read;
+    private NoticePriority priority = NoticePriority.NORMAL;
+    private final List<NoticeAttachment> attachments = new ArrayList<>();
 
     public Notice() {
     }
@@ -20,6 +30,7 @@ public class Notice {
         this.category = category;
         this.publisher = publisher;
         this.isImportant = isImportant;
+        this.priority = isImportant ? NoticePriority.IMPORTANT : NoticePriority.NORMAL;
     }
 
     public int getId() {
@@ -76,5 +87,35 @@ public class Notice {
 
     public void setImportant(boolean important) {
         isImportant = important;
+        priority = important ? NoticePriority.IMPORTANT : NoticePriority.NORMAL;
+    }
+
+    public String getBody() { return content; }
+    public String getIssuer() { return publisher; }
+    public String getDepartment() {
+        if (publisher == null) return "";
+        int separator = publisher.lastIndexOf('/');
+        return separator < 0 ? "" : publisher.substring(separator + 1).trim();
+    }
+    public NoticeCategory getNoticeCategory() { return NoticeCategory.fromLabel(category); }
+    public NoticePriority getPriority() { return priority; }
+    public void setPriority(NoticePriority priority) {
+        this.priority = priority == null ? NoticePriority.NORMAL : priority;
+        isImportant = this.priority != NoticePriority.NORMAL;
+    }
+    public LocalDate getLocalDate() {
+        if (date == null || date.isBlank()) return null;
+        try {
+            return LocalDate.parse(date.trim(), DateTimeFormatter.ofPattern("d MMM uuuu", Locale.ENGLISH));
+        } catch (DateTimeParseException exception) {
+            return null;
+        }
+    }
+    public boolean isRead() { return read; }
+    public void setRead(boolean read) { this.read = read; }
+    public List<NoticeAttachment> getAttachments() { return List.copyOf(attachments); }
+    public void setAttachments(List<NoticeAttachment> files) {
+        attachments.clear();
+        if (files != null) attachments.addAll(files);
     }
 }

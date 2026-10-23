@@ -81,7 +81,7 @@ public class UndergraduateDashboardFrame extends JFrame implements NavigationLis
         timetableView = new TimetableView();
         timetableView.setNotificationIntegration(topBarPanel::setNotificationCount, timetableView::showReminders);
         timetableView.setClearSearchAction(topBarPanel::clearSearch);
-        noticesView = new NoticesView();
+        noticesView = new NoticesView(this);
 
         cardsPanel.add(dashboardView, "Dashboard");
         cardsPanel.add(profileView, "Profile");

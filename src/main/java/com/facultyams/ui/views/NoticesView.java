@@ -4,8 +4,11 @@ import com.facultyams.model.Notice;
 import com.facultyams.service.DataService;
 import com.facultyams.ui.components.BadgeLabel;
 import com.facultyams.ui.components.CardPanel;
+import com.facultyams.ui.components.NoticeDetailsDialog;
 import com.facultyams.ui.theme.IconHelper;
 import com.facultyams.ui.theme.Theme;
+import com.facultyams.service.NoticeService;
+import com.srms.controller.NavigationListener;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.*;
@@ -22,6 +25,8 @@ import javax.swing.event.DocumentListener;
 public class NoticesView extends JPanel {
     private static final String[] CATEGORIES = {"ALL", "Examinations", "Academic", "General", "Events"};
     private final DataService dataService = DataService.getInstance();
+    private final NoticeService noticeService = NoticeService.getInstance();
+    private final NavigationListener navigationListener;
     private final Set<Integer> readNoticeIds = new HashSet<>();
     private final Set<Integer> savedNoticeIds = new HashSet<>();
     private final ButtonGroup categoryGroup = new ButtonGroup();
@@ -35,6 +40,11 @@ public class NoticesView extends JPanel {
 
     /** Creates the notice board screen. */
     public NoticesView() {
+        this(null);
+    }
+
+    public NoticesView(NavigationListener navigationListener) {
+        this.navigationListener = navigationListener;
         setOpaque(false);
         setLayout(new BorderLayout());
         searchTimer = new javax.swing.Timer(300, e -> {
@@ -63,6 +73,10 @@ public class NoticesView extends JPanel {
         scroll.getHorizontalScrollBar().setPreferredSize(new Dimension(0, 0));
         scroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         add(scroll, BorderLayout.CENTER);
+        noticeService.addListener(notice -> SwingUtilities.invokeLater(() -> {
+            readNoticeIds.add(notice.getId());
+            renderNotices();
+        }));
         renderNotices();
     }
 
@@ -87,6 +101,7 @@ public class NoticesView extends JPanel {
         markRead.addActionListener(e -> {
             for (Notice notice : dataService.getNotices()) {
                 readNoticeIds.add(notice.getId());
+                noticeService.markAsRead(notice);
             }
             renderNotices();
         });
@@ -342,51 +357,11 @@ public class NoticesView extends JPanel {
     }
 
     private void showNoticeDetailDialog(Notice notice) {
+        noticeService.markAsRead(notice);
         readNoticeIds.add(notice.getId());
         renderNotices();
         Window owner = SwingUtilities.getWindowAncestor(this);
-        JDialog dialog = new JDialog(owner, "Notice Details", Dialog.ModalityType.APPLICATION_MODAL);
-        dialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
-        JPanel panel = new JPanel(new BorderLayout(0, 16));
-        panel.setBackground(Color.WHITE);
-        panel.setBorder(new EmptyBorder(24, 24, 24, 24));
-        JLabel title = new JLabel(notice.getTitle());
-        title.setFont(Theme.FONT_TITLE);
-        title.setForeground(Theme.TEXT_MAIN);
-        JLabel meta = new JLabel(notice.getCategory() + "  |  " + notice.getPublisher() + "  |  " + notice.getDate());
-        meta.setFont(Theme.FONT_SMALL);
-        meta.setForeground(Theme.TEXT_MUTED);
-        JPanel heading = new JPanel();
-        heading.setOpaque(false);
-        heading.setLayout(new BoxLayout(heading, BoxLayout.Y_AXIS));
-        heading.add(title);
-        heading.add(Box.createVerticalStrut(8));
-        heading.add(meta);
-        JTextArea content = new JTextArea(notice.getContent());
-        content.setFont(Theme.FONT_BODY);
-        content.setForeground(Theme.TEXT_MAIN);
-        content.setLineWrap(true);
-        content.setWrapStyleWord(true);
-        content.setEditable(false);
-        content.setOpaque(false);
-        content.setBorder(new EmptyBorder(4, 0, 4, 0));
-        JScrollPane contentScroll = new JScrollPane(content);
-        contentScroll.setBorder(BorderFactory.createMatteBorder(1, 0, 1, 0, Theme.CARD_BORDER));
-        contentScroll.setPreferredSize(new Dimension(580, 220));
-        FlatNoticeButton close = new FlatNoticeButton("Close", true);
-        close.addActionListener(e -> dialog.dispose());
-        JPanel footer = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
-        footer.setOpaque(false);
-        footer.add(close);
-        panel.add(heading, BorderLayout.NORTH);
-        panel.add(contentScroll, BorderLayout.CENTER);
-        panel.add(footer, BorderLayout.SOUTH);
-        dialog.setContentPane(panel);
-        dialog.setSize(640, 380);
-        dialog.setMinimumSize(new Dimension(520, 320));
-        dialog.setLocationRelativeTo(this);
-        dialog.getRootPane().registerKeyboardAction(e -> dialog.dispose(),
-                KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), JComponent.WHEN_IN_FOCUSED_WINDOW);
+        NoticeDetailsDialog dialog = new NoticeDetailsDialog(owner, notice, noticeService, navigationListener);
         dialog.setVisible(true);
     }
 

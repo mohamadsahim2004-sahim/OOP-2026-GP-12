@@ -35,6 +35,25 @@ public class Theme {
     public static final int ENROLLMENT_BUTTON_HEIGHT = 32;
     public static final int ENROLLMENT_CARD_RADIUS = 16;
     public static final int ENROLLMENT_CONTROL_RADIUS = 8;
+    public static final int NOTICE_DIALOG_PADDING = 24;
+    public static final int NOTICE_DIALOG_SECTION_GAP = 16;
+    public static final int NOTICE_DIALOG_ELEMENT_GAP = 8;
+    public static final int NOTICE_DIALOG_CONTROL_HEIGHT = 40;
+    public static final int NOTICE_DIALOG_RADIUS = 16;
+    public static final int NOTICE_DIALOG_CONTROL_RADIUS = 8;
+    public static final int NOTICE_DIALOG_WIDTH = 560;
+    public static final int NOTICE_DIALOG_BODY_MAX_HEIGHT = 240;
+    public static final int NOTICE_DIALOG_SCROLLBAR_WIDTH = 8;
+    public static final Color NOTICE_DIALOG_BORDER = new Color(229, 231, 235);
+    public static final Color NOTICE_DIALOG_BODY = new Color(55, 65, 81);
+    public static final Color NOTICE_DIALOG_HOVER = new Color(243, 244, 246);
+    public static final Color NOTICE_DIALOG_SECONDARY_HOVER = new Color(249, 250, 251);
+    public static final Color NOTICE_DIALOG_ATTACHMENT_BG = new Color(249, 250, 251);
+    public static final Color NOTICE_DIALOG_SCROLLBAR = new Color(209, 213, 219);
+    public static final Color NOTICE_DIALOG_SHADOW = new Color(15, 23, 42, 10);
+    public static final Color NOTICE_DIALOG_PRESSED = new Color(30, 64, 175);
+    public static final Color NOTICE_DIALOG_AMBER = new Color(217, 119, 6);
+    public static final Color NOTICE_DIALOG_AMBER_BG = new Color(254, 243, 199);
     public static final Font FONT_TINY = new Font("Segoe UI", Font.PLAIN, 10);
     // Primary Brand Colors
     public static final Color PRIMARY = new Color(37, 99, 235);        // #2563EB Vibrant Blue
