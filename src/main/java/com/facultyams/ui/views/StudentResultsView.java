@@ -6,8 +6,10 @@ import com.facultyams.service.DataService;
 import com.facultyams.ui.components.*;
 import com.facultyams.ui.theme.IconHelper;
 import com.facultyams.ui.theme.Theme;
+import com.facultyams.util.Constants;
 import java.awt.*;
 import java.util.List;
+import java.util.Locale;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 
@@ -48,7 +50,8 @@ public class StudentResultsView extends JPanel {
         row.setOpaque(false);
 
         row.add(new StatCard("cgpa", Theme.ACCENT_BLUE_BG, Theme.ACCENT_BLUE,
-                "Cumulative GPA", String.format("%.2f", s.getCgpa()), "Out of 4.0 / 10.0 scale", Theme.PRIMARY));
+                "Cumulative GPA", String.format("%.2f", s.getCgpa()),
+                "Out of " + String.format(Locale.ROOT, "%.2f", Constants.MAX_GPA) + " scale", Theme.PRIMARY));
 
         row.add(new StatCard("trophy", Theme.ACCENT_AMBER_BG, Theme.ACCENT_AMBER,
                 "Batch Rank", "#" + s.getOverallRank(), "Top 10% of Cohort", Theme.ACCENT_AMBER));

@@ -96,6 +96,10 @@ public class UndergraduateDashboardFrame extends JFrame {
 
     public void navigateTo(String viewName) {
         String normalized = normalizeViewName(viewName);
+        if ("Profile".equals(currentView) && !"Profile".equals(normalized)
+                && profileView != null && !profileView.confirmNavigation()) {
+            return;
+        }
         if ("Course Enrollment".equals(normalized) && coursesContainerView != null) {
             coursesContainerView.resetToOverview();
         }
@@ -103,6 +107,7 @@ public class UndergraduateDashboardFrame extends JFrame {
             modernAttendanceView.resetToOverview();
         }
         topBarPanel.setTitle(normalized);
+        topBarPanel.setSearchInputActive(!"Profile".equals(normalized));
         currentView = normalized;
         sidebarPanel.setActiveView(normalized);
         if ("Timetable".equals(normalized)) {

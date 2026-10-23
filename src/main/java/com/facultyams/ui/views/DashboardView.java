@@ -6,6 +6,7 @@ import com.facultyams.model.Student;
 import com.facultyams.service.DataService;
 import com.facultyams.ui.components.CardPanel;
 import com.facultyams.ui.theme.Theme;
+import com.facultyams.util.Constants;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -14,6 +15,7 @@ import java.awt.geom.Area;
 import java.awt.geom.Ellipse2D;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Locale;
 import java.util.function.Consumer;
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -123,7 +125,8 @@ public class DashboardView extends JPanel {
         row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 115));
 
         // 1. CGPA
-        row.add(createKpiCard("CGPA", String.format("%.2f", s.getCgpa()), "+ 0.20 from last sem", COLOR_SUCCESS));
+        row.add(createKpiCard("CGPA", String.format("%.2f", s.getCgpa()),
+                "Out of " + String.format(Locale.ROOT, "%.2f", Constants.MAX_GPA) + " scale", COLOR_SUCCESS));
 
         // 2. Attendance
         row.add(createKpiCard("Attendance", (int) s.getAttendancePercentage() + "%", "Above 75% minimum", COLOR_SUCCESS));

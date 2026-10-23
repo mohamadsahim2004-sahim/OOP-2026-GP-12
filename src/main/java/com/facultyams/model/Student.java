@@ -1,6 +1,8 @@
 package com.facultyams.model;
 
 import com.facultyams.security.Role;
+import com.facultyams.model.profile.StudentStatus;
+import com.facultyams.util.Constants;
 
 public class Student extends User {
     private String regNo;
@@ -17,6 +19,10 @@ public class Student extends User {
     private String academicAdvisor;
     private String department;
     private String emergencyContact;
+    private String personalEmail;
+    private String emergencyRelationship = "Parent";
+    private int creditsCompleted = 78;
+    private StudentStatus status = StudentStatus.ACTIVE;
 
     public Student() {
         setRole(Role.STUDENT);
@@ -28,7 +34,7 @@ public class Student extends User {
         this.regNo = regNo;
         this.degreeProgram = degreeProgram;
         this.academicYear = academicYear;
-        this.cgpa = cgpa;
+        setCgpa(cgpa);
     }
 
     public String getRegNo() {
@@ -68,6 +74,9 @@ public class Student extends User {
     }
 
     public void setCgpa(double cgpa) {
+        if (!Double.isFinite(cgpa) || cgpa < 0.0 || cgpa > Constants.MAX_GPA) {
+            throw new IllegalArgumentException("CGPA must be between 0.00 and " + Constants.MAX_GPA + ".");
+        }
         this.cgpa = cgpa;
     }
 
@@ -141,5 +150,37 @@ public class Student extends User {
 
     public void setEmergencyContact(String emergencyContact) {
         this.emergencyContact = emergencyContact;
+    }
+
+    public String getPersonalEmail() {
+        return personalEmail;
+    }
+
+    public void setPersonalEmail(String personalEmail) {
+        this.personalEmail = personalEmail;
+    }
+
+    public String getEmergencyRelationship() {
+        return emergencyRelationship;
+    }
+
+    public void setEmergencyRelationship(String emergencyRelationship) {
+        this.emergencyRelationship = emergencyRelationship;
+    }
+
+    public int getCreditsCompleted() {
+        return creditsCompleted;
+    }
+
+    public void setCreditsCompleted(int creditsCompleted) {
+        this.creditsCompleted = creditsCompleted;
+    }
+
+    public StudentStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(StudentStatus status) {
+        this.status = status;
     }
 }

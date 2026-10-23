@@ -33,7 +33,7 @@ public final class RoundedComboBoxUI extends BasicComboBoxUI {
     @Override public void paint(Graphics graphics, JComponent component) {
         Graphics2D g = (Graphics2D) graphics.create();
         Theme.setAntiAliasing(g);
-        g.setColor(comboBox.isEnabled() ? Color.WHITE : Theme.ACCENT_GRAY_BG);
+        g.setColor(Color.WHITE);
         g.fillRoundRect(0, 0, component.getWidth(), component.getHeight(), 10, 10);
         g.setColor(component.hasFocus() ? Theme.PRIMARY_BORDER : Theme.CONTROL_BORDER);
         g.setStroke(new BasicStroke(1f));

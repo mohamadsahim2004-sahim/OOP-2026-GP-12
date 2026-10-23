@@ -40,7 +40,7 @@ public class StatCard extends CardPanel {
         titleLbl.setFont(Theme.FONT_SMALL);
         titleLbl.setForeground(Theme.TEXT_MUTED);
 
-        // Value (e.g. 8.45, 6)
+        // Metric value such as a 4.0-scale GPA or course count.
         JLabel valLbl = new JLabel(value);
         valLbl.setFont(Theme.FONT_METRIC);
         valLbl.setForeground(Theme.TEXT_MAIN);

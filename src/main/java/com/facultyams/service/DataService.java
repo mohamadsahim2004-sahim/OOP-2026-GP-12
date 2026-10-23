@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class DataService {
     private static DataService instance;
@@ -18,6 +19,7 @@ public class DataService {
     private final List<TimeTable> timetableEntries = new ArrayList<>();
     private final List<Attendance> attendanceRecords = new ArrayList<>();
     private final List<Medical> medicalRecords = new ArrayList<>();
+    private final List<ProfileChangeListener> profileChangeListeners = new CopyOnWriteArrayList<>();
 
     private DataService() {
         initData();
@@ -33,7 +35,7 @@ public class DataService {
     private void initData() {
         // Current Student matching the screenshot
         currentStudent = new Student(1, "abhishek", "Abhishek Verma", "abhishek.verma@eng.university.ac.lk",
-                "TG/2021/842", "B.Tech CSE - 3rd Year", "2021/2022", 8.45);
+                "TG/2021/842", "B.Tech CSE - 3rd Year", "2021/2022", 3.45);
         currentStudent.setCurrentSemester("Semester 5");
         currentStudent.setOverallRank(12);
         currentStudent.setTotalStudents(120);
@@ -45,6 +47,9 @@ public class DataService {
         currentStudent.setPhoneNumber("+94 77 123 4567");
         currentStudent.setAddress("No. 45, University Crescent, Colombo 07");
         currentStudent.setEmergencyContact("+94 71 987 6543 (Parent)");
+        currentStudent.setPersonalEmail("abhishek.personal@gmail.com");
+        currentStudent.setEmergencyRelationship("Parent");
+        currentStudent.setProfileImageUrl("/images/profile.png");
 
         // Recent Marks matching screenshot
         recentMarks.add(new Marks(1, "CS301", "Data Structures", "Mid Sem", "A", 86, 100, "12 May 2024", 4, "Semester 5"));
@@ -224,10 +229,40 @@ public class DataService {
     }
 
     public void updateStudentProfile(String email, String phone, String address, String emergencyContact) {
-        currentStudent.setEmail(email);
+        currentStudent.setPersonalEmail(email);
         currentStudent.setPhoneNumber(phone);
         currentStudent.setAddress(address);
         currentStudent.setEmergencyContact(emergencyContact);
+        fireProfileChanged();
+    }
+
+    public void updateStudentContactInfo(String personalEmail, String phone, String address,
+                                         String emergencyNumber, String relationship) {
+        currentStudent.setPersonalEmail(personalEmail);
+        currentStudent.setPhoneNumber(phone);
+        currentStudent.setAddress(address);
+        currentStudent.setEmergencyContact(emergencyNumber);
+        currentStudent.setEmergencyRelationship(relationship);
+        fireProfileChanged();
+    }
+
+    public void updateStudentPhoto(String imagePath) {
+        currentStudent.setProfileImageUrl(imagePath);
+        fireProfileChanged();
+    }
+
+    public void addProfileChangeListener(ProfileChangeListener listener) {
+        profileChangeListeners.add(listener);
+    }
+
+    public void removeProfileChangeListener(ProfileChangeListener listener) {
+        profileChangeListeners.remove(listener);
+    }
+
+    private void fireProfileChanged() {
+        for (ProfileChangeListener listener : profileChangeListeners) {
+            listener.profileChanged(currentStudent);
+        }
     }
 
     public int getTotalEnrolledCredits() {

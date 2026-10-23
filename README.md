@@ -42,8 +42,10 @@ Modern Java Swing Academic Management System with a SaaS dashboard aesthetic bas
    - Print Academic Transcript action.
 
 7. **Student Profile**
-   - Student identity card with degree, advisor, CGPA, and registration number.
-   - Editable contact information form (Personal email, phone number, address, emergency contact) with Save feature.
+   - Responsive, scrollable student summary and aligned contact/academic information cards, with the supplied circular profile photo.
+   - Edit mode with inline validation, Sri Lankan phone formatting, dirty-state confirmation, photo crop/replace/remove, and asynchronous save.
+   - Password change dialog with live strength rules and salted SHA-256 password hashes.
+   - GPA is validated and presented consistently on the 4.00 scale.
 
 8. **Student Attendance View**
    - Overall attendance gauge (87%) with exam eligibility indicator (>= 80% mandatory policy).
@@ -84,6 +86,23 @@ if ($LASTEXITCODE -eq 0) { java -cp .\bin com.facultyams.App }
 ```
 
 The existing MySQL connector dependency is unchanged; the timetable implementation adds no external dependency.
+
+## Student profile implementation
+
+`StudentProfileView` uses the `StudentProfileService` boundary (`InMemoryStudentProfileService` currently adapts the existing application data service). `PasswordService` uses per-password salted SHA-256 hashing and constant-time hash comparison. Shared GPA bounds are in `com.facultyams.util.Constants`, and `GpaClassifier` provides the profile classification label. Reusable profile UI components and image utilities live in `com.facultyams.ui.components`. The supplied portrait is `src/main/resources/images/profile.png`; when launched directly from the repository root, image loading also checks this resources path if the resource has not been copied to the classpath.
+
+```text
+StudentProfileView
+  -> StudentProfileService
+       `- InMemoryStudentProfileService -> DataService -> Student
+             `- PasswordService -> SaltedSha256PasswordService
+  -> FormField / AvatarLabel / ProfilePhotoCropDialog
+       `- ImageUtils
+  -> ProfileChangeListener -> TopBarPanel avatar
+  -> Constants.MAX_GPA / GpaClassifier
+```
+
+The profile implementation uses only Java 17 and Swing/AWT; no new Maven or Gradle dependencies are required.
 
 ## 🚀 How to Run
 

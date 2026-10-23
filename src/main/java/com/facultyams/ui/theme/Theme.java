@@ -16,6 +16,15 @@ public class Theme {
     public static final int CARD_RADIUS = 12;
     public static final int BUTTON_RADIUS = 8;
     public static final int CONTROL_HEIGHT = 36;
+    public static final int PROFILE_PAGE_PADDING = 24;
+    public static final int PROFILE_CARD_GAP = 24;
+    public static final int PROFILE_CARD_PADDING = 24;
+    public static final int PROFILE_SECTION_GAP = 32;
+    public static final int PROFILE_FIELD_ROW_GAP = 20;
+    public static final int PROFILE_COLUMN_GAP = 24;
+    public static final int PROFILE_LABEL_GAP = 6;
+    public static final int PROFILE_FIELD_HEIGHT = 44;
+    public static final int PROFILE_FIELD_INSET = 12;
     public static final Font FONT_TINY = new Font("Segoe UI", Font.PLAIN, 10);
     // Primary Brand Colors
     public static final Color PRIMARY = new Color(37, 99, 235);        // #2563EB Vibrant Blue
@@ -87,12 +96,22 @@ public class Theme {
     public static final Font FONT_SECTION = new Font("Segoe UI", Font.BOLD, 15);
     public static final Font TIMETABLE_TITLE = new Font("Segoe UI", Font.BOLD, 24);
     public static final Font TIMETABLE_SECTION = new Font("Segoe UI", Font.BOLD, 18);
+    public static final Font PROFILE_SECTION = new Font("Segoe UI", Font.BOLD, 16);
+    public static final Font PROFILE_STUDENT_NAME = new Font("Segoe UI", Font.BOLD, 20);
+    public static final Font PROFILE_DIALOG_TITLE = new Font("Segoe UI", Font.BOLD, 18);
+    public static final Font PROFILE_VALUE = new Font("Segoe UI", Font.BOLD, 14);
     public static final Font FONT_CARD_TITLE = new Font("Segoe UI", Font.BOLD, 15);
     public static final Font FONT_BODY_BOLD = new Font("Segoe UI", Font.BOLD, 13);
     public static final Font FONT_BODY = new Font("Segoe UI", Font.PLAIN, 13);
     public static final Font FONT_SMALL = new Font("Segoe UI", Font.PLAIN, 12);
     public static final Font FONT_METRIC = new Font("Segoe UI", Font.BOLD, 26);
     public static final Font FONT_METRIC_SUB = new Font("Segoe UI", Font.PLAIN, 11);
+    public static final Color PROFILE_ERROR = new Color(220, 38, 38);
+    public static final Color PROFILE_WARNING = new Color(217, 119, 6);
+    public static final Color PROFILE_SUCCESS = new Color(5, 150, 105);
+    public static final Color PROFILE_LOCKED_BG = new Color(248, 250, 252);
+    public static final Color PROFILE_OVERLAY = new Color(15, 23, 42, 105);
+    public static final Color PROFILE_SHADOW_SOFT = new Color(15, 23, 42, 12);
 
     public static void setAntiAliasing(Graphics2D g2) {
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);

@@ -2,6 +2,7 @@ package com.facultyams.ui.components;
 
 import com.facultyams.model.Student;
 import com.facultyams.service.DataService;
+import com.facultyams.service.ProfileChangeListener;
 import com.facultyams.ui.theme.IconHelper;
 import com.facultyams.ui.theme.Theme;
 import java.awt.*;
@@ -23,6 +24,10 @@ public class TopBarPanel extends JPanel {
     private int notificationCount;
     private JPanel notificationBell;
     private JTextField searchField;
+    private AvatarLabel profileAvatar;
+    private JLabel profileName;
+    private JLabel profileDegree;
+    private final ProfileChangeListener profileChangeListener;
 
     private static final Color COLOR_TEXT_PRIMARY = Theme.TEXT_MAIN;
     private static final Color COLOR_TEXT_SECONDARY = Theme.TEXT_MUTED;
@@ -36,9 +41,11 @@ public class TopBarPanel extends JPanel {
                        Consumer<String> searchCallback, Consumer<String> navigationCallback) {
         this.navigationCallback = navigationCallback;
         this.searchCallback = searchCallback;
+        this.profileChangeListener = student -> SwingUtilities.invokeLater(() -> updateProfileChip(student));
         this.notificationAction = () -> {
             if (navigationCallback != null) navigationCallback.accept("Notice Board");
         };
+        DataService.getInstance().addProfileChangeListener(profileChangeListener);
 
         setPreferredSize(new Dimension(0, 64));
         setBackground(Color.WHITE);
@@ -96,6 +103,21 @@ public class TopBarPanel extends JPanel {
             searchField.setText("");
             searchField.setForeground(COLOR_TEXT_MUTED);
             searchField.repaint();
+        }
+    }
+
+    /** Keeps the shared search field visible but suppresses its caret on non-search profile views. */
+    public void setSearchInputActive(boolean active) {
+        if (searchField == null) return;
+        searchField.setEditable(active);
+        searchField.setFocusable(active);
+        if (!active) {
+            searchField.setCaretPosition(0);
+            searchField.getCaret().setVisible(false);
+            searchField.setForeground(COLOR_TEXT_MUTED);
+        } else {
+            searchField.setForeground(searchField.getText().isEmpty()
+                    ? COLOR_TEXT_MUTED : COLOR_TEXT_PRIMARY);
         }
     }
 
@@ -195,47 +217,29 @@ public class TopBarPanel extends JPanel {
         pill.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
         // Circular Avatar "AV"
-        JPanel avatar = new JPanel() {
-            @Override
-            protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                Theme.setAntiAliasing(g2);
-                g2.setColor(COLOR_PRIMARY);
-                g2.fillOval(0, 0, getWidth(), getHeight());
-                g2.setColor(Color.WHITE);
-                g2.setFont(new Font("Segoe UI", Font.BOLD, 12));
-                FontMetrics fm = g2.getFontMetrics();
-                String in = "AV";
-                int tx = (getWidth() - fm.stringWidth(in)) / 2;
-                int ty = (getHeight() - fm.getHeight()) / 2 + fm.getAscent();
-                g2.drawString(in, tx, ty);
-                g2.dispose();
-            }
-        };
-        avatar.setOpaque(false);
-        avatar.setPreferredSize(new Dimension(34, 34));
+        profileAvatar = new AvatarLabel(s.getProfileImageUrl(), initials(s.getFullName()), 34);
 
         // Text: Abhishek Verma + B.Tech CSE • 3rd Year
         JPanel textP = new JPanel();
         textP.setOpaque(false);
         textP.setLayout(new BoxLayout(textP, BoxLayout.Y_AXIS));
 
-        JLabel nameLbl = new JLabel(s.getFullName());
-        nameLbl.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        nameLbl.setForeground(COLOR_TEXT_PRIMARY);
+        profileName = new JLabel(s.getFullName());
+        profileName.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        profileName.setForeground(COLOR_TEXT_PRIMARY);
 
         String degree = s.getDegreeProgram();
         if (degree.contains("-")) {
             degree = degree.replace("-", "•");
         }
-        JLabel roleLbl = new JLabel(degree);
-        roleLbl.setFont(new Font("Segoe UI", Font.PLAIN, 11));
-        roleLbl.setForeground(COLOR_TEXT_SECONDARY);
+        profileDegree = new JLabel(degree);
+        profileDegree.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        profileDegree.setForeground(COLOR_TEXT_SECONDARY);
 
-        textP.add(nameLbl);
-        textP.add(roleLbl);
+        textP.add(profileName);
+        textP.add(profileDegree);
 
-        pill.add(avatar);
+        pill.add(profileAvatar);
         pill.add(textP);
 
         pill.addMouseListener(new MouseAdapter() {
@@ -248,5 +252,21 @@ public class TopBarPanel extends JPanel {
         });
 
         return pill;
+    }
+
+    private void updateProfileChip(Student student) {
+        if (profileAvatar == null) return;
+        profileAvatar.setImagePath(student.getProfileImageUrl());
+        if (profileName != null) profileName.setText(student.getFullName());
+        if (profileDegree != null) {
+            profileDegree.setText(student.getDegreeProgram().replace("-", "\u2022"));
+        }
+    }
+
+    private String initials(String fullName) {
+        if (fullName == null || fullName.isBlank()) return "ST";
+        String[] parts = fullName.trim().split("\\s+");
+        return parts.length == 1 ? parts[0].substring(0, 1).toUpperCase()
+                : (parts[0].substring(0, 1) + parts[parts.length - 1].substring(0, 1)).toUpperCase();
     }
 }
