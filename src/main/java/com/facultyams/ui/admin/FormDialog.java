@@ -1,17 +1,28 @@
 package com.facultyams.ui.admin;
 
+import javax.swing.BorderFactory;
 import javax.swing.JButton;
+import javax.swing.JComponent;
 import javax.swing.JDialog;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
 import java.awt.BorderLayout;
 import java.awt.Component;
+import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Window;
+import java.awt.event.KeyEvent;
 import java.util.function.BooleanSupplier;
 
-/** Shows an Add/Edit form in a modal dialog with Save and Cancel buttons (shared by the management screens). */
+/**
+ * Shows an Add/Edit form in a modal dialog with a heading, Save and Cancel buttons (shared by the management
+ * screens). Enter saves and Escape cancels, so forms can be completed from the keyboard.
+ */
 final class FormDialog {
+
+    private static final int MIN_WIDTH = 460;
 
     private FormDialog() {
     }
@@ -35,17 +46,33 @@ final class FormDialog {
         });
         cancelButton.addActionListener(e -> dialog.dispose());
 
-        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 8));
+        JLabel heading = new JLabel(title);
+        heading.setFont(AdminTheme.SECTION);
+        heading.setForeground(AdminTheme.TEXT);
+        heading.setBorder(BorderFactory.createEmptyBorder(20, 22, 4, 22));
+
+        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        buttons.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(1, 0, 0, 0, AdminTheme.BORDER),
+                BorderFactory.createEmptyBorder(12, 14, 12, 14)));
         buttons.add(cancelButton);
         buttons.add(saveButton);
+
         JPanel content = new JPanel(new BorderLayout());
+        content.add(heading, BorderLayout.NORTH);
         content.add(form, BorderLayout.CENTER);
         content.add(buttons, BorderLayout.SOUTH);
         AdminTheme.apply(content);
         AdminTheme.secondary(cancelButton);
+        content.setOpaque(true);
+        content.setBackground(AdminTheme.PAGE_BG);
         dialog.setContentPane(content);
         dialog.getRootPane().setDefaultButton(saveButton);
+        dialog.getRootPane().registerKeyboardAction(e -> dialog.dispose(),
+                KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), JComponent.WHEN_IN_FOCUSED_WINDOW);
         dialog.pack();
+        dialog.setMinimumSize(new Dimension(MIN_WIDTH, dialog.getHeight()));
+        dialog.setSize(Math.max(MIN_WIDTH, dialog.getWidth()), dialog.getHeight());
         dialog.setLocationRelativeTo(parent);
         dialog.setVisible(true);
         return saved[0];

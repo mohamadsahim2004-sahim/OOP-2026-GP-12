@@ -8,99 +8,44 @@ import com.facultyams.service.NoticeService;
 import com.facultyams.util.UIUtil;
 
 import javax.swing.BorderFactory;
-import javax.swing.JButton;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
+import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
-import java.awt.BorderLayout;
-import java.awt.FlowLayout;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.time.LocalDate;
-import java.time.format.DateTimeParseException;
+import java.awt.Color;
+import java.awt.Dimension;
 import java.util.List;
 
-/** Admin screen: create / view / update / delete / search notices. */
+/**
+ * Admin screen: search, view, add, edit and delete notices. A notice is visible to its audience as soon as it is
+ * saved (the database has no draft / unpublished state), so "Add" publishes it and "Delete" withdraws it.
+ */
 public class NoticeManagementPanel extends AbstractManagementPanel<Notice> {
 
-    private static final int PREVIEW_LENGTH = 60;
+    private static final long serialVersionUID = 1L;
+    private static final String[] COLUMNS = {"ID", "Title", "Date", "Posted by", "Actions"};
+    private static final int ACTIONS_COLUMN = 4;
 
-    private final NoticeService noticeService = new NoticeService();
-
-    private final JTextField searchField = new JTextField(25);
-    private final JTextField titleField = new JTextField(30);
-    private final JTextField dateField = new JTextField(10);
-    private final JTextArea contentArea = new JTextArea(4, 40);
+    private final transient NoticeService noticeService;
+    final JTextField searchField = searchField("Search notices...");
 
     public NoticeManagementPanel() {
-        super(new String[]{"ID", "Title", "Content", "Date", "Posted by"});
-        contentArea.setLineWrap(true);
-        contentArea.setWrapStyleWord(true);
-        add(buildSearchBar(), BorderLayout.NORTH);
-        add(buildForm(), BorderLayout.SOUTH);
-        AdminTheme.apply(this);
+        this(new NoticeService());
     }
 
-    private JPanel buildSearchBar() {
-        JPanel bar = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        JButton searchButton = new JButton("Search");
-        JButton showAllButton = new JButton("Show all");
-        bar.add(new JLabel("Search title / content:"));
-        bar.add(searchField);
-        bar.add(searchButton);
-        bar.add(showAllButton);
-        searchButton.addActionListener(e -> refresh());
-        searchField.addActionListener(e -> refresh());
-        showAllButton.addActionListener(e -> {
-            searchField.setText("");
-            refresh();
-        });
-        return bar;
-    }
-
-    private JPanel buildForm() {
-        JPanel form = new JPanel(new GridBagLayout());
-        addField(form, 0, 0, "Title:", titleField);
-        addField(form, 0, 1, "Date (yyyy-MM-dd):", dateField);
-
-        GridBagConstraints c = new GridBagConstraints();
-        c.insets = new java.awt.Insets(3, 5, 3, 5);
-        c.gridy = 1;
-        c.gridx = 0;
-        c.anchor = GridBagConstraints.FIRST_LINE_END;
-        form.add(new JLabel("Content:"), c);
-        c.gridx = 1;
-        c.gridwidth = 3;
-        c.anchor = GridBagConstraints.LINE_START;
-        c.fill = GridBagConstraints.HORIZONTAL;
-        c.weightx = 1.0;
-        form.add(new JScrollPane(contentArea), c);
-
-        JButton addButton = new JButton("Add Notice");
-        JButton updateButton = new JButton("Update");
-        JButton deleteButton = new JButton("Delete");
-        JButton clearButton = new JButton("Clear");
-        addButton.addActionListener(e -> addNotice());
-        updateButton.addActionListener(e -> updateNotice());
-        deleteButton.addActionListener(e -> deleteNotice());
-        clearButton.addActionListener(e -> {
-            table.clearSelection();
-            clearForm();
-        });
-
-        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        buttons.add(addButton);
-        buttons.add(updateButton);
-        buttons.add(deleteButton);
-        buttons.add(clearButton);
-
-        JPanel south = new JPanel(new BorderLayout());
-        south.setBorder(BorderFactory.createTitledBorder("Notice details"));
-        south.add(form, BorderLayout.CENTER);
-        south.add(buttons, BorderLayout.SOUTH);
-        return south;
+    public NoticeManagementPanel(NoticeService noticeService) {
+        super("notice", COLUMNS);
+        this.noticeService = noticeService;
+        liveSearch(searchField, this::refresh);
+        setToolbar(filterRow(260, new double[0], searchField), addButton("Add Notice", this::addNotice));
+        table.getColumnModel().getColumn(1).setPreferredWidth(320);
+        table.getColumnModel().getColumn(2).setPreferredWidth(110);
+        table.getColumnModel().getColumn(3).setPreferredWidth(160);
+        RowActions.install(table, ACTIONS_COLUMN,
+                new RowActions.Action(AdminIcons.Kind.EYE, new Color(0x475569), new Color(0xEEF2F7), "View",
+                        this::viewRow),
+                RowActions.edit(this::editRow),
+                RowActions.delete(this::deleteRow));
     }
 
     @Override
@@ -110,82 +55,54 @@ public class NoticeManagementPanel extends AbstractManagementPanel<Notice> {
 
     @Override
     protected Object[] toRow(Notice n) {
-        String content = n.getContent().replace('\n', ' ');
-        if (content.length() > PREVIEW_LENGTH) {
-            content = content.substring(0, PREVIEW_LENGTH) + "...";
-        }
-        return new Object[]{n.getNoticeId(), n.getTitle(), content, n.getNoticeDate(),
-                n.getCreatedByName() == null ? "-" : n.getCreatedByName()};
+        return new Object[] {code('N', n.getNoticeId()), n.getTitle(), n.getNoticeDate(),
+                n.getCreatedByName() == null ? "-" : n.getCreatedByName(), ""};
     }
 
-    @Override
-    protected void fillForm(Notice n) {
-        titleField.setText(n.getTitle());
-        dateField.setText(n.getNoticeDate().toString());
-        contentArea.setText(n.getContent());
-        contentArea.setCaretPosition(0);
-    }
-
-    @Override
-    protected void clearForm() {
-        titleField.setText("");
-        dateField.setText(LocalDate.now().toString());
-        contentArea.setText("");
-    }
-
-    /** Copies the form into a Notice. Throws ValidationException for an unreadable date. */
-    private Notice readForm() throws ValidationException {
-        Notice n = new Notice();
-        n.setTitle(titleField.getText());
-        n.setContent(contentArea.getText());
-        try {
-            n.setNoticeDate(LocalDate.parse(dateField.getText().trim()));
-        } catch (DateTimeParseException e) {
-            throw new ValidationException("Date must be written as yyyy-MM-dd, e.g. 2026-09-20.", e);
-        }
-        return n;
-    }
+    // ------------------------------------------------------------------ actions
 
     private void addNotice() {
-        try {
-            Notice n = noticeService.addNotice(readForm());
-            UIUtil.showInfo(this, "Notice '" + n.getTitle() + "' published.");
+        if (NoticeFormPanel.showDialog(this, noticeService, null)) {
             refresh();
-        } catch (ValidationException | AuthorizationException | DatabaseException e) {
-            UIUtil.showException(this, e);
+            success("Notice published.");
         }
     }
 
-    private void updateNotice() {
-        Notice selected = requireSelection("notice");
-        if (selected == null) {
+    private void editRow(int row) {
+        Notice notice = itemAt(row);
+        if (notice != null && NoticeFormPanel.showDialog(this, noticeService, notice)) {
+            refresh();
+            success("Notice updated.");
+        }
+    }
+
+    /** Read-only view of the full notice text. */
+    private void viewRow(int row) {
+        Notice notice = itemAt(row);
+        if (notice == null) {
+            return;
+        }
+        JTextArea text = new JTextArea(notice.getContent(), 10, 40);
+        text.setEditable(false);
+        text.setLineWrap(true);
+        text.setWrapStyleWord(true);
+        text.setFont(AdminTheme.FONT);
+        text.setBorder(BorderFactory.createEmptyBorder(8, 10, 8, 10));
+        JScrollPane scroll = new JScrollPane(text);
+        scroll.setPreferredSize(new Dimension(460, 220));
+        JOptionPane.showMessageDialog(this, new Object[] {notice.getTitle() + "  (" + notice.getNoticeDate() + ")", scroll},
+                "Notice", JOptionPane.PLAIN_MESSAGE);
+    }
+
+    private void deleteRow(int row) {
+        Notice notice = itemAt(row);
+        if (notice == null || !UIUtil.confirm(this, "Delete notice \"" + notice.getTitle() + "\"?")) {
             return;
         }
         try {
-            Notice n = readForm();
-            n.setNoticeId(selected.getNoticeId());
-            noticeService.updateNotice(n);
-            UIUtil.showInfo(this, "Notice updated.");
+            noticeService.deleteNotice(notice.getNoticeId());
             refresh();
-        } catch (ValidationException | AuthorizationException | DatabaseException e) {
-            UIUtil.showException(this, e);
-        }
-    }
-
-    @Override
-    protected void deleteSelected() {
-        deleteNotice();
-    }
-
-    private void deleteNotice() {
-        Notice selected = requireSelection("notice");
-        if (selected == null || !UIUtil.confirm(this, "Delete notice \"" + selected.getTitle() + "\"?")) {
-            return;
-        }
-        try {
-            noticeService.deleteNotice(selected.getNoticeId());
-            UIUtil.showInfo(this, "Notice deleted.");
-            refresh();
+            success("Notice deleted.");
         } catch (ValidationException | AuthorizationException | DatabaseException e) {
             UIUtil.showException(this, e);
         }
