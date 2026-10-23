@@ -155,4 +155,183 @@ public abstract class AbstractManagementPanel<T> extends JPanel implements Refre
         c.gridy = 1;
         empty.add(emptyLabel, c);
         c.gridy = 2;
-        c.fill =
+        c.fill = GridBagConstraints.HORIZONTAL;
+        c.weightx = 1;
+        empty.add(errorText, c);
+        c.gridy = 3;
+        c.fill = GridBagConstraints.NONE;
+        empty.add(retryButton, c);
+        return empty;
+    }
+
+    // ------------------------------------------------------------------ for subclasses
+
+    protected abstract List<T> loadItems() throws DatabaseException, AuthorizationException;
+
+    protected abstract Object[] toRow(T item);
+
+    protected void loadLookups() throws DatabaseException, AuthorizationException {
+        // nothing by default
+    }
+
+    /** Called after every successful or failed load with the full (unpaged) list. */
+    protected void afterLoad(List<T> items) {
+        // nothing by default
+    }
+
+    /** The toolbar above the card: filters on the left, the Add button on the right. */
+    protected final void setToolbar(JComponent filters, JComponent action) {
+        JPanel bar = new JPanel(new BorderLayout(12, 0));
+        bar.setOpaque(false);
+        bar.setBorder(BorderFactory.createEmptyBorder(0, 0, 4, 0));
+        bar.add(filters, BorderLayout.CENTER);
+        if (action != null) {
+            JPanel right = new JPanel(new BorderLayout());
+            right.setOpaque(false);
+            right.add(action, BorderLayout.NORTH);
+            bar.add(right, BorderLayout.EAST);
+        }
+        toolbarSlot.add(bar, BorderLayout.CENTER);
+    }
+
+    /** Lays out the filter controls in a responsive row that wraps on narrow windows. */
+    protected static JPanel filterRow(int minCellWidth, double[] weights, JComponent... parts) {
+        JPanel row = new JPanel(new ResponsiveGridLayout(minCellWidth, 10, weights));
+        row.setOpaque(false);
+        for (JComponent part : parts) {
+            row.add(part);
+        }
+        return row;
+    }
+
+    /** Additional alternative bodies (for example a weekly timetable grid) that replace the table. */
+    protected final void addView(String name, JComponent component) {
+        body.add(component, name);
+    }
+
+    protected final void setView(String name) {
+        view = name;
+        render();
+    }
+
+    protected final String getView() {
+        return view;
+    }
+
+    /** Shows a green confirmation ("User created.") above the table for a few seconds. */
+    protected final void success(String message) {
+        banner.setText(message);
+        bannerBox.setVisible(true);
+        bannerTimer.restart();
+        revalidate();
+    }
+
+    protected static JButton addButton(String text, Runnable action) {
+        JButton b = new JButton(text, AdminIcons.of(AdminIcons.Kind.PLUS, 16, java.awt.Color.WHITE));
+        AdminTheme.primary(b);
+        b.addActionListener(e -> action.run());
+        return b;
+    }
+
+    protected static HintTextField searchField(String hint) {
+        return new HintTextField(hint, 18).icon(AdminIcons.Kind.SEARCH);
+    }
+
+    /** Searches while typing (after a short pause) and immediately on Enter. */
+    protected static void liveSearch(JTextField field, Runnable search) {
+        Timer pause = new Timer(350, e -> search.run());
+        pause.setRepeats(false);
+        field.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                pause.restart();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                pause.restart();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                pause.restart();
+            }
+        });
+        field.addActionListener(e -> {
+            pause.stop();
+            search.run();
+        });
+    }
+
+    /** "U007" style id shown in the first column. */
+    protected static String code(char prefix, int id) {
+        return String.format("%c%03d", prefix, id);
+    }
+
+    /** The record shown in the given table row of the current page. */
+    protected final T itemAt(int row) {
+        return pager.get(row);
+    }
+
+    protected final T getSelectedItem() {
+        return pager.get(table.getSelectedRow());
+    }
+
+    // ------------------------------------------------------------------ loading and rendering
+
+    @Override
+    public void refresh() {
+        List<T> items;
+        String error = null;
+        try {
+            loadLookups();
+            items = loadItems();
+        } catch (DatabaseException | AuthorizationException e) {
+            items = new ArrayList<>();
+            error = e.getMessage();
+            if (e instanceof DatabaseException) {
+                System.err.println("Database error: " + e.getMessage());
+                if (e.getCause() != null) {
+                    e.getCause().printStackTrace();
+                }
+            }
+        }
+        pager.setItems(items);
+        errorText.setText(error == null ? "" : error);
+        errorText.setVisible(error != null);
+        retryButton.setVisible(error != null);
+        emptyLabel.setText(error != null ? "Could not load " + noun + "s" : "No " + noun + "s found");
+        renderPage();
+        afterLoad(items);
+    }
+
+    /** Fills the table with the current page and shows the table, the alternative view or the empty state. */
+    private void renderPage() {
+        tableModel.setRowCount(0);
+        for (T item : pager.pageItems()) {
+            tableModel.addRow(toRow(item));
+        }
+        render();
+    }
+
+    private void render() {
+        boolean empty = pager.total() == 0;
+        bodyCards.show(body, empty ? EMPTY : view);
+        footer.setVisible(!empty && TABLE.equals(view));
+        revalidate();
+        repaint();
+    }
+
+    protected static DefaultListCellRenderer nullRenderer(String nullText) {
+        return new DefaultListCellRenderer() {
+            private static final long serialVersionUID = 1L;
+
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value, int index,
+                                                          boolean isSelected, boolean cellHasFocus) {
+                return super.getListCellRendererComponent(list, value == null ? nullText : value,
+                        index, isSelected, cellHasFocus);
+            }
+        };
+    }
+}
