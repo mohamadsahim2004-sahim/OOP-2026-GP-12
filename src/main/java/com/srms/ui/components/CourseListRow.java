@@ -24,14 +24,14 @@ public class CourseListRow extends Ui.Card {
         details.setLayout(new BoxLayout(details, BoxLayout.Y_AXIS));
         JLabel code = new JLabel(course.code() + "  ·  " + course.semester().replace("Semester", "Sem"));
         code.setFont(Theme.FONT_SMALL);
-        code.setForeground(Theme.TEXT_MUTED);
+        code.setForeground(Theme.COURSE_TEXT_MUTED);
         JLabel title = new JLabel(course.title());
         title.setFont(Theme.FONT_SUBTITLE);
-        title.setForeground(Theme.TEXT_MAIN);
+        title.setForeground(Theme.COURSE_TEXT_MAIN);
         JLabel lecturer = new JLabel((course.lecturerName() == null ? "" : course.lecturerName())
                 + "  ·  " + course.credits() + " credits");
         lecturer.setFont(Theme.FONT_SMALL);
-        lecturer.setForeground(Theme.TEXT_MUTED);
+        lecturer.setForeground(Theme.COURSE_TEXT_MUTED);
         details.add(code);
         details.add(Box.createVerticalStrut(4));
         details.add(title);
@@ -42,7 +42,7 @@ public class CourseListRow extends Ui.Card {
         progress.setOpaque(false);
         progress.setLayout(new BoxLayout(progress, BoxLayout.Y_AXIS));
         JLabel percent = new JLabel(course.progressPercent() + "%");
-        percent.setFont(Theme.FONT_BODY_BOLD);
+        percent.setFont(Theme.COURSE_BODY_BOLD);
         percent.setForeground(Theme.PRIMARY);
         JProgressBar bar = new JProgressBar(0, 100);
         bar.setValue(course.progressPercent());

@@ -11,6 +11,19 @@ import javax.swing.BorderFactory;
 public final class Theme {
     private Theme() {}
 
+    public static final int PAGE_PADDING = 24;
+    public static final int SECTION_GAP = 16;
+    public static final int CARD_GAP = 16;
+    public static final int CARD_PADDING = 20;
+    public static final int CONTROL_GAP = 12;
+    public static final int CONTROL_HEIGHT = 40;
+    public static final int RADIUS_CARD = 16;
+    public static final int RADIUS_CONTROL = 8;
+
+    public static final Color COURSE_PAGE_BG = new Color(245, 247, 251);
+    public static final Color COURSE_TEXT_MAIN = new Color(17, 24, 39);
+    public static final Color COURSE_TEXT_MUTED = new Color(107, 114, 128);
+
     // Primary Colors
     public static final Color PRIMARY = new Color(37, 99, 235);        // #2563EB
     public static final Color PRIMARY_DARK = new Color(29, 78, 216);   // #1D4ED8
@@ -50,6 +63,8 @@ public final class Theme {
     public static final Font FONT_SUBTITLE = new Font("Segoe UI", Font.BOLD, 15);
     public static final Font FONT_BODY_BOLD = new Font("Segoe UI", Font.BOLD, 13);
     public static final Font FONT_BODY = new Font("Segoe UI", Font.PLAIN, 13);
+    public static final Font COURSE_BODY = new Font("Segoe UI", Font.PLAIN, 14);
+    public static final Font COURSE_BODY_BOLD = new Font("Segoe UI", Font.BOLD, 14);
     public static final Font FONT_SMALL = new Font("Segoe UI", Font.PLAIN, 12);
     public static final Font FONT_TINY = new Font("Segoe UI", Font.BOLD, 11);
 

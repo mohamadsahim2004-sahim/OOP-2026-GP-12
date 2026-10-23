@@ -3,13 +3,13 @@ package com.srms.ui.views;
 import com.srms.Theme;
 import com.srms.Ui;
 import com.srms.model.Course;
-import com.srms.model.CourseStatus;
-import com.srms.model.SortOption;
 import com.srms.model.ViewMode;
 import com.srms.service.CourseFilter;
 import com.srms.ui.components.CourseCard;
 import com.srms.ui.components.CourseListRow;
 import com.srms.ui.components.CourseToolbar;
+import com.srms.ui.components.Icons;
+import com.srms.ui.components.PrimaryButton;
 import java.awt.*;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
@@ -33,9 +33,11 @@ public class CourseOverviewView extends JPanel {
     public CourseOverviewView(Consumer<Course> onCourseSelected, Runnable onManageEnrollment) {
         this.onCourseSelected = onCourseSelected;
         this.onManageEnrollment = onManageEnrollment;
-        setLayout(new BorderLayout(0, 16));
-        setOpaque(false);
-        setBorder(BorderFactory.createEmptyBorder(16, 16, 20, 16));
+        setLayout(new BorderLayout());
+        setOpaque(true);
+        setBackground(Theme.COURSE_PAGE_BG);
+        setBorder(BorderFactory.createEmptyBorder(Theme.PAGE_PADDING, Theme.PAGE_PADDING,
+                Theme.PAGE_PADDING, Theme.PAGE_PADDING));
         buildHeader();
         buildCourseList();
         toolbar.addFilterListener(this::applyFilters);
@@ -47,49 +49,63 @@ public class CourseOverviewView extends JPanel {
     private void buildHeader() {
         JPanel header = new JPanel();
         header.setOpaque(false);
-        header.setLayout(new BoxLayout(header, BoxLayout.Y_AXIS));
+        header.setLayout(new GridBagLayout());
+        header.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 8));
 
         JPanel titleRow = new JPanel(new BorderLayout(16, 0));
         titleRow.setOpaque(false);
         JLabel title = new JLabel("Course overview");
         title.setFont(Theme.FONT_TITLE);
-        title.setForeground(Theme.TEXT_MAIN);
+        title.setForeground(Theme.COURSE_TEXT_MAIN);
         titleRow.add(title, BorderLayout.WEST);
         if (onManageEnrollment != null) {
-            JButton manage = new JButton("Manage Enrollment");
-            manage.setFont(Theme.FONT_BODY_BOLD);
-            manage.setForeground(Color.WHITE);
-            manage.setBackground(Theme.PRIMARY);
-            manage.setFocusPainted(false);
-            manage.setBorder(BorderFactory.createEmptyBorder(10, 16, 10, 16));
-            manage.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-            manage.addMouseListener(new java.awt.event.MouseAdapter() {
-                @Override public void mouseEntered(java.awt.event.MouseEvent e) { manage.setBackground(Theme.PRIMARY_DARK); }
-                @Override public void mouseExited(java.awt.event.MouseEvent e) { manage.setBackground(Theme.PRIMARY); }
-            });
+            JButton manage = new PrimaryButton("Manage Enrollment");
             manage.addActionListener(e -> onManageEnrollment.run());
             titleRow.add(manage, BorderLayout.EAST);
         }
-        header.add(titleRow);
-        header.add(Box.createVerticalStrut(16));
+        addHeaderItem(header, titleRow, 0);
+        addHeaderGap(header, 1, Theme.SECTION_GAP);
 
         Ui.Card toolbarCard = new Ui.Card(16, Color.WHITE, Theme.CARD_BORDER);
         toolbarCard.setLayout(new BorderLayout());
         toolbarCard.add(toolbar, BorderLayout.CENTER);
-        header.add(toolbarCard);
-        header.add(Box.createVerticalStrut(8));
-        resultCount.setFont(Theme.FONT_SMALL);
-        resultCount.setForeground(Theme.TEXT_MUTED);
-        resultCount.setBorder(BorderFactory.createEmptyBorder(0, 4, 0, 0));
-        header.add(resultCount);
+        addHeaderItem(header, toolbarCard, 2);
+        addHeaderGap(header, 3, Theme.CARD_GAP / 2);
+        resultCount.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        resultCount.setForeground(Theme.COURSE_TEXT_MUTED);
+        resultCount.setAlignmentX(Component.LEFT_ALIGNMENT);
+        resultCount.setHorizontalAlignment(SwingConstants.LEFT);
+        resultCount.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
+        addHeaderItem(header, resultCount, 4);
+        addHeaderGap(header, 5, Theme.CARD_GAP / 2);
         add(header, BorderLayout.NORTH);
+    }
+
+    private void addHeaderItem(JPanel header, Component component, int row) {
+        GridBagConstraints c = new GridBagConstraints();
+        c.gridx = 0;
+        c.gridy = row;
+        c.weightx = 1;
+        c.fill = GridBagConstraints.HORIZONTAL;
+        c.anchor = GridBagConstraints.WEST;
+        header.add(component, c);
+    }
+
+    private void addHeaderGap(JPanel header, int row, int height) {
+        GridBagConstraints c = new GridBagConstraints();
+        c.gridx = 0;
+        c.gridy = row;
+        c.weightx = 1;
+        c.fill = GridBagConstraints.HORIZONTAL;
+        header.add(Box.createRigidArea(new Dimension(0, height)), c);
     }
 
     private void buildCourseList() {
         gridContainer.setOpaque(false);
-        gridContainer.setBorder(BorderFactory.createEmptyBorder(4, 4, 12, 4));
+        gridContainer.setBorder(BorderFactory.createEmptyBorder());
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
         scrollPane.setOpaque(false);
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
         scrollPane.getViewport().setOpaque(false);
         Ui.applyThinScrollBar(scrollPane);
         add(scrollPane, BorderLayout.CENTER);
@@ -117,25 +133,25 @@ public class CourseOverviewView extends JPanel {
 
     private void renderCards(ViewMode viewMode) {
         gridContainer.removeAll();
+        gridContainer.setPreferredSize(null);
+        gridContainer.setMinimumSize(new Dimension(0, 0));
         if (visibleCourses.isEmpty()) {
             gridContainer.setLayout(new GridBagLayout());
             JPanel emptyState = new JPanel();
             emptyState.setOpaque(false);
             emptyState.setLayout(new BoxLayout(emptyState, BoxLayout.Y_AXIS));
-            JLabel icon = new JLabel("⌕", SwingConstants.CENTER);
-            icon.setFont(new Font("Segoe UI", Font.PLAIN, 36));
-            icon.setForeground(Theme.TEXT_SUBTLE);
+            JComponent icon = new EmptyStateIcon();
             icon.setAlignmentX(Component.CENTER_ALIGNMENT);
             JLabel heading = new JLabel("No courses found");
             heading.setFont(Theme.FONT_SECTION);
-            heading.setForeground(Theme.TEXT_MAIN);
+            heading.setForeground(Theme.COURSE_TEXT_MAIN);
             heading.setAlignmentX(Component.CENTER_ALIGNMENT);
             JLabel hint = new JLabel("Try changing your search or filters.");
-            hint.setFont(Theme.FONT_BODY);
-            hint.setForeground(Theme.TEXT_MUTED);
+            hint.setFont(Theme.COURSE_BODY);
+            hint.setForeground(Theme.COURSE_TEXT_MUTED);
             hint.setAlignmentX(Component.CENTER_ALIGNMENT);
             JButton clear = new JButton("Clear filters");
-            clear.setFont(Theme.FONT_BODY_BOLD);
+            clear.setFont(Theme.COURSE_BODY_BOLD);
             clear.setForeground(Theme.PRIMARY);
             clear.setBorder(BorderFactory.createEmptyBorder(6, 4, 6, 4));
             clear.setContentAreaFilled(false);
@@ -144,9 +160,9 @@ public class CourseOverviewView extends JPanel {
             clear.setAlignmentX(Component.CENTER_ALIGNMENT);
             clear.addActionListener(e -> toolbar.clearFilters());
             emptyState.add(icon);
-            emptyState.add(Box.createVerticalStrut(8));
+            emptyState.add(Box.createVerticalStrut(Theme.CONTROL_GAP));
             emptyState.add(heading);
-            emptyState.add(Box.createVerticalStrut(4));
+            emptyState.add(Box.createVerticalStrut(Theme.CONTROL_GAP / 2));
             emptyState.add(hint);
             emptyState.add(clear);
             gridContainer.setPreferredSize(new Dimension(Math.max(0, viewportWidth()),
@@ -168,7 +184,7 @@ public class CourseOverviewView extends JPanel {
                 c.gridy = i;
                 c.weightx = 1;
                 c.fill = GridBagConstraints.HORIZONTAL;
-                c.insets = new Insets(0, 8, 12, 8);
+                c.insets = new Insets(0, 0, Theme.CARD_GAP, 0);
                 gridContainer.add(row, c);
             }
             GridBagConstraints remainder = new GridBagConstraints();
@@ -178,24 +194,18 @@ public class CourseOverviewView extends JPanel {
             gridContainer.add(Box.createGlue(), remainder);
         } else {
             int columns = Math.max(1, currentColumns);
-            gridContainer.setLayout(new GridBagLayout());
+            gridContainer.setLayout(new GridLayout(0, columns, Theme.CARD_GAP, Theme.CARD_GAP));
             for (int i = 0; i < visibleCourses.size(); i++) {
                 CourseCard card = new CourseCard(visibleCourses.get(i), onCourseSelected, onManageEnrollment);
-                GridBagConstraints c = new GridBagConstraints();
-                c.gridx = i % columns;
-                c.gridy = i / columns;
-                c.weightx = 1;
-                c.fill = GridBagConstraints.HORIZONTAL;
-                c.anchor = GridBagConstraints.NORTH;
-                c.insets = new Insets(4, 8, 12, 8);
-                gridContainer.add(card, c);
+                gridContainer.add(card);
             }
-            for (int col = 0; col < columns; col++) {
-                GridBagConstraints remainder = new GridBagConstraints();
-                remainder.gridx = col;
-                remainder.gridy = (visibleCourses.size() + columns - 1) / columns;
-                remainder.weighty = 1;
-                gridContainer.add(Box.createGlue(), remainder);
+            int remainder = visibleCourses.size() % columns;
+            if (remainder != 0) {
+                for (int i = remainder; i < columns; i++) {
+                    JPanel spacer = new JPanel();
+                    spacer.setOpaque(false);
+                    gridContainer.add(spacer);
+                }
             }
         }
         gridContainer.revalidate();
@@ -235,5 +245,12 @@ public class CourseOverviewView extends JPanel {
         @Override public int getScrollableBlockIncrement(Rectangle visibleRect, int orientation, int direction) { return 64; }
         @Override public boolean getScrollableTracksViewportWidth() { return true; }
         @Override public boolean getScrollableTracksViewportHeight() { return false; }
+    }
+
+    private static final class EmptyStateIcon extends JComponent {
+        EmptyStateIcon() { setPreferredSize(new Dimension(40, 40)); }
+        @Override protected void paintComponent(Graphics graphics) {
+            Icons.paint((Graphics2D) graphics, Icons.Type.SEARCH, 4, 4, 32, Theme.TEXT_SUBTLE);
+        }
     }
 }
