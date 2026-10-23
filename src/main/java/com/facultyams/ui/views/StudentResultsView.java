@@ -1,14 +1,18 @@
 package com.facultyams.ui.views;
 
 import com.facultyams.model.profile.GpaClassifier;
+import com.facultyams.model.results.ResultGrade;
+import com.facultyams.model.results.ResultStatusFilter;
 import com.facultyams.service.DataService;
 import com.facultyams.service.GradingScheme;
+import com.facultyams.service.ResultFilter;
 import com.facultyams.service.ResultService;
 import com.facultyams.service.ResultService.CourseResult;
 import com.facultyams.service.ResultService.SemesterResult;
 import com.facultyams.service.ResultService.SemesterStatus;
 import com.facultyams.service.ResultService.Summary;
 import com.facultyams.ui.components.CardPanel;
+import com.facultyams.ui.components.ResultsFilterBar;
 import com.facultyams.ui.theme.IconHelper;
 import com.facultyams.ui.theme.Theme;
 import com.facultyams.util.Constants;
@@ -41,13 +45,9 @@ public class StudentResultsView extends JPanel {
     private final JPanel selectedViewPanel = new JPanel(new BorderLayout());
     private final ButtonGroup viewGroup = new ButtonGroup();
     private final List<YearTab> yearTabs = new ArrayList<>();
-    private final JTextField searchField = new PlaceholderField();
-    private final JComboBox<String> gradeFilter = new JComboBox<>(new String[]{"All grades", "A range", "B range", "C range", "D / E"});
-    private final JComboBox<String> statusFilter = new JComboBox<>(new String[]{"All statuses", "Pass", "Fail", "Provisional", "Pending"});
-    private JButton clearFiltersButton;
-    private final javax.swing.Timer searchDebounce;
+    private final ResultsFilterBar resultsFilterBar = new ResultsFilterBar();
+    private ResultFilter activeFilter = new ResultFilter("", ResultGrade.ALL, ResultStatusFilter.ALL);
     private JPanel resultsContent;
-    private String searchText = "";
     private int selectedYear = 3;
     private String selectedView = "Results";
     private int expandedCourseId = -1;
@@ -56,11 +56,6 @@ public class StudentResultsView extends JPanel {
     public StudentResultsView() {
         setOpaque(false);
         setLayout(new BorderLayout());
-        searchDebounce = new javax.swing.Timer(300, e -> {
-            searchText = searchField.getText().trim().toLowerCase(Locale.ROOT);
-            refreshResults();
-        });
-        searchDebounce.setRepeats(false);
         page.setLayout(new BoxLayout(page, BoxLayout.Y_AXIS));
         page.setOpaque(false);
         page.setBorder(BorderFactory.createEmptyBorder(0, 0, 24, 0));
@@ -328,11 +323,9 @@ public class StudentResultsView extends JPanel {
     }
 
     private JPanel createResultsToolbar() {
-        JPanel toolbar = new JPanel(new BorderLayout(12, 0));
+        JPanel toolbar = new JPanel(new GridBagLayout());
         toolbar.setOpaque(false);
-        toolbar.setPreferredSize(new Dimension(900, 40));
-        toolbar.setMinimumSize(new Dimension(0, 40));
-        toolbar.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+        toolbar.setAlignmentX(Component.LEFT_ALIGNMENT);
         JPanel tabs = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 2));
         tabs.setOpaque(false);
         yearTabs.clear();
@@ -343,93 +336,34 @@ public class StudentResultsView extends JPanel {
             yearTabs.add(tab);
             tabs.add(tab);
         }
-        JPanel controls = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 2));
-        controls.setOpaque(false);
-        searchField.setFont(Theme.FONT_BODY);
-        searchField.setBorder(BorderFactory.createEmptyBorder());
-        searchField.setOpaque(false);
-        searchField.setPreferredSize(new Dimension(92, 32));
-        searchField.addActionListener(e -> {
-            searchDebounce.stop();
-            searchText = searchField.getText().trim().toLowerCase(Locale.ROOT);
-            refreshResults();
-        });
-        searchField.getDocument().addDocumentListener(new DocumentListener() {
-            public void insertUpdate(DocumentEvent e) { searchDebounce.restart(); updateClearFiltersVisibility(); }
-            public void removeUpdate(DocumentEvent e) { searchDebounce.restart(); updateClearFiltersVisibility(); }
-            public void changedUpdate(DocumentEvent e) { searchDebounce.restart(); updateClearFiltersVisibility(); }
-        });
-        styleFilter(gradeFilter);
-        styleFilter(statusFilter);
-        gradeFilter.addActionListener(e -> {
-            refreshResults();
-            updateClearFiltersVisibility();
-        });
-        statusFilter.addActionListener(e -> {
-            refreshResults();
-            updateClearFiltersVisibility();
-        });
         FlatButton transcript = new FlatButton("Transcript");
         transcript.addActionListener(e -> showTranscriptMenu(transcript));
-        controls.add(createSearchControl());
-        controls.add(gradeFilter);
-        controls.add(statusFilter);
-        clearFiltersButton = new JButton("Clear all");
-        clearFiltersButton.setFont(Theme.FONT_SMALL);
-        clearFiltersButton.setForeground(Theme.PRIMARY);
-        clearFiltersButton.setBorderPainted(false);
-        clearFiltersButton.setContentAreaFilled(false);
-        clearFiltersButton.addActionListener(e -> {
-            searchField.setText("");
-            searchText = "";
-            gradeFilter.setSelectedIndex(0);
-            statusFilter.setSelectedIndex(0);
-            updateClearFiltersVisibility();
+        GridBagConstraints c = new GridBagConstraints();
+        c.gridx = 0;
+        c.gridy = 0;
+        c.weightx = 1;
+        c.anchor = GridBagConstraints.WEST;
+        c.fill = GridBagConstraints.HORIZONTAL;
+        c.insets = new Insets(0, 0, 8, 8);
+        toolbar.add(tabs, c);
+        c.gridx = 1;
+        c.weightx = 0;
+        c.fill = GridBagConstraints.NONE;
+        c.anchor = GridBagConstraints.EAST;
+        c.insets = new Insets(0, 0, 8, 0);
+        toolbar.add(transcript, c);
+        c.gridx = 0;
+        c.gridy = 1;
+        c.gridwidth = 2;
+        c.weightx = 1;
+        c.fill = GridBagConstraints.HORIZONTAL;
+        c.insets = new Insets(0, 0, 0, 0);
+        toolbar.add(resultsFilterBar, c);
+        resultsFilterBar.addFilterListener(filter -> {
+            activeFilter = filter;
             refreshResults();
         });
-        clearFiltersButton.setVisible(false);
-        controls.add(clearFiltersButton);
-        controls.add(transcript);
-        toolbar.add(tabs, BorderLayout.WEST);
-        toolbar.add(controls, BorderLayout.EAST);
         return toolbar;
-    }
-
-    private JComponent createSearchControl() {
-        JPanel search = new JPanel(new BorderLayout(6, 0));
-        search.setOpaque(true);
-        search.setBackground(Color.WHITE);
-        search.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(Theme.CONTROL_BORDER),
-                BorderFactory.createEmptyBorder(0, 8, 0, 6)));
-        search.setPreferredSize(new Dimension(152, 36));
-        search.add(new JLabel(IconHelper.getIcon("search", 15, Theme.TEXT_MUTED)), BorderLayout.WEST);
-        JButton clear = new JButton("x");
-        clear.setFont(Theme.FONT_SMALL);
-        clear.setForeground(Theme.TEXT_MUTED);
-        clear.setBorder(BorderFactory.createEmptyBorder(2, 4, 2, 4));
-        clear.setContentAreaFilled(false);
-        clear.setFocusPainted(false);
-        clear.setToolTipText("Clear search");
-        clear.addActionListener(e -> searchField.setText(""));
-        search.add(searchField, BorderLayout.CENTER);
-        search.add(clear, BorderLayout.EAST);
-        return search;
-    }
-
-    private void updateClearFiltersVisibility() {
-        if (clearFiltersButton == null) return;
-        boolean active = !searchField.getText().isBlank() || gradeFilter.getSelectedIndex() != 0
-                || statusFilter.getSelectedIndex() != 0;
-        clearFiltersButton.setVisible(active);
-        clearFiltersButton.getParent().revalidate();
-    }
-
-    private void styleFilter(JComboBox<String> combo) {
-        combo.setFont(Theme.FONT_SMALL);
-        combo.setBackground(Color.WHITE);
-        combo.setPreferredSize(new Dimension(92, 36));
-        combo.setBorder(BorderFactory.createLineBorder(Theme.CONTROL_BORDER));
     }
 
     private void refreshResults() {
@@ -437,9 +371,15 @@ public class StudentResultsView extends JPanel {
         resultsContent.removeAll();
         List<SemesterResult> semesters = selectedYear == 0
                 ? resultService.getSemesters() : resultService.getSemestersForYear(selectedYear);
-        String selectedGrade = (String) gradeFilter.getSelectedItem();
-        String selectedStatus = (String) statusFilter.getSelectedItem();
-        int count = 0;
+        int totalResults = semesters.stream().mapToInt(semester -> semester.courses().size()).sum();
+        int visibleResults = (int) semesters.stream().flatMap(semester -> semester.courses().stream())
+                .filter(activeFilter::matches).count();
+        JLabel resultCount = new JLabel("Showing " + visibleResults + " of " + totalResults + " results");
+        resultCount.setFont(Theme.FONT_SMALL);
+        resultCount.setForeground(Theme.TEXT_MUTED);
+        resultCount.setBorder(BorderFactory.createEmptyBorder(0, 2, 8, 0));
+        resultCount.setAlignmentX(Component.LEFT_ALIGNMENT);
+        resultsContent.add(resultCount);
         int currentYearHeading = -1;
         for (SemesterResult semester : semesters) {
             if (selectedYear == 0 && semester.year() != currentYearHeading) {
@@ -451,41 +391,39 @@ public class StudentResultsView extends JPanel {
                 resultsContent.add(heading);
             }
             List<CourseResult> filtered = semester.courses().stream()
-                    .filter(c -> matches(c, selectedGrade, selectedStatus)).toList();
+                    .filter(activeFilter::matches).toList();
             if (filtered.isEmpty() && semester.status() != SemesterStatus.UPCOMING) continue;
             resultsContent.add(createSemesterSection(semester, filtered));
             resultsContent.add(Box.createVerticalStrut(12));
-            count += filtered.size();
         }
-        if (count == 0) {
-            JLabel empty = new JLabel(searchText.isEmpty() ? "No results match the selected filters."
-                    : "No courses match \"" + searchField.getText().trim() + "\". Clear the search to see results.");
-            empty.setForeground(Theme.TEXT_MUTED);
-            empty.setFont(Theme.FONT_BODY);
+        if (visibleResults == 0) {
+            JPanel empty = new JPanel();
+            empty.setOpaque(false);
+            empty.setLayout(new BoxLayout(empty, BoxLayout.Y_AXIS));
+            JLabel message = new JLabel("No results match your filters");
+            message.setForeground(Theme.TEXT_MUTED);
+            message.setFont(Theme.FONT_BODY);
+            message.setAlignmentX(Component.CENTER_ALIGNMENT);
+            JButton clear = new JButton("Clear filters");
+            clear.setForeground(Theme.PRIMARY);
+            clear.setFont(Theme.FONT_SMALL.deriveFont(Font.BOLD));
+            clear.setBorderPainted(false);
+            clear.setContentAreaFilled(false);
+            clear.setFocusPainted(false);
+            clear.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            clear.setAlignmentX(Component.CENTER_ALIGNMENT);
+            clear.addActionListener(e -> resultsFilterBar.resetFilters());
+            empty.add(message);
+            empty.add(Box.createVerticalStrut(8));
+            empty.add(clear);
             empty.setBorder(BorderFactory.createEmptyBorder(24, 8, 24, 8));
+            empty.setAlignmentX(Component.LEFT_ALIGNMENT);
+            empty.setMaximumSize(new Dimension(Integer.MAX_VALUE, 100));
+            empty.setForeground(Theme.TEXT_MUTED);
             resultsContent.add(empty);
         }
         resultsContent.revalidate();
         resultsContent.repaint();
-    }
-
-    private boolean matches(CourseResult course, String gradeFilterValue, String statusFilterValue) {
-        if (!searchText.isEmpty() && !(course.code().toLowerCase(Locale.ROOT).contains(searchText)
-                || course.name().toLowerCase(Locale.ROOT).contains(searchText)
-                || course.lecturer().toLowerCase(Locale.ROOT).contains(searchText))) return false;
-        String grade = course.grade();
-        if (gradeFilterValue != null && !gradeFilterValue.equals("All grades")) {
-            boolean gradeMatches = switch (gradeFilterValue) {
-                case "A range" -> grade.startsWith("A");
-                case "B range" -> grade.startsWith("B");
-                case "C range" -> grade.startsWith("C");
-                default -> grade.equals("D") || grade.equals("E");
-            };
-            if (!gradeMatches) return false;
-        }
-        if (statusFilterValue != null && !statusFilterValue.equals("All statuses")
-                && !course.status().name().equalsIgnoreCase(statusFilterValue)) return false;
-        return true;
     }
 
     private JComponent createSemesterSection(SemesterResult semester, List<CourseResult> courses) {
