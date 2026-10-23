@@ -169,10 +169,9 @@ public final class StudentProfileView extends JPanel {
     private JPanel createSummaryCard() {
         Student student = profileService.getProfile();
         CardPanel card = new CardPanel(12);
-        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+        card.setLayout(new GridBagLayout());
         card.setBorder(BorderFactory.createEmptyBorder(Theme.PROFILE_CARD_PADDING, Theme.PROFILE_CARD_PADDING,
                 Theme.PROFILE_CARD_PADDING, Theme.PROFILE_CARD_PADDING));
-        card.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         avatar = new AvatarLabel(student.getProfileImageUrl(), initials(student.getFullName()), 112);
         avatarHolder = new JPanel(new GridBagLayout());
@@ -219,7 +218,7 @@ public final class StudentProfileView extends JPanel {
         JLabel name = new JLabel(student.getFullName());
         name.setFont(Theme.PROFILE_STUDENT_NAME);
         name.setForeground(Theme.TEXT_MAIN);
-        name.setAlignmentX(Component.CENTER_ALIGNMENT);
+        name.setHorizontalAlignment(SwingConstants.CENTER);
         JPanel idRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 4, 0));
         idRow.setOpaque(false);
         JLabel id = new JLabel(student.getRegNo());
@@ -232,11 +231,11 @@ public final class StudentProfileView extends JPanel {
         });
         idRow.add(id);
         idRow.add(copy);
-        idRow.setAlignmentX(Component.CENTER_ALIGNMENT);
+        idRow.setPreferredSize(new Dimension(120, idRow.getPreferredSize().height));
         JLabel program = new JLabel(student.getDegreeProgram());
         program.setFont(Theme.FONT_BODY);
         program.setForeground(Theme.TEXT_MUTED);
-        program.setAlignmentX(Component.CENTER_ALIGNMENT);
+        program.setHorizontalAlignment(SwingConstants.CENTER);
         StudentStatus status = student.getStatus() == null ? StudentStatus.ACTIVE : student.getStatus();
         JLabel active = new JLabel(status.name().charAt(0) + status.name().substring(1).toLowerCase()
                 + (status == StudentStatus.ACTIVE ? " Student" : ""));
@@ -245,22 +244,18 @@ public final class StudentProfileView extends JPanel {
         active.setForeground(status == StudentStatus.ACTIVE ? Theme.PROFILE_SUCCESS : Theme.TEXT_MUTED);
         active.setFont(Theme.FONT_SMALL.deriveFont(Font.BOLD));
         active.setBorder(BorderFactory.createEmptyBorder(4, 10, 4, 10));
-        active.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        JPanel summaryRows = new JPanel();
+        JPanel summaryRows = new JPanel(new GridBagLayout());
         summaryRows.setOpaque(false);
-        summaryRows.setLayout(new BoxLayout(summaryRows, BoxLayout.Y_AXIS));
-        summaryRows.setBorder(BorderFactory.createEmptyBorder(12, 0, 0, 0));
-        summaryRows.setAlignmentX(Component.LEFT_ALIGNMENT);
         double cgpa = student.getCgpa();
-        summaryRows.add(createCgpaRow(cgpa));
-        summaryRows.add(createSummaryRow("Department", student.getDepartment()));
-        summaryRows.add(createAdvisorRow(student.getAcademicAdvisor()));
-        summaryRows.add(createSummaryRow("Credits completed", Integer.toString(student.getCreditsCompleted())));
-        summaryRows.add(createSummaryRow("Attendance", String.format("%.0f%%", student.getAttendancePercentage())));
+        addSummaryRow(summaryRows, createCgpaRow(cgpa), 0, false);
+        addSummaryRow(summaryRows, createSummaryRow("Department", student.getDepartment()), 1, true);
+        addSummaryRow(summaryRows, createAdvisorRow(student.getAcademicAdvisor()), 2, true);
+        addSummaryRow(summaryRows, createSummaryRow("Credits completed", Integer.toString(student.getCreditsCompleted())), 3, true);
+        addSummaryRow(summaryRows, createSummaryRow("Attendance", String.format("%.0f%%", student.getAttendancePercentage())), 4, true);
         completeness.setFont(Theme.FONT_SMALL.deriveFont(Font.BOLD));
         completeness.setForeground(Theme.TEXT_MUTED);
-        completeness.setAlignmentX(Component.LEFT_ALIGNMENT);
+        completeness.setHorizontalAlignment(SwingConstants.LEFT);
         completenessBar.setValue(completionPercent(student));
         completenessBar.setBorderPainted(false);
         completenessBar.setForeground(Theme.PRIMARY);
@@ -268,39 +263,67 @@ public final class StudentProfileView extends JPanel {
         completenessBar.setPreferredSize(new Dimension(100, 5));
         completenessBar.setMinimumSize(new Dimension(10, 5));
         completenessBar.setMaximumSize(new Dimension(Integer.MAX_VALUE, 5));
-        JPanel completenessPanel = new JPanel();
+        JPanel completenessPanel = new JPanel(new BorderLayout(0, 8));
         completenessPanel.setOpaque(false);
-        completenessPanel.setLayout(new BoxLayout(completenessPanel, BoxLayout.Y_AXIS));
         completenessPanel.setBorder(BorderFactory.createEmptyBorder(12, 0, 0, 0));
-        completenessPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        completenessPanel.add(completeness);
-        completenessPanel.add(Box.createVerticalStrut(6));
-        completenessPanel.add(completenessBar);
+        completenessPanel.add(completeness, BorderLayout.NORTH);
+        completenessPanel.add(completenessBar, BorderLayout.SOUTH);
 
-        card.add(avatarHolder);
-        card.add(Box.createVerticalStrut(6));
-        card.add(name);
-        card.add(Box.createVerticalStrut(4));
-        card.add(idRow);
-        card.add(Box.createVerticalStrut(4));
-        card.add(program);
-        card.add(Box.createVerticalStrut(8));
-        card.add(active);
-        card.add(Box.createVerticalStrut(12));
-        card.add(createDivider());
-        card.add(summaryRows);
-        card.add(completenessPanel);
+        int row = 0;
+        addSummaryContent(card, avatarHolder, row++, GridBagConstraints.CENTER, 0, 0);
+        addSummaryContent(card, name, row++, GridBagConstraints.CENTER, 6, 0);
+        addSummaryContent(card, idRow, row++, GridBagConstraints.CENTER, 4, 0);
+        addSummaryContent(card, program, row++, GridBagConstraints.CENTER, 4, 0);
+        addSummaryContent(card, active, row++, GridBagConstraints.CENTER, 8, 0);
+        addSummaryContent(card, createDivider(), row++, GridBagConstraints.CENTER, 12, 0);
+        addSummaryContent(card, summaryRows, row++, GridBagConstraints.WEST, 0, 0);
+        addSummaryContent(card, completenessPanel, row++, GridBagConstraints.WEST, 12, 0);
+        GridBagConstraints spacer = new GridBagConstraints();
+        spacer.gridx = 0;
+        spacer.gridy = row;
+        spacer.weighty = 1;
+        card.add(Box.createGlue(), spacer);
         updateCompleteness(student);
         return card;
     }
 
+    private void addSummaryContent(CardPanel card, JComponent component, int row, int anchor,
+                                   int topInset, int bottomInset) {
+        GridBagConstraints c = new GridBagConstraints();
+        c.gridx = 0;
+        c.gridy = row;
+        c.weightx = 1;
+        c.fill = GridBagConstraints.HORIZONTAL;
+        c.anchor = anchor;
+        c.insets = new Insets(topInset, 0, bottomInset, 0);
+        card.add(component, c);
+    }
+
+    private void addSummaryRow(JPanel rows, JComponent component, int row, boolean divider) {
+        GridBagConstraints c = new GridBagConstraints();
+        c.gridx = 0;
+        c.gridy = row;
+        c.weightx = 1;
+        c.fill = GridBagConstraints.HORIZONTAL;
+        c.anchor = GridBagConstraints.WEST;
+        if (divider) {
+            component.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createMatteBorder(1, 0, 0, 0, Theme.TIMETABLE_CARD_BORDER),
+                    BorderFactory.createEmptyBorder(8, 0, 8, 0)));
+        }
+        rows.add(component, c);
+    }
+
     private JComponent createCgpaRow(double cgpa) {
-        JPanel row = new JPanel(new BorderLayout(0, 5));
+        JPanel row = new JPanel();
         row.setOpaque(false);
+        row.setLayout(new BoxLayout(row, BoxLayout.Y_AXIS));
         row.setBorder(BorderFactory.createEmptyBorder(8, 0, 8, 0));
-        JPanel labels = new JPanel(new BorderLayout());
+        JPanel labels = new JPanel(new BorderLayout(6, 0));
         labels.setOpaque(false);
-        labels.add(summaryLabel("Current CGPA"), BorderLayout.WEST);
+        JLabel title = summaryLabel("Current CGPA");
+        title.setHorizontalAlignment(SwingConstants.LEFT);
+        labels.add(title, BorderLayout.WEST);
         JPanel classification = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
         classification.setOpaque(false);
         classification.add(summaryValue(String.format(Locale.ROOT, "%.2f / %.2f", cgpa,
@@ -312,11 +335,17 @@ public final class StudentProfileView extends JPanel {
         classBadge.setBackground(Theme.PRIMARY_LIGHT);
         classBadge.setBorder(BorderFactory.createEmptyBorder(3, 6, 3, 6));
         classification.add(classBadge);
-        JComponent progress = new ThinProgressBar((int) Math.round(cgpa / com.facultyams.util.Constants.MAX_GPA * 100));
-        row.add(labels, BorderLayout.NORTH);
-        row.add(progress, BorderLayout.CENTER);
         labels.add(classification, BorderLayout.EAST);
-        row.setAlignmentX(Component.LEFT_ALIGNMENT);
+        labels.setAlignmentX(Component.LEFT_ALIGNMENT);
+        labels.setMaximumSize(new Dimension(Integer.MAX_VALUE, 24));
+        JComponent progress = new ThinProgressBar((int) Math.round(cgpa / com.facultyams.util.Constants.MAX_GPA * 100));
+        progress.setAlignmentX(Component.LEFT_ALIGNMENT);
+        row.add(labels);
+        row.add(Box.createVerticalStrut(8));
+        row.add(progress);
+        row.setPreferredSize(new Dimension(100, 56));
+        row.setMinimumSize(new Dimension(80, 56));
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 56));
         return row;
     }
 
