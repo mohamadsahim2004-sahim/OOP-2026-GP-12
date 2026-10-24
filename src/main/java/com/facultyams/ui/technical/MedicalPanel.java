@@ -34,6 +34,7 @@ public class MedicalPanel extends JPanel implements Refreshable {
     public MedicalPanel() {
         setLayout(new BorderLayout(0, 10));
 
+        //  submit a new medical
         JPanel addRow = new JPanel(new FlowLayout(FlowLayout.LEFT));
         addRow.add(new JLabel("Attendance ID"));
         addRow.add(attendanceField);
@@ -42,6 +43,7 @@ public class MedicalPanel extends JPanel implements Refreshable {
         JButton submitButton = new JButton("Submit Medical");
         addRow.add(submitButton);
 
+        // view a student's medicals, approve or reject
         JPanel viewRow = new JPanel(new FlowLayout(FlowLayout.LEFT));
         viewRow.add(new JLabel("Student ID"));
         viewRow.add(studentField);
@@ -81,13 +83,24 @@ public class MedicalPanel extends JPanel implements Refreshable {
                 return;
             }
 
+            //  a medical is allowed only for an absent session
+            String attendanceStatus = dao.getAttendanceStatus(attendanceId);
+            if (attendanceStatus == null) {
+                showError("Attendance ID " + attendanceId + " does not exist");
+                return;
+            }
+            if (!attendanceStatus.equals("absent")) {
+                showError("A medical can be submitted only for an absent session");
+                return;
+            }
+
             Medical m = new Medical(attendanceId, currentOfficerId(), LocalDate.now(), reason, "pending");
 
             if (dao.addMedical(m)) {
                 JOptionPane.showMessageDialog(this, "Medical submitted (pending)");
                 loadTable();
             } else {
-                showError("Could not save. Check the attendance ID (a medical may already exist for it).");
+                showError("Could not save. A medical may already exist for this attendance.");
             }
         } catch (NumberFormatException ex) {
             showError("Attendance ID must be a number");
