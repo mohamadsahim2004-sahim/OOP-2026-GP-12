@@ -7,23 +7,26 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
 
 public class MarksDAO {
 
     public MarksDAO() {
-        // Database connections are obtained when needed.
+        // Connections are obtained when needed.
     }
 
+    // Save marks and calculated results
     public void saveMarks(Marks marks) throws SQLException {
 
         String sql = "INSERT INTO marks " +
-                "(student_id, course_id, obtainMarks, finalMarks, grade, isEligible) " +
-                "VALUES (?, ?, ?, ?, ?, ?)";
+                "(student_id, course_id, obtainMarks, finalMarks, " +
+                "grade, isEligible, overall_mark, grade_points) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+             PreparedStatement statement =
+                     connection.prepareStatement(sql)) {
 
             statement.setInt(1, marks.getStudentId());
             statement.setInt(2, marks.getCourseId());
@@ -31,34 +34,43 @@ public class MarksDAO {
             statement.setDouble(4, marks.getFinalMarks());
             statement.setString(5, marks.getGrade());
             statement.setBoolean(6, marks.isEligible());
+            statement.setDouble(7, marks.getOverallMark());
+            statement.setDouble(8, marks.getGradePoints());
 
             statement.executeUpdate();
         }
     }
 
+    // Find a marks record by its database ID
     public Marks findMarksById(int marksID) throws SQLException {
 
         String sql = "SELECT marksid, student_id, course_id, " +
-                "obtainMarks, finalMarks, grade, isEligible " +
+                "obtainMarks, finalMarks, grade, isEligible, " +
+                "overall_mark, grade_points " +
                 "FROM marks WHERE marksid = ?";
 
         try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+             PreparedStatement statement =
+                     connection.prepareStatement(sql)) {
 
             statement.setInt(1, marksID);
 
-            try (ResultSet resultSet = statement.executeQuery()) {
-
-                if (resultSet.next()) {
-                    return new Marks(
-                            resultSet.getInt("marksid"),
-                            resultSet.getInt("student_id"),
-                            resultSet.getInt("course_id"),
-                            resultSet.getDouble("obtainMarks"),
-                            resultSet.getDouble("finalMarks"),
-                            resultSet.getString("grade"),
-                            resultSet.getBoolean("isEligible")
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    Marks marks = new Marks(
+                            rs.getInt("marksid"),
+                            rs.getInt("student_id"),
+                            rs.getInt("course_id"),
+                            rs.getDouble("obtainMarks"),
+                            rs.getDouble("finalMarks"),
+                            rs.getString("grade"),
+                            rs.getBoolean("isEligible")
                     );
+
+                    marks.setOverallMark(rs.getDouble("overall_mark"));
+                    marks.setGradePoints(rs.getDouble("grade_points"));
+
+                    return marks;
                 }
             }
         }
@@ -66,12 +78,14 @@ public class MarksDAO {
         return null;
     }
 
+    // Find all saved marks for a student using their TG registration number
     public List<String> findMarksSummaryByRegistrationNo(
             String registrationNo) throws SQLException {
 
         String sql = "SELECT s.registration_no, u.full_name, " +
-                "c.course_code, c.course_name, " +
-                "m.obtainMarks, m.finalMarks, m.grade, m.isEligible " +
+                "c.course_code, c.course_name, m.obtainMarks, " +
+                "m.finalMarks, m.overall_mark, m.grade, " +
+                "m.grade_points, m.isEligible " +
                 "FROM marks m " +
                 "JOIN students s ON m.student_id = s.user_id " +
                 "JOIN users u ON s.user_id = u.user_id " +
@@ -82,7 +96,8 @@ public class MarksDAO {
         List<String> results = new ArrayList<>();
 
         try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+             PreparedStatement statement =
+                     connection.prepareStatement(sql)) {
 
             statement.setString(1, registrationNo.trim());
 
@@ -93,11 +108,17 @@ public class MarksDAO {
                                     " - " + rs.getString("full_name") + "\n" +
                                     "Course: " + rs.getString("course_code") +
                                     " - " + rs.getString("course_name") + "\n" +
-                                    "CA Marks: " + rs.getString("obtainMarks") + "\n" +
-                                    "Final Marks: " + rs.getString("finalMarks") + "\n" +
+                                    "CA Marks: " + rs.getDouble("obtainMarks") + "\n" +
+                                    "Final Exam Marks: " +
+                                    rs.getDouble("finalMarks") + "\n" +
+                                    "Overall Mark: " +
+                                    rs.getDouble("overall_mark") + "/100\n" +
                                     "Grade: " + rs.getString("grade") + "\n" +
-                                    "CA Eligible: " + rs.getBoolean("isEligible") + "\n" +
-                                    "------------------------------";
+                                    "Grade Points: " +
+                                    rs.getDouble("grade_points") + "\n" +
+                                    "CA Eligible: " +
+                                    rs.getBoolean("isEligible") + "\n" +
+                                    "--------------------------------";
 
                     results.add(result);
                 }
