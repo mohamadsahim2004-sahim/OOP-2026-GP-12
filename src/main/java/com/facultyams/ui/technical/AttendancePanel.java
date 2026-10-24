@@ -52,12 +52,22 @@ public class AttendancePanel extends JPanel implements Refreshable {
         form.add(saveButton);
         form.add(viewButton);
 
+        JPanel actionRow = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        actionRow.add(new JLabel("Select a row, choose present/absent above, then:"));
+        JButton updateButton = new JButton("Update Status");
+        actionRow.add(updateButton);
+
+        JPanel top = new JPanel(new BorderLayout());
+        top.add(form, BorderLayout.NORTH);
+        top.add(actionRow, BorderLayout.SOUTH);
+
         saveButton.addActionListener(e -> saveAttendance());
         viewButton.addActionListener(e -> loadTable());
+        updateButton.addActionListener(e -> updateStatus());
 
-        table.setDefaultEditor(Object.class, null);   // table la type pannamudiyaadhu
+        table.setDefaultEditor(Object.class, null);   
 
-        add(form, BorderLayout.NORTH);
+        add(top, BorderLayout.NORTH);
         add(new JScrollPane(table), BorderLayout.CENTER);
     }
 
@@ -82,7 +92,23 @@ public class AttendancePanel extends JPanel implements Refreshable {
         } catch (DateTimeParseException ex) {
             showError("Date must be like 2026-10-23");
         } catch (IllegalArgumentException ex) {
-            showError(ex.getMessage());   // session 1 to 15 check inga varum
+            showError(ex.getMessage());   }
+    }
+
+    private void updateStatus() {
+        int row = table.getSelectedRow();
+        if (row < 0) {
+            showError("Select a record from the table first");
+            return;
+        }
+        int attendanceId = (int) tableModel.getValueAt(row, 0);
+        String status = (String) statusBox.getSelectedItem();
+
+        if (dao.updateStatus(attendanceId, status)) {
+            JOptionPane.showMessageDialog(this, "Status updated to " + status);
+            loadTable();
+        } else {
+            showError("Could not update the record");
         }
     }
 
@@ -91,7 +117,7 @@ public class AttendancePanel extends JPanel implements Refreshable {
             int studentId = Integer.parseInt(studentField.getText().trim());
             List<Attendance> list = dao.getAttendanceByUser(studentId);
 
-            tableModel.setRowCount(0);   // pazhaya rows azhikkum
+            tableModel.setRowCount(0);   
             for (Attendance a : list) {
                 tableModel.addRow(new Object[]{
                         a.getAttendanceId(), a.getUserId(), a.getComponentId(),

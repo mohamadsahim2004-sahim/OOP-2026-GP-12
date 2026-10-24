@@ -13,6 +13,7 @@ import com.facultyams.exception.DatabaseException;
 import com.facultyams.model.Medical;
 
 public class MedicalDAO {
+
     public boolean addMedical(Medical m) {
         String sql = "INSERT INTO MEDICAL (attendance_id, reviewed_by, submitted_date, reason, approval_status) VALUES (?, ?, ?, ?, ?)";
 
@@ -83,7 +84,7 @@ public class MedicalDAO {
 
     public int countApproved(int userId, int componentId) {
         String sql = "SELECT COUNT(*) FROM MEDICAL m "
-                   + "JOIN ATTENDANCE a ON m.attendance_id = a.attendance_id "
+                   + "JOIN session_attendance a ON m.attendance_id = a.attendance_id "
                    + "WHERE a.user_id = ? AND a.component_id = ? AND m.approval_status = 'approved'";
 
         try (Connection con = DatabaseConnection.getConnection();
@@ -100,5 +101,23 @@ public class MedicalDAO {
             System.out.println("Error: " + e.getMessage());
         }
         return 0;
+    }
+
+    public String getAttendanceStatus(int attendanceId) {
+        String sql = "SELECT status FROM session_attendance WHERE attendance_id = ?";
+
+        try (Connection con = DatabaseConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setInt(1, attendanceId);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                return rs.getString("status");
+            }
+
+        } catch (SQLException | DatabaseException e) {
+            System.out.println("Error: " + e.getMessage());
+        }
+        return null;
     }
 }
