@@ -257,4 +257,8 @@ public final class DatabaseConnection {
             return false;
         }
     }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> eae9b8deb3b78eb767a318e49b2dbc95081b07aa
