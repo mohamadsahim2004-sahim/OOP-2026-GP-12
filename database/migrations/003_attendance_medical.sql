@@ -8,7 +8,7 @@ CREATE TABLE course_component (
     FOREIGN KEY (course_id) REFERENCES courses (course_id)
 );
 
-CREATE TABLE attendance (
+CREATE TABLE session_attendance (
     attendance_id INT NOT NULL AUTO_INCREMENT,
     user_id       INT NOT NULL,
     component_id  INT NOT NULL,
@@ -29,6 +29,6 @@ CREATE TABLE medical (
     reason          VARCHAR(255) NOT NULL,
     approval_status VARCHAR(10) NOT NULL DEFAULT 'pending',
     PRIMARY KEY (medical_id),
-    FOREIGN KEY (attendance_id) REFERENCES attendance (attendance_id),
+    FOREIGN KEY (attendance_id) REFERENCES session_attendance (attendance_id),
     FOREIGN KEY (reviewed_by) REFERENCES users (user_id)
 );

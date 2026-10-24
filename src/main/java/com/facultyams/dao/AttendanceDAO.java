@@ -15,7 +15,7 @@ import java.sql.ResultSet;
 public class AttendanceDAO {
 
         public boolean addAttendance(Attendance a) {
-        String sql="INSERT INTO ATTENDANCE (user_id, component_id, session_no, date, status) VALUES (?, ?, ?, ?, ?)";
+        String sql="INSERT INTO session_attendance (user_id, component_id, session_no, date, status) VALUES (?, ?, ?, ?, ?)";
 
         try (Connection con=DatabaseConnection.getConnection();
              PreparedStatement ps=con.prepareStatement(sql)) {
@@ -35,7 +35,7 @@ public class AttendanceDAO {
    
     public List<Attendance> getAttendanceByUser(int userId) {
         List<Attendance> list = new ArrayList<>();
-        String sql = "SELECT * FROM ATTENDANCE WHERE user_id=?";
+        String sql = "SELECT * FROM session_attendance WHERE user_id=?";
 
         try (Connection con = DatabaseConnection.getConnection();
                 PreparedStatement ps = con.prepareStatement(sql)) {
@@ -59,7 +59,7 @@ public class AttendanceDAO {
         return list;
     }
     public int countPresent(int userId, int componentId) {
-        String sql = "SELECT COUNT(*) FROM ATTENDANCE "
+        String sql = "SELECT COUNT(*) FROM session_attendance "
                    + "WHERE user_id = ? AND component_id = ? AND status = 'present'";
 
         try (Connection con = DatabaseConnection.getConnection();
@@ -79,7 +79,7 @@ public class AttendanceDAO {
     }
     public List<Integer> getStudentIdsByComponent(int componentId) {
         List<Integer> ids = new ArrayList<>();
-        String sql = "SELECT DISTINCT user_id FROM ATTENDANCE WHERE component_id = ?";
+        String sql = "SELECT DISTINCT user_id FROM session_attendance WHERE component_id = ?";
 
         try (Connection con = DatabaseConnection.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {

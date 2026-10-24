@@ -34,7 +34,7 @@ public class MedicalDAO {
     public List<Medical> getMedicalsByUser(int userId) {
         List<Medical> list = new ArrayList<>();
         String sql = "SELECT m.* FROM MEDICAL m "
-                   + "JOIN ATTENDANCE a ON m.attendance_id = a.attendance_id "
+                   + "JOIN session_attendance a ON m.attendance_id = a.attendance_id "
                    + "WHERE a.user_id = ?";
 
         try (Connection con = DatabaseConnection.getConnection();
