@@ -21,9 +21,11 @@ import com.facultyams.dao.StudentDAO;
 
 import java.util.Map;
 import java.util.LinkedHashMap;
+import com.facultyams.service.GPAService;
 
 public class LecturerDashboard extends JFrame {
     private final MarksService marksService = new MarksService();
+    private final GPAService gpaService = new GPAService();
     private final LecturerService lecturerService = new LecturerService();
     private final CourseMaterialService courseMaterialService = new CourseMaterialService();
 
@@ -578,6 +580,8 @@ public class LecturerDashboard extends JFrame {
             dashboard.setVisible(true);
         });
     }
+
+
     private JPanel createMarksViewPanel() {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
         panel.setBorder(new EmptyBorder(25, 25, 25, 25));
@@ -590,9 +594,11 @@ public class LecturerDashboard extends JFrame {
         JTextField registrationNoField = new JTextField(18);
         JButton searchButton = new JButton("Search Results");
 
-        JTextArea resultArea = new JTextArea(12, 40);
+        JTextArea resultArea = new JTextArea(16, 40);
         resultArea.setEditable(false);
         resultArea.setFont(new Font("Arial", Font.PLAIN, 14));
+        resultArea.setLineWrap(true);
+        resultArea.setWrapStyleWord(true);
 
         JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         searchPanel.setOpaque(false);
@@ -625,22 +631,68 @@ public class LecturerDashboard extends JFrame {
                     resultArea.setText(
                             "No saved marks found for " + registrationNo
                     );
-                } else {
-                    resultArea.setText(String.join("\n\n", results));
+                    return;
                 }
+
+                StringBuilder output = new StringBuilder();
+
+                output.append(String.join("\n\n", results));
+
+                Map<Integer, Double> sgpaResults =
+                        gpaService.calculateSGPA(registrationNo);
+
+                double cgpa =
+                        gpaService.calculateCGPA(registrationNo);
+
+                output.append("\n\n========== GPA SUMMARY ==========\n");
+
+                if (sgpaResults.isEmpty()) {
+                    output.append("SGPA: No GPA data available\n");
+                } else {
+                    for (Map.Entry<Integer, Double> entry
+                            : sgpaResults.entrySet()) {
+
+                        output.append("Semester ")
+                                .append(entry.getKey())
+                                .append("\n");
+
+                        output.append("SGPA: ")
+                                .append(String.format("%.2f", entry.getValue()))
+                                .append("\n\n");
+                    }
+                }
+
+                output.append("CGPA: ")
+                        .append(String.format("%.2f", cgpa))
+                        .append("\n");
+
+                resultArea.setText(output.toString());
+                resultArea.setCaretPosition(0);
 
             } catch (Exception ex) {
                 resultArea.setText(
-                        "Could not retrieve marks: " + ex.getMessage()
+                        "Could not retrieve marks and GPA: "
+                                + ex.getMessage()
                 );
             }
         });
 
-        panel.add(topPanel, BorderLayout.NORTH);
-        panel.add(new JScrollPane(resultArea), BorderLayout.CENTER);
+        JPanel content = new JPanel(new BorderLayout(0, 10));
+        content.setOpaque(false);
+        content.add(topPanel, BorderLayout.NORTH);
+        content.add(new JScrollPane(resultArea), BorderLayout.CENTER);
+
+        panel.add(content, BorderLayout.CENTER);
 
         return panel;
     }
+
+
+
+
+
+
+
 
 
 
