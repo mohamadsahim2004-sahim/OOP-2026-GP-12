@@ -22,6 +22,7 @@ import com.facultyams.dao.StudentDAO;
 import java.util.Map;
 import java.util.LinkedHashMap;
 import com.facultyams.service.GPAService;
+import com.facultyams.dao.AttendanceMedicalDAO;
 
 public class LecturerDashboard extends JFrame {
     private final MarksService marksService = new MarksService();
@@ -155,8 +156,10 @@ public class LecturerDashboard extends JFrame {
 
             } else if (section.equals("Undergraduate Details")) {
                 mainContent.add(createUndergraduateDetailsPanel(), section);
-
-            } else {
+            } else if (section.equals("Attendance and Medical Records")) {
+                mainContent.add(createAttendanceMedicalPanel(), section);
+            }
+            else {
                 mainContent.add(createPlaceholder(section), section);
             }
         }
@@ -602,6 +605,88 @@ public class LecturerDashboard extends JFrame {
         return panel;
     }
 
+
+    private JPanel createAttendanceMedicalPanel() {
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setBackground(backgroundColor);
+        panel.setBorder(new EmptyBorder(25, 25, 25, 25));
+
+        JLabel heading = new JLabel("Attendance and Medical Records");
+        heading.setFont(new Font("Arial", Font.BOLD, 23));
+        heading.setForeground(navy);
+
+        JTabbedPane tabs = new JTabbedPane();
+
+        JTextArea attendanceArea = new JTextArea();
+        attendanceArea.setEditable(false);
+        attendanceArea.setFont(new Font("Arial", Font.PLAIN, 14));
+
+        JTextArea medicalArea = new JTextArea();
+        medicalArea.setEditable(false);
+        medicalArea.setFont(new Font("Arial", Font.PLAIN, 14));
+
+        JButton refreshAttendance = new JButton("Refresh Attendance");
+        JButton refreshMedical = new JButton("Refresh Medical Records");
+
+        refreshAttendance.addActionListener(e -> {
+            try {
+                List<String> records =
+                        new AttendanceMedicalDAO().getAttendanceRecords();
+
+                attendanceArea.setText(records.isEmpty()
+                        ? "No attendance records found."
+                        : String.join("\n\n", records));
+
+                attendanceArea.setCaretPosition(0);
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(
+                        panel,
+                        "Could not load attendance: " + ex.getMessage(),
+                        "Database Error",
+                        JOptionPane.ERROR_MESSAGE
+                );
+            }
+        });
+
+        refreshMedical.addActionListener(e -> {
+            try {
+                List<String> records =
+                        new AttendanceMedicalDAO().getMedicalRecords();
+
+                medicalArea.setText(records.isEmpty()
+                        ? "No medical records found."
+                        : String.join("\n\n", records));
+
+                medicalArea.setCaretPosition(0);
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(
+                        panel,
+                        "Could not load medical records: " + ex.getMessage(),
+                        "Database Error",
+                        JOptionPane.ERROR_MESSAGE
+                );
+            }
+        });
+
+        JPanel attendanceTab = new JPanel(new BorderLayout(5, 5));
+        attendanceTab.add(refreshAttendance, BorderLayout.NORTH);
+        attendanceTab.add(new JScrollPane(attendanceArea), BorderLayout.CENTER);
+
+        JPanel medicalTab = new JPanel(new BorderLayout(5, 5));
+        medicalTab.add(refreshMedical, BorderLayout.NORTH);
+        medicalTab.add(new JScrollPane(medicalArea), BorderLayout.CENTER);
+
+        tabs.addTab("Attendance", attendanceTab);
+        tabs.addTab("Medical Records", medicalTab);
+
+        panel.add(heading, BorderLayout.NORTH);
+        panel.add(tabs, BorderLayout.CENTER);
+
+        refreshAttendance.doClick();
+        refreshMedical.doClick();
+
+        return panel;
+    }
 
     private JPanel createPlaceholder(String section) {
 
