@@ -146,10 +146,16 @@ public class LecturerDashboard extends JFrame {
         for (String section : sections) {
             if (section.equals("Marks, Grades and GPA")) {
                 mainContent.add(createMarksViewPanel(), section);
+
             } else if (section.equals("Course Materials")) {
                 mainContent.add(createCourseMaterialsPanel(), section);
+
             } else if (section.equals("Exam Eligibility")) {
                 mainContent.add(createExamEligibilityPanel(), section);
+
+            } else if (section.equals("Undergraduate Details")) {
+                mainContent.add(createUndergraduateDetailsPanel(), section);
+
             } else {
                 mainContent.add(createPlaceholder(section), section);
             }
@@ -545,9 +551,60 @@ public class LecturerDashboard extends JFrame {
         return panel;
     }
 
+    private JPanel createUndergraduateDetailsPanel() {
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setBackground(backgroundColor);
+        panel.setBorder(new EmptyBorder(25, 25, 25, 25));
+
+        JLabel heading = new JLabel("Undergraduate Details");
+        heading.setFont(new Font("Arial", Font.BOLD, 23));
+        heading.setForeground(navy);
+
+        JTextArea detailsArea = new JTextArea();
+        detailsArea.setEditable(false);
+        detailsArea.setFont(new Font("Arial", Font.PLAIN, 14));
+
+        JButton refreshButton = new JButton("Refresh Students");
+
+        refreshButton.addActionListener(e -> {
+            try {
+                List<String> students =
+                        new StudentDAO().getUndergraduateDetails();
+
+                if (students.isEmpty()) {
+                    detailsArea.setText("No undergraduate records found.");
+                } else {
+                    detailsArea.setText(String.join("\n\n", students));
+                    detailsArea.setCaretPosition(0);
+                }
+
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(
+                        panel,
+                        "Could not load undergraduate details: "
+                                + ex.getMessage(),
+                        "Database Error",
+                        JOptionPane.ERROR_MESSAGE
+                );
+            }
+        });
+
+        JPanel top = new JPanel(new BorderLayout());
+        top.setOpaque(false);
+        top.add(heading, BorderLayout.WEST);
+        top.add(refreshButton, BorderLayout.EAST);
+
+        panel.add(top, BorderLayout.NORTH);
+        panel.add(new JScrollPane(detailsArea), BorderLayout.CENTER);
+
+        refreshButton.doClick();
+
+        return panel;
+    }
 
 
     private JPanel createPlaceholder(String section) {
+
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(backgroundColor);
         panel.setBorder(new EmptyBorder(25, 25, 25, 25));
