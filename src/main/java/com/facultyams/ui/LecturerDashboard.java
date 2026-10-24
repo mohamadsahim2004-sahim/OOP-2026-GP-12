@@ -16,6 +16,11 @@ import javax.swing.Box;
 import com.facultyams.model.CourseMaterial;
 import com.facultyams.service.CourseMaterialService;
 import java.util.List;
+import com.facultyams.dao.CourseDAO;
+import com.facultyams.dao.StudentDAO;
+
+import java.util.Map;
+import java.util.LinkedHashMap;
 
 public class LecturerDashboard extends JFrame {
     private final MarksService marksService = new MarksService();
@@ -397,10 +402,6 @@ public class LecturerDashboard extends JFrame {
     }
 
 
-
-
-
-
     private JPanel createUploadMarksPanel() {
         JPanel panel = new JPanel(new BorderLayout(0, 15));
         panel.setBackground(backgroundColor);
@@ -414,13 +415,38 @@ public class LecturerDashboard extends JFrame {
         form.setBackground(Color.WHITE);
         form.setBorder(new EmptyBorder(20, 20, 20, 20));
 
-        JTextField marksIdField = new JTextField();
+        JComboBox<String> courseCombo = new JComboBox<>();
+        JTextField registrationNoField = new JTextField();
+        Map<String, Integer> courseIds = new LinkedHashMap<>();
+
         JTextField caMarksField = new JTextField();
         JTextField finalMarksField = new JTextField();
         JTextField gradeField = new JTextField();
 
-        form.add(new JLabel("Marks ID:"));
-        form.add(marksIdField);
+        // Load courses and students from the database.
+        // Load courses from the database.
+        try {
+            Map<Integer, String> courses = new CourseDAO().getAllCourses();
+
+            for (Map.Entry<Integer, String> entry : courses.entrySet()) {
+                courseCombo.addItem(entry.getValue());
+                courseIds.put(entry.getValue(), entry.getKey());
+            }
+
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(
+                    panel,
+                    "Could not load courses: " + ex.getMessage(),
+                    "Database Error",
+                    JOptionPane.ERROR_MESSAGE
+            );
+        }
+
+        form.add(new JLabel("Course:"));
+        form.add(courseCombo);
+
+        form.add(new JLabel("Student Registration No:"));
+        form.add(registrationNoField);
 
         form.add(new JLabel("CA Marks (0-100):"));
         form.add(caMarksField);
@@ -431,48 +457,90 @@ public class LecturerDashboard extends JFrame {
         form.add(new JLabel("Grade:"));
         form.add(gradeField);
 
-        JButton validateButton = new JButton("Save Marks");
+        JButton saveButton = new JButton("Save Marks");
 
-            validateButton.addActionListener(e -> {
-                try {
-                    int marksID = Integer.parseInt(marksIdField.getText().trim());
-                    double caMarks = Double.parseDouble(caMarksField.getText().trim());
-                    double finalMarks = Double.parseDouble(finalMarksField.getText().trim());
-                    String grade = gradeField.getText().trim();
+        saveButton.addActionListener(e -> {
+            try {
+                String courseLabel = (String) courseCombo.getSelectedItem();
+                String registrationNo = registrationNoField.getText().trim();
 
-                    if (marksID <= 0 || grade.isEmpty()) {
-                        throw new IllegalArgumentException("Enter a valid Marks ID and grade.");
-                    }
-
-                    if (!marksService.isValidateMarks(caMarks)
-                            || !marksService.isValidateMarks(finalMarks)) {
-                        throw new IllegalArgumentException("Marks must be between 0 and 100.");
-                    }
-
-                    Marks marks = new Marks(
-                            marksID, caMarks, finalMarks, grade,
-                            marksService.isCAEligible(caMarks)
+                if (courseLabel == null || registrationNo.isEmpty()) {
+                    throw new IllegalArgumentException(
+                            "Please select a course and enter a student registration number."
                     );
-
-                    marksService.saveMarks(marks);
-
-                    JOptionPane.showMessageDialog(panel, "Marks saved successfully.");
-
-
-                } catch (NumberFormatException ex) {
-                    JOptionPane.showMessageDialog(panel,
-                            "Enter valid numeric values.", "Invalid Input",
-                            JOptionPane.ERROR_MESSAGE);
-                } catch (Exception ex) {
-                    JOptionPane.showMessageDialog(panel,
-                            "Could not save marks: " + ex.getMessage(),
-                            "Error", JOptionPane.ERROR_MESSAGE);
                 }
-            });
+                int courseId = courseIds.get(courseLabel);
+                int studentId =
+                        new StudentDAO().findStudentIdByRegistrationNo(registrationNo);
+
+                if (studentId == -1) {
+                    throw new IllegalArgumentException(
+                            "Student registration number not found: " + registrationNo
+                    );
+                }
+                double caMarks =
+                        Double.parseDouble(caMarksField.getText().trim());
+
+                double finalMarks =
+                        Double.parseDouble(finalMarksField.getText().trim());
+
+                String grade = gradeField.getText().trim();
+
+                if (!marksService.isValidateMarks(caMarks)
+                        || !marksService.isValidateMarks(finalMarks)) {
+                    throw new IllegalArgumentException(
+                            "Marks must be between 0 and 100."
+                    );
+                }
+
+                if (grade.isEmpty()) {
+                    throw new IllegalArgumentException(
+                            "Please enter the grade."
+                    );
+                }
+
+                Marks marks = new Marks(
+                        0,
+                        studentId,
+                        courseId,
+                        caMarks,
+                        finalMarks,
+                        grade,
+                        marksService.isCAEligible(caMarks)
+                );
+
+                marksService.saveMarks(marks);
+
+                JOptionPane.showMessageDialog(
+                        panel,
+                        "Marks saved successfully for "
+                                + registrationNo + " - " + courseLabel
+                );
+
+                caMarksField.setText("");
+                finalMarksField.setText("");
+                gradeField.setText("");
+
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(
+                        panel,
+                        "Enter valid numeric values for the marks.",
+                        "Invalid Input",
+                        JOptionPane.ERROR_MESSAGE
+                );
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(
+                        panel,
+                        "Could not save marks: " + ex.getMessage(),
+                        "Error",
+                        JOptionPane.ERROR_MESSAGE
+                );
+            }
+        });
 
         JPanel bottom = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         bottom.setOpaque(false);
-        bottom.add(validateButton);
+        bottom.add(saveButton);
 
         panel.add(heading, BorderLayout.NORTH);
         panel.add(form, BorderLayout.CENTER);
@@ -480,6 +548,8 @@ public class LecturerDashboard extends JFrame {
 
         return panel;
     }
+
+
 
     private JPanel createPlaceholder(String section) {
         JPanel panel = new JPanel(new BorderLayout());
@@ -525,54 +595,69 @@ public class LecturerDashboard extends JFrame {
         heading.setFont(new Font("Arial", Font.BOLD, 23));
         heading.setForeground(navy);
 
-        JTextField marksIdField = new JTextField(10);
-        JButton searchButton = new JButton("Search Marks");
-        JTextArea resultArea = new JTextArea(8, 30);
+        JTextField registrationNoField = new JTextField(18);
+        JButton searchButton = new JButton("Search Results");
+
+        JTextArea resultArea = new JTextArea(12, 40);
         resultArea.setEditable(false);
+        resultArea.setFont(new Font("Arial", Font.PLAIN, 14));
 
         JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        searchPanel.add(new JLabel("Marks ID:"));
-        searchPanel.add(marksIdField);
+        searchPanel.setOpaque(false);
+        searchPanel.add(new JLabel("Student Registration No:"));
+        searchPanel.add(registrationNoField);
         searchPanel.add(searchButton);
 
         JPanel topPanel = new JPanel(new BorderLayout(0, 15));
         topPanel.setOpaque(false);
-
-        JPanel headingPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        headingPanel.setOpaque(false);
-        headingPanel.add(heading);
-
-        topPanel.add(headingPanel, BorderLayout.NORTH);
+        topPanel.add(heading, BorderLayout.NORTH);
         topPanel.add(searchPanel, BorderLayout.CENTER);
-
 
         searchButton.addActionListener(e -> {
             try {
-                int id = Integer.parseInt(marksIdField.getText().trim());
-                Marks marks = marksService.findMarksById(id);
+                String registrationNo =
+                        registrationNoField.getText().trim();
 
-                if (marks == null) {
-                    resultArea.setText("No marks found.");
-                } else {
-                    resultArea.setText(
-                            "Marks ID: " + marks.getMarksId()
-                                    + "\nCA Marks: " + marks.getObtainMarks()
-                                    + "\nFinal Marks: " + marks.getFinalMarks()
-                                    + "\nGrade: " + marks.getGrade()
-                                    + "\nEligible: " + marks.isEligible()
+                if (registrationNo.isEmpty()) {
+                    JOptionPane.showMessageDialog(
+                            panel,
+                            "Please enter a student registration number."
                     );
+                    return;
                 }
+
+                List<String> results =
+                        marksService.findMarksByRegistrationNo(registrationNo);
+
+                if (results.isEmpty()) {
+                    resultArea.setText(
+                            "No saved marks found for " + registrationNo
+                    );
+                } else {
+                    resultArea.setText(String.join("\n\n", results));
+                }
+
             } catch (Exception ex) {
-                resultArea.setText("Error: " + ex.getMessage());
+                resultArea.setText(
+                        "Could not retrieve marks: " + ex.getMessage()
+                );
             }
         });
+
         panel.add(topPanel, BorderLayout.NORTH);
         panel.add(new JScrollPane(resultArea), BorderLayout.CENTER);
 
         return panel;
-
-
     }
+
+
+
+
+
+
+
+
+
     private JPanel createExamEligibilityPanel() { //clculates exam eligibility
         JPanel panel = new JPanel(new BorderLayout(10, 10));
         panel.setBackground(backgroundColor);

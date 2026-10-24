@@ -7,6 +7,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import com.facultyams.exception.DatabaseException;
 public class CourseMaterialDAO {
     public List<CourseMaterial> getAllMaterials() {
         List<CourseMaterial> materials = new ArrayList<>();
@@ -30,7 +31,7 @@ public class CourseMaterialDAO {
                 materials.add(material);
             }
 
-        } catch (SQLException e) {
+        } catch (SQLException | DatabaseException e) {
             throw new RuntimeException("Failed to retrieve course materials", e);
         }
 
@@ -51,7 +52,7 @@ public class CourseMaterialDAO {
 
             return ps.executeUpdate() > 0;
 
-        } catch (SQLException e) {
+        } catch (SQLException | DatabaseException e) {
             throw new RuntimeException("Failed to add course material", e);
         }
     }
@@ -73,7 +74,7 @@ public class CourseMaterialDAO {
 
             return ps.executeUpdate() > 0;
 
-        } catch (SQLException e) {
+        } catch (SQLException | DatabaseException e) {
             throw new RuntimeException("Failed to update course material", e);
         }
     }
