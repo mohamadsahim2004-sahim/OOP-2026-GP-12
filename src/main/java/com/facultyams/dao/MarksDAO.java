@@ -1,5 +1,5 @@
 package com.facultyams.dao;
-
+import com.facultyams.exception.DatabaseException;
 import com.facultyams.config.DatabaseConnection;
 import com.facultyams.model.Marks;
 
@@ -26,7 +26,7 @@ public class MarksDAO {
                 "grade, isEligible, overall_mark, grade_points) " +
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 
-        try (Connection connection = DatabaseConnection.getConnection();
+        try (Connection connection = getConnection();
              PreparedStatement statement =
                      connection.prepareStatement(sql)) {
 
@@ -42,7 +42,6 @@ public class MarksDAO {
             statement.executeUpdate();
         }
     }
-
     // Find a marks record by its database ID
     public Marks findMarksById(int marksID) throws SQLException {
 
@@ -51,7 +50,7 @@ public class MarksDAO {
                 "overall_mark, grade_points " +
                 "FROM marks WHERE marksid = ?";
 
-        try (Connection connection = DatabaseConnection.getConnection();
+        try (Connection connection = getConnection();
              PreparedStatement statement =
                      connection.prepareStatement(sql)) {
 
@@ -97,7 +96,7 @@ public class MarksDAO {
 
         List<String> results = new ArrayList<>();
 
-        try (Connection connection = DatabaseConnection.getConnection();
+        try (Connection connection = getConnection();
              PreparedStatement statement =
                      connection.prepareStatement(sql)) {
 
@@ -147,7 +146,7 @@ public class MarksDAO {
 
         Map<Integer, Double> results = new LinkedHashMap<>();
 
-        try (Connection connection = DatabaseConnection.getConnection();
+        try (Connection connection = getConnection();
              PreparedStatement statement =
                      connection.prepareStatement(sql)) {
 
@@ -179,7 +178,7 @@ public class MarksDAO {
                 "WHERE s.registration_no = ? " +
                 "AND m.grade_points IS NOT NULL";
 
-        try (Connection connection = DatabaseConnection.getConnection();
+        try (Connection connection = getConnection();
              PreparedStatement statement =
                      connection.prepareStatement(sql)) {
 
@@ -193,5 +192,13 @@ public class MarksDAO {
         }
 
         return 0.0;
+    }
+
+    private Connection getConnection() throws SQLException {
+        try {
+            return DatabaseConnection.getConnection();
+        } catch (DatabaseException e) {
+            throw new SQLException("Database connection failed.", e);
+        }
     }
 }

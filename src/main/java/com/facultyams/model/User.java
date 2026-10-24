@@ -1,6 +1,6 @@
+
 package com.facultyams.model;
 
-<<<<<<< HEAD
 import com.facultyams.security.Role;
 
 import java.time.LocalDateTime;
@@ -8,18 +8,14 @@ import java.util.Set;
 
 /**
  * Common data and behaviour shared by every kind of user.
- *
- * Abstraction:   User is abstract - a "plain" user cannot exist, only Admin,
- *                Lecturer, TechnicalOfficer or Student.
- * Polymorphism:  each subclass answers getRole() and getEditableProfileFields()
- *                differently (e.g. a Student may only edit contact number and picture).
- * Encapsulation: all fields are private with getters/setters.
  */
 public abstract class User {
 
-    /** Profile fields a user may be allowed to change on their own profile. */
     public enum ProfileField {
-        FULL_NAME, EMAIL, CONTACT_NUMBER, PROFILE_PICTURE
+        FULL_NAME,
+        EMAIL,
+        CONTACT_NUMBER,
+        PROFILE_PICTURE
     }
 
     private int userId;
@@ -30,34 +26,55 @@ public abstract class User {
     private String contactNumber;
     private String profilePicture;
     private Integer departmentId;
-    private String departmentName;      // read-only, filled by DAO joins for display
+    private String departmentName;
     private boolean active = true;
     private LocalDateTime createdAt;
+    private String legacyRole;
 
     protected User() {
     }
 
-    protected User(int userId, String username, String fullName, String email) {
+    protected User(
+            int userId,
+            String username,
+            String fullName,
+            String email) {
+
         this.userId = userId;
         this.username = username;
         this.fullName = fullName;
         this.email = email;
     }
 
-    /** The role of this user (fixed by the subclass). */
+    /**
+     * Compatibility constructor for existing user subclasses.
+     */
+    protected User(
+            int userID,
+            String username,
+            String password,
+            String role,
+            String fullName,
+            String email,
+            String phone,
+            String profilePicture,
+            int departmentID) {
+
+        this(userID, username, fullName, email);
+        this.passwordHash = password;
+        this.legacyRole = role;
+        this.contactNumber = phone;
+        this.profilePicture = profilePicture;
+        this.departmentId = departmentID;
+    }
+
     public abstract Role getRole();
 
-    /**
-     * Fields this kind of user may change on their OWN profile.
-     * Username and password are never self-editable (only Admin can change them).
-     */
     public abstract Set<ProfileField> getEditableProfileFields();
 
     public boolean canEditOwn(ProfileField field) {
         return getEditableProfileFields().contains(field);
     }
-
-    // ----- getters / setters -----
 
     public int getUserId() {
         return userId;
@@ -65,44 +82,21 @@ public abstract class User {
 
     public void setUserId(int userId) {
         this.userId = userId;
-=======
-public abstract class User {   //srs variables
-    private int userID;
-    private String username;
-    private String password;
-    private String role;
-    private String fullName;
-    private String email;
-    private String phone;
-    private String profilePicture;
-    private int departmentID;
-
-    //"protected" is for allow child classes(lecturer)to call this constructor(User)
-    protected User(int userID, String username, String password, String role, String fullName, String email, String phone, String profilePicture, int departmentID) {
-        this.userID = userID;
-        this.username = username;
-        this.password = password;
-        this.role = role;
-        this.fullName = fullName;
-        this.email = email;
-        this.phone = phone;
-        this.profilePicture = profilePicture;
-        this.departmentID = departmentID;
-
     }
 
-    //variables are private therefor getters and setters for access them
-    //getters for read and setters for update
+    // Compatibility with the existing Lecturer module.
     public int getUserID() {
-        return userID;
->>>>>>> eae9b8deb3b78eb767a318e49b2dbc95081b07aa
+        return userId;
+    }
+
+    public void setUserID(int userID) {
+        this.userId = userID;
     }
 
     public String getUsername() {
         return username;
     }
 
-<<<<<<< HEAD
     public void setUsername(String username) {
         this.username = username;
     }
@@ -113,14 +107,23 @@ public abstract class User {   //srs variables
 
     public void setPasswordHash(String passwordHash) {
         this.passwordHash = passwordHash;
-=======
-    public String getPassword() {
-        return password;
     }
 
-    public String getRole() {
-        return role;
->>>>>>> eae9b8deb3b78eb767a318e49b2dbc95081b07aa
+    // Legacy accessor retained for compatibility.
+    public String getPassword() {
+        return passwordHash;
+    }
+
+    public void setPassword(String password) {
+        this.passwordHash = password;
+    }
+
+    public String getLegacyRole() {
+        return legacyRole;
+    }
+
+    public void setRole(String role) {
+        this.legacyRole = role;
     }
 
     public String getFullName() {
@@ -139,21 +142,21 @@ public abstract class User {   //srs variables
         this.email = email;
     }
 
-<<<<<<< HEAD
     public String getContactNumber() {
         return contactNumber;
     }
 
     public void setContactNumber(String contactNumber) {
         this.contactNumber = contactNumber;
-=======
+    }
+
+    // Legacy phone accessors.
     public String getPhone() {
-        return phone;
+        return contactNumber;
     }
 
     public void setPhone(String phone) {
-        this.phone = phone;
->>>>>>> eae9b8deb3b78eb767a318e49b2dbc95081b07aa
+        this.contactNumber = phone;
     }
 
     public String getProfilePicture() {
@@ -163,7 +166,6 @@ public abstract class User {   //srs variables
     public void setProfilePicture(String profilePicture) {
         this.profilePicture = profilePicture;
     }
-<<<<<<< HEAD
 
     public Integer getDepartmentId() {
         return departmentId;
@@ -171,6 +173,15 @@ public abstract class User {   //srs variables
 
     public void setDepartmentId(Integer departmentId) {
         this.departmentId = departmentId;
+    }
+
+    // Legacy department accessors.
+    public int getDepartmentID() {
+        return departmentId == null ? 0 : departmentId;
+    }
+
+    public void setDepartmentID(int departmentID) {
+        this.departmentId = departmentID;
     }
 
     public String getDepartmentName() {
@@ -202,6 +213,3 @@ public abstract class User {   //srs variables
         return fullName + " (" + username + ")";
     }
 }
-=======
-}
->>>>>>> eae9b8deb3b78eb767a318e49b2dbc95081b07aa

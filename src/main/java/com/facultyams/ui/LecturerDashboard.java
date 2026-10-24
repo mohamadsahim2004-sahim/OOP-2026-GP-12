@@ -23,8 +23,11 @@ import java.util.Map;
 import java.util.LinkedHashMap;
 import com.facultyams.service.GPAService;
 import com.facultyams.dao.AttendanceMedicalDAO;
+import com.facultyams.model.Notice;
+import com.facultyams.service.NoticeService;
 
 public class LecturerDashboard extends JFrame {
+    private final NoticeService noticeService = new NoticeService();
     private final MarksService marksService = new MarksService();
     private final GPAService gpaService = new GPAService();
     private final LecturerService lecturerService = new LecturerService();
@@ -158,8 +161,10 @@ public class LecturerDashboard extends JFrame {
                 mainContent.add(createUndergraduateDetailsPanel(), section);
             } else if (section.equals("Attendance and Medical Records")) {
                 mainContent.add(createAttendanceMedicalPanel(), section);
-            }
-            else {
+
+        } else if (section.equals("Notices")) {
+                mainContent.add(createNoticesPanel(), section);
+            }  else {
                 mainContent.add(createPlaceholder(section), section);
             }
         }
@@ -243,7 +248,7 @@ public class LecturerDashboard extends JFrame {
 
         try {
 
-            Lecturer lecturer = lecturerService.findByLecturerID(1);
+            Lecturer lecturer = lecturerService.findByLecturerID(2);
 
             profilePanel.add(createProfileRow(
                     "Lecturer ID:",
@@ -303,7 +308,7 @@ public class LecturerDashboard extends JFrame {
 
             try {
 
-                Lecturer lecturer = lecturerService.findByLecturerID(1);
+                Lecturer lecturer = lecturerService.findByLecturerID(2);
 
                 nameField.setText(lecturer.getFullName());
                 emailField.setText(lecturer.getEmail());
@@ -343,7 +348,7 @@ public class LecturerDashboard extends JFrame {
 
                 try {
 
-                    Lecturer lecturer = lecturerService.findByLecturerID(1);
+                    Lecturer lecturer = lecturerService.findByLecturerID(2);
 
                     lecturerService.updateProfile(
                             lecturer.getUserID(),
@@ -688,6 +693,99 @@ public class LecturerDashboard extends JFrame {
         return panel;
     }
 
+        private JPanel createNoticesPanel() {
+            JPanel panel = new JPanel(new BorderLayout(10, 10));
+            panel.setBackground(backgroundColor);
+            panel.setBorder(new EmptyBorder(25, 25, 25, 25));
+
+            JLabel heading = new JLabel("Notices");
+            heading.setFont(new Font("Arial", Font.BOLD, 23));
+            heading.setForeground(navy);
+
+            JTextField searchField = new JTextField(20);
+            JButton searchButton = new JButton("Search");
+            JButton refreshButton = new JButton("Refresh");
+
+            JTextArea noticesArea = new JTextArea();
+            noticesArea.setEditable(false);
+            noticesArea.setFont(new Font("Arial", Font.PLAIN, 14));
+            noticesArea.setLineWrap(true);
+            noticesArea.setWrapStyleWord(true);
+
+            JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+            searchPanel.setOpaque(false);
+            searchPanel.add(new JLabel("Search notices:"));
+            searchPanel.add(searchField);
+            searchPanel.add(searchButton);
+            searchPanel.add(refreshButton);
+
+            JPanel topPanel = new JPanel(new BorderLayout(0, 10));
+            topPanel.setOpaque(false);
+            topPanel.add(heading, BorderLayout.NORTH);
+            topPanel.add(searchPanel, BorderLayout.CENTER);
+
+            searchButton.addActionListener(e ->
+                    loadNotices(searchField.getText(), noticesArea));
+
+            searchField.addActionListener(e ->
+                    loadNotices(searchField.getText(), noticesArea));
+
+            refreshButton.addActionListener(e -> {
+                searchField.setText("");
+                loadNotices("", noticesArea);
+            });
+
+            panel.add(topPanel, BorderLayout.NORTH);
+            panel.add(new JScrollPane(noticesArea), BorderLayout.CENTER);
+
+            loadNotices("", noticesArea);
+
+            return panel;
+        }
+
+        private void loadNotices(String keyword, JTextArea noticesArea) {
+            try {
+                List<Notice> notices;
+
+                if (keyword == null || keyword.isBlank()) {
+                    notices = noticeService.getAllNotices();
+                } else {
+                    notices = noticeService.searchNotices(keyword.trim());
+                }
+
+                if (notices.isEmpty()) {
+                    noticesArea.setText("No notices found.");
+                } else {
+                    StringBuilder output = new StringBuilder();
+
+                    for (Notice notice : notices) {
+                        output.append("Notice ID: ")
+                                .append(notice.getNoticeId())
+                                .append("\nTitle: ")
+                                .append(notice.getTitle())
+                                .append("\nDate: ")
+                                .append(notice.getNoticeDate())
+                                .append("\nCreated By: ")
+                                .append(notice.getCreatedByName() == null
+                                        ? "Unknown"
+                                        : notice.getCreatedByName())
+                                .append("\nContent: ")
+                                .append(notice.getContent())
+                                .append("\n")
+                                .append("----------------------------------------")
+                                .append("\n\n");
+                    }
+
+                    noticesArea.setText(output.toString());
+                }
+
+                noticesArea.setCaretPosition(0);
+
+            } catch (Exception ex) {
+                noticesArea.setText(
+                        "Could not load notices: " + ex.getMessage());
+            }
+        }
     private JPanel createPlaceholder(String section) {
 
         JPanel panel = new JPanel(new BorderLayout());

@@ -1,6 +1,6 @@
 
 package com.facultyams.dao;
-
+import com.facultyams.exception.DatabaseException;
 import com.facultyams.config.DatabaseConnection;
 
 import java.sql.Connection;
@@ -12,8 +12,8 @@ import java.util.List;
 
 public class AttendanceMedicalDAO {
 
-    public List<String> getAttendanceRecords() throws SQLException {
-        List<String> records = new ArrayList<>();
+    public List<String> getAttendanceRecords()
+            throws SQLException, DatabaseException {        List<String> records = new ArrayList<>();
 
         String sql =
                 "SELECT s.registration_no, u.full_name, " +
@@ -48,9 +48,9 @@ public class AttendanceMedicalDAO {
         return records;
     }
 
-    public List<String> getMedicalRecords() throws SQLException {
         List<String> records = new ArrayList<>();
-
+    public List<String> getMedicalRecords()
+            throws SQLException, DatabaseException {
         String sql =
                 "SELECT m.medical_id, s.registration_no, u.full_name, " +
                         "c.course_code, cc.type, sa.session_no, " +

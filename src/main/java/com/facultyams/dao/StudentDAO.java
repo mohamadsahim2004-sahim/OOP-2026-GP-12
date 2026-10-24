@@ -1,5 +1,5 @@
 package com.facultyams.dao;
-
+import com.facultyams.exception.DatabaseException;
 import com.facultyams.config.DatabaseConnection;
 
 import java.sql.Connection;
@@ -13,8 +13,8 @@ import java.util.List;
 
 public class StudentDAO {
 
-    public Map<Integer, String> getAllStudents() throws SQLException {
-
+    public Map<Integer, String> getAllStudents()
+            throws SQLException, DatabaseException {
         String sql = "SELECT s.user_id, s.registration_no, u.full_name " +
                 "FROM students s " +
                 "JOIN users u ON s.user_id = u.user_id " +
@@ -41,8 +41,7 @@ public class StudentDAO {
     }
 
     public int findStudentIdByRegistrationNo(String registrationNo)
-            throws java.sql.SQLException {
-
+            throws java.sql.SQLException, DatabaseException {
         String sql = "SELECT user_id FROM students WHERE registration_no = ?";
 
         try (java.sql.Connection connection =
@@ -62,8 +61,8 @@ public class StudentDAO {
         return -1;
     }
 
-    public List<String> getUndergraduateDetails() throws SQLException {
-
+    public List<String> getUndergraduateDetails()
+            throws SQLException, DatabaseException {
         String sql = "SELECT s.registration_no, u.full_name, " +
                 "s.batch, s.student_status " +
                 "FROM students s " +
