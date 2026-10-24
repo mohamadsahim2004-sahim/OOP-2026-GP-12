@@ -13,7 +13,7 @@ import com.facultyams.exception.DatabaseException;
 import com.facultyams.model.Medical;
 
 public class MedicalDAO {
-    public void addMedical(Medical m) {
+    public boolean addMedical(Medical m) {
         String sql = "INSERT INTO MEDICAL (attendance_id, reviewed_by, submitted_date, reason, approval_status) VALUES (?, ?, ?, ?, ?)";
 
         try (Connection con = DatabaseConnection.getConnection();
@@ -24,8 +24,10 @@ public class MedicalDAO {
             ps.setString(4, m.getReason());
             ps.setString(5, m.getApprovalStatus());
             ps.executeUpdate();
+            return true;
         } catch (SQLException | DatabaseException e) {
             System.out.println("Error: " + e.getMessage());
+            return false;
         }
     }
 
@@ -58,7 +60,7 @@ public class MedicalDAO {
         return list;
     }
 
-    public void updateApprovalStatus(int medicalId, String status, int reviewedBy) {
+    public boolean updateApprovalStatus(int medicalId, String status, int reviewedBy) {
         if (!status.equals("pending") && !status.equals("approved") && !status.equals("rejected")) {
             throw new IllegalArgumentException("Approval status must be pending, approved or rejected");
         }
@@ -71,9 +73,11 @@ public class MedicalDAO {
             ps.setInt(2, reviewedBy);
             ps.setInt(3, medicalId);
             ps.executeUpdate();
+            return true;
 
         } catch (SQLException | DatabaseException e) {
             System.out.println("Error: " + e.getMessage());
+            return false;
         }
     }
 
@@ -92,7 +96,7 @@ public class MedicalDAO {
                 return rs.getInt(1);
             }
 
-        } catch (SQLException | DatabaseException e)  {
+        } catch (SQLException | DatabaseException e) {
             System.out.println("Error: " + e.getMessage());
         }
         return 0;
