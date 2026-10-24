@@ -8,6 +8,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 
 public class StudentDAO {
 
@@ -58,5 +60,38 @@ public class StudentDAO {
         }
 
         return -1;
+    }
+
+    public List<String> getUndergraduateDetails() throws SQLException {
+
+        String sql = "SELECT s.registration_no, u.full_name, " +
+                "s.batch, s.student_status " +
+                "FROM students s " +
+                "JOIN users u ON s.user_id = u.user_id " +
+                "ORDER BY s.registration_no";
+
+        List<String> details = new ArrayList<>();
+
+        try (Connection connection = DatabaseConnection.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql);
+             ResultSet resultSet = statement.executeQuery()) {
+
+            while (resultSet.next()) {
+                String student =
+                        "Registration No: " +
+                                resultSet.getString("registration_no") + "\n" +
+                                "Name: " +
+                                resultSet.getString("full_name") + "\n" +
+                                "Batch: " +
+                                resultSet.getString("batch") + "\n" +
+                                "Enrollment Status: " +
+                                resultSet.getString("student_status") + "\n" +
+                                "----------------------------------------";
+
+                details.add(student);
+            }
+        }
+
+        return details;
     }
 }

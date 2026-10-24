@@ -143,11 +143,13 @@ public class LecturerDashboard extends JFrame {
                 "Notices"
         };
 
-        for (String section : sections) { // to connect exam eligibility menu for new screen
+        for (String section : sections) {
             if (section.equals("Marks, Grades and GPA")) {
                 mainContent.add(createMarksViewPanel(), section);
             } else if (section.equals("Course Materials")) {
                 mainContent.add(createCourseMaterialsPanel(), section);
+            } else if (section.equals("Exam Eligibility")) {
+                mainContent.add(createExamEligibilityPanel(), section);
             } else {
                 mainContent.add(createPlaceholder(section), section);
             }
@@ -986,3 +988,6 @@ public class LecturerDashboard extends JFrame {
         return panel;
     }
 }
+
+
+//exam eligibility according to the srs
