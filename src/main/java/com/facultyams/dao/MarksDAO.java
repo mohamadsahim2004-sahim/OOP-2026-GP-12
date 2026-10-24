@@ -9,6 +9,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 public class MarksDAO {
 
@@ -126,5 +128,70 @@ public class MarksDAO {
         }
 
         return results;
+    }
+
+    // Calculate SGPA for each semester of a student
+    public Map<Integer, Double> findSGPAByRegistrationNo(
+            String registrationNo) throws SQLException {
+
+        String sql = "SELECT c.semester, " +
+                "SUM(m.grade_points * c.credits) / " +
+                "NULLIF(SUM(c.credits), 0) AS sgpa " +
+                "FROM marks m " +
+                "JOIN students s ON m.student_id = s.user_id " +
+                "JOIN courses c ON m.course_id = c.course_id " +
+                "WHERE s.registration_no = ? " +
+                "AND m.grade_points IS NOT NULL " +
+                "GROUP BY c.semester " +
+                "ORDER BY c.semester";
+
+        Map<Integer, Double> results = new LinkedHashMap<>();
+
+        try (Connection connection = DatabaseConnection.getConnection();
+             PreparedStatement statement =
+                     connection.prepareStatement(sql)) {
+
+            statement.setString(1, registrationNo.trim());
+
+            try (ResultSet rs = statement.executeQuery()) {
+                while (rs.next()) {
+                    results.put(
+                            rs.getInt("semester"),
+                            rs.getDouble("sgpa")
+                    );
+                }
+            }
+        }
+
+        return results;
+    }
+
+    // Calculate CGPA across all currently stored course results
+    public double findCGPAByRegistrationNo(
+            String registrationNo) throws SQLException {
+
+        String sql = "SELECT COALESCE(" +
+                "SUM(m.grade_points * c.credits) / " +
+                "NULLIF(SUM(c.credits), 0), 0) AS cgpa " +
+                "FROM marks m " +
+                "JOIN students s ON m.student_id = s.user_id " +
+                "JOIN courses c ON m.course_id = c.course_id " +
+                "WHERE s.registration_no = ? " +
+                "AND m.grade_points IS NOT NULL";
+
+        try (Connection connection = DatabaseConnection.getConnection();
+             PreparedStatement statement =
+                     connection.prepareStatement(sql)) {
+
+            statement.setString(1, registrationNo.trim());
+
+            try (ResultSet rs = statement.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getDouble("cgpa");
+                }
+            }
+        }
+
+        return 0.0;
     }
 }

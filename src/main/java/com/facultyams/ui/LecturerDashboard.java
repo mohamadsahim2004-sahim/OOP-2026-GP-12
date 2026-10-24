@@ -421,7 +421,6 @@ public class LecturerDashboard extends JFrame {
 
         JTextField caMarksField = new JTextField();
         JTextField finalMarksField = new JTextField();
-        JTextField gradeField = new JTextField();
 
         // Load courses and students from the database.
         // Load courses from the database.
@@ -454,8 +453,7 @@ public class LecturerDashboard extends JFrame {
         form.add(new JLabel("Final Marks (0-100):"));
         form.add(finalMarksField);
 
-        form.add(new JLabel("Grade:"));
-        form.add(gradeField);
+
 
         JButton saveButton = new JButton("Save Marks");
 
@@ -484,7 +482,6 @@ public class LecturerDashboard extends JFrame {
                 double finalMarks =
                         Double.parseDouble(finalMarksField.getText().trim());
 
-                String grade = gradeField.getText().trim();
 
                 if (!marksService.isValidateMarks(caMarks)
                         || !marksService.isValidateMarks(finalMarks)) {
@@ -493,11 +490,7 @@ public class LecturerDashboard extends JFrame {
                     );
                 }
 
-                if (grade.isEmpty()) {
-                    throw new IllegalArgumentException(
-                            "Please enter the grade."
-                    );
-                }
+
 
                 Marks marks = new Marks(
                         0,
@@ -505,7 +498,7 @@ public class LecturerDashboard extends JFrame {
                         courseId,
                         caMarks,
                         finalMarks,
-                        grade,
+                        "",
                         marksService.isCAEligible(caMarks)
                 );
 
@@ -519,7 +512,6 @@ public class LecturerDashboard extends JFrame {
 
                 caMarksField.setText("");
                 finalMarksField.setText("");
-                gradeField.setText("");
 
             } catch (NumberFormatException ex) {
                 JOptionPane.showMessageDialog(
