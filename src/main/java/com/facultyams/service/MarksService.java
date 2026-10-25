@@ -1,206 +1,136 @@
 package com.facultyams.service;
 
-import com.facultyams.model.Marks;
+import com.facultyams.dao.EvaluationComponentDAO;
+import com.facultyams.dao.LecturerAccessDAO.StudentRow;
 import com.facultyams.dao.MarksDAO;
+import com.facultyams.exception.DatabaseException;
+import com.facultyams.exception.ValidationException;
+import com.facultyams.model.Course;
+import com.facultyams.model.EvaluationComponent;
+import com.facultyams.model.Marks;
 
-import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
+/**
+ * Marks entry: enter and update CA, assignment, practical and final-examination marks per
+ * evaluation component. When a student has a mark for every component, the final result
+ * (CA %, final %, overall, grade, grade points, eligibility) is calculated and stored in the same
+ * database transaction as the marks.
+ *
+ * <p>Only the assigned lecturer of the course can enter marks, only for students of that course,
+ * and a published result is locked. There is exactly one mark per student and component and one
+ * result per student and course.
+ */
 public class MarksService {
 
-    private final MarksDAO marksDAO = new MarksDAO();
-
-    // Validate marks between 0 and 100
-    public boolean isValidateMarks(double marks) {
-        return marks >= 0 && marks <= 100;
+    /** One student's line on the entry sheet. */
+    public record EntryRow(StudentRow student, Map<Integer, Double> marks, boolean hasResult,
+                           Double overall, String grade, boolean published) {
     }
 
-    // CA eligibility: at least 40
-    public boolean isCAEligible(double caMarks) {
-        if (!isValidateMarks(caMarks)) {
-            throw new IllegalArgumentException(
-                    "CA marks must be between 0 and 100."
-            );
-        }
-
-        return caMarks >= 40;
+    public record EntrySheet(Course course, List<EvaluationComponent> components,
+                             AcademicRules.SchemeCheck scheme, List<EntryRow> rows) {
     }
 
-    // Final exam eligibility requires CA >= 40 and attendance >= 80
-    public boolean isExamEligiblity(
-            double caMarks, double attendancePercentage) {
+    private final LecturerAccessService access;
+    private final EvaluationComponentDAO componentDAO;
+    private final MarksDAO marksDAO;
 
-        if (!isValidateMarks(caMarks)) {
-            throw new IllegalArgumentException(
-                    "CA marks must be between 0 and 100."
-            );
-        }
-
-        if (!isValidateMarks(attendancePercentage)) {
-            throw new IllegalArgumentException(
-                    "Attendance must be between 0 and 100."
-            );
-        }
-
-        return isCAEligible(caMarks)
-                && attendancePercentage >= 80;
+    public MarksService() {
+        this(new LecturerAccessService(), new EvaluationComponentDAO(), new MarksDAO());
     }
 
-    // Calculate overall mark: 40% CA + 60% final examination
-    public double calculateOverallMark(
-            double caMarks, double finalMarks) {
-
-        if (!isValidateMarks(caMarks)
-                || !isValidateMarks(finalMarks)) {
-            throw new IllegalArgumentException(
-                    "CA and final marks must be between 0 and 100."
-            );
-        }
-
-        double overall =
-                (caMarks * 0.40) + (finalMarks * 0.60);
-
-        return Math.round(overall * 100.0) / 100.0;
+    public MarksService(LecturerAccessService access, EvaluationComponentDAO componentDAO, MarksDAO marksDAO) {
+        this.access = access;
+        this.componentDAO = componentDAO;
+        this.marksDAO = marksDAO;
     }
 
-    // Assign grade using the grade ranges in your SRS
-    public String calculateGrade(double overallMark) {
-
-        if (!isValidateMarks(overallMark)) {
-            throw new IllegalArgumentException(
-                    "Overall mark must be between 0 and 100."
-            );
+    public EntrySheet loadEntrySheet(int courseId) throws DatabaseException {
+        Course course = access.requireOwnedCourse(courseId);
+        List<EvaluationComponent> components = componentDAO.findByCourse(courseId);
+        Map<Integer, Map<Integer, Double>> allMarks = componentDAO.findMarksByCourse(courseId);
+        Map<Integer, MarksDAO.ResultRow> results = new HashMap<>();
+        for (MarksDAO.ResultRow r : marksDAO.findResultsByCourse(courseId)) {
+            results.put(r.studentId(), r);
         }
-
-        if (overallMark >= 85) return "A+";
-        if (overallMark >= 75) return "A";
-        if (overallMark >= 70) return "A-";
-        if (overallMark >= 65) return "B+";
-        if (overallMark >= 60) return "B";
-        if (overallMark >= 55) return "B-";
-        if (overallMark >= 50) return "C+";
-        if (overallMark >= 45) return "C";
-        if (overallMark >= 40) return "C-";
-        if (overallMark >= 35) return "D+";
-        if (overallMark >= 30) return "D";
-
-        return "E";
+        List<EntryRow> rows = new ArrayList<>();
+        for (StudentRow s : access.getStudents(courseId)) {
+            MarksDAO.ResultRow r = results.get(s.studentId());
+            rows.add(new EntryRow(s,
+                    new LinkedHashMap<>(allMarks.getOrDefault(s.studentId(), Map.of())),
+                    r != null && r.overall() != null,
+                    r == null ? null : r.overall(),
+                    r == null ? null : r.grade(),
+                    r != null && r.published()));
+        }
+        return new EntrySheet(course, components, AcademicRules.checkScheme(components), rows);
     }
 
-    // Assign grade points using the SRS grading table
-    public double calculateGradePoints(double overallMark) {
+    /**
+     * Saves the marks entered for one student and recalculates the result when complete.
+     *
+     * @param entered componentId -> mark; components left out keep their saved mark
+     * @return the calculated result, or {@code null} while some component still has no mark
+     */
+    public AcademicRules.Result saveStudentMarks(int courseId, int studentId, Map<Integer, Double> entered)
+            throws DatabaseException, ValidationException {
+        int lecturerId = access.currentLecturerId();
+        access.requireStudentInCourse(courseId, studentId);
 
-        if (!isValidateMarks(overallMark)) {
-            throw new IllegalArgumentException(
-                    "Overall mark must be between 0 and 100."
-            );
+        List<EvaluationComponent> components = componentDAO.findByCourse(courseId);
+        AcademicRules.SchemeCheck scheme = AcademicRules.checkScheme(components);
+        if (!scheme.complete()) {
+            throw new ValidationException("The evaluation scheme of this course is incomplete: "
+                    + scheme.problem());
+        }
+        if (entered == null || entered.isEmpty()) {
+            throw new ValidationException("Enter at least one mark.");
         }
 
-        if (overallMark >= 85) return 4.0;
-        if (overallMark >= 75) return 4.0;
-        if (overallMark >= 70) return 3.7;
-        if (overallMark >= 65) return 3.3;
-        if (overallMark >= 60) return 3.0;
-        if (overallMark >= 55) return 2.7;
-        if (overallMark >= 50) return 2.3;
-        if (overallMark >= 45) return 2.0;
-        if (overallMark >= 40) return 1.7;
-        if (overallMark >= 35) return 1.3;
-        if (overallMark >= 30) return 1.0;
+        Map<Integer, EvaluationComponent> byId = new HashMap<>();
+        for (EvaluationComponent c : components) {
+            byId.put(c.getEvalComponentId(), c);
+        }
+        Map<Integer, Double> validated = new LinkedHashMap<>();
+        for (Map.Entry<Integer, Double> e : entered.entrySet()) {
+            EvaluationComponent c = byId.get(e.getKey());
+            if (c == null) {
+                throw new ValidationException("A component does not belong to this course.");
+            }
+            if (e.getValue() == null) {
+                throw new ValidationException(c.getComponentName() + ": enter a mark.");
+            }
+            validated.put(c.getEvalComponentId(), AcademicRules.requireValidMark(c, e.getValue()));
+        }
 
-        return 0.0;
+        Marks existing = marksDAO.findResult(studentId, courseId);
+        if (existing != null && existing.isPublished()) {
+            throw new ValidationException(
+                    "This result is published and locked. Unpublish the course results to change marks.");
+        }
+
+        Map<Integer, Double> merged = new HashMap<>(componentDAO.findMarksOfStudent(courseId, studentId));
+        merged.putAll(validated);
+
+        AcademicRules.Result result = AcademicRules.computeResult(components, merged,
+                access.attendanceOf(access.attendanceByStudent(courseId), studentId));
+
+        marksDAO.saveStudentMarks(courseId, studentId, lecturerId, validated,
+                result == null ? null : toMarks(existing, studentId, courseId, result));
+        return result;
     }
 
-    // Validate a Marks object
-    public boolean validateMarksObject(Marks marks) {
-
-        if (marks == null) {
-            throw new IllegalArgumentException(
-                    "Marks cannot be null."
-            );
-        }
-
-        if (!isValidateMarks(marks.getObtainMarks())) {
-            throw new IllegalArgumentException(
-                    "CA marks must be between 0 and 100."
-            );
-        }
-
-        if (!isValidateMarks(marks.getFinalMarks())) {
-            throw new IllegalArgumentException(
-                    "Final marks must be between 0 and 100."
-            );
-        }
-
-        return true;
-    }
-
-    // Find a saved record by Marks ID
-    public Marks findMarksById(int marksID) throws SQLException {
-
-        if (marksID <= 0) {
-            throw new IllegalArgumentException(
-                    "Marks ID must be greater than zero."
-            );
-        }
-
-        return marksDAO.findMarksById(marksID);
-    }
-
-    // Find saved results using a student's registration number
-    public List<String> findMarksByRegistrationNo(
-            String registrationNo) {
-
-        if (registrationNo == null
-                || registrationNo.trim().isEmpty()) {
-            throw new IllegalArgumentException(
-                    "Enter a student registration number."
-            );
-        }
-
-        try {
-            return marksDAO.findMarksSummaryByRegistrationNo(
-                    registrationNo.trim()
-            );
-        } catch (SQLException e) {
-            throw new RuntimeException(
-                    "Failed to retrieve student marks.", e
-            );
-        }
-    }
-
-    // Calculate grade and grade points before saving
-    public void saveMarks(Marks marks) {
-
-        validateMarksObject(marks);
-
-        if (marks.getStudentId() <= 0
-                || marks.getCourseId() <= 0) {
-            throw new IllegalArgumentException(
-                    "A valid student and course are required."
-            );
-        }
-
-        double overallMark = calculateOverallMark(
-                marks.getObtainMarks(),
-                marks.getFinalMarks()
-        );
-
-        marks.setOverallMark(overallMark);
-        marks.setGrade(calculateGrade(overallMark));
-        marks.setGradePoints(
-                calculateGradePoints(overallMark)
-        );
-        marks.setEligible(
-                isCAEligible(marks.getObtainMarks())
-        );
-
-        try {
-            marksDAO.saveMarks(marks);
-        } catch (SQLException e) {
-            throw new RuntimeException(
-                    "Failed to save marks.", e
-            );
-        }
+    /** Builds the row stored in the marks table. */
+    static Marks toMarks(Marks existing, int studentId, int courseId, AcademicRules.Result r) {
+        Marks marks = new Marks(existing == null ? 0 : existing.getMarksId(), studentId, courseId,
+                r.caPercent(), r.finalPercent(), r.grade(), r.eligibility().eligible());
+        marks.setOverallMark(r.overall());
+        marks.setGradePoints(r.gradePoints());
+        return marks;
     }
 }

@@ -1,37 +1,62 @@
-
 package com.facultyams.ui;
 
-import javax.swing.*;
-import javax.swing.border.EmptyBorder;
-import java.awt.*;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-
-import com.facultyams.config.DatabaseConnection;
-import com.facultyams.model.Marks;
-import com.facultyams.service.MarksService;
-import com.facultyams.service.LecturerService;//lecturerDashboard to use lectuerService
-import com.facultyams.model.Lecturer;//to allow the dashboard to hold lecturer information in Lecturer object
-import javax.swing.Box;
-import com.facultyams.model.CourseMaterial;
-import com.facultyams.service.CourseMaterialService;
-import java.util.List;
-import com.facultyams.dao.CourseDAO;
-import com.facultyams.dao.StudentDAO;
-
-import java.util.Map;
-import java.util.LinkedHashMap;
-import com.facultyams.service.GPAService;
-import com.facultyams.dao.AttendanceMedicalDAO;
+import com.facultyams.model.Lecturer;
 import com.facultyams.model.Notice;
+import com.facultyams.model.User;
+import com.facultyams.security.Role;
+import com.facultyams.security.Session;
+import com.facultyams.service.LecturerService;
 import com.facultyams.service.NoticeService;
+import com.facultyams.ui.admin.Refreshable;
+import com.facultyams.ui.lecturer.CourseMaterialsPanel;
+import com.facultyams.ui.lecturer.DashboardHomePanel;
+import com.facultyams.ui.lecturer.EligibilityPanel;
+import com.facultyams.ui.lecturer.EvaluationComponentsPanel;
+import com.facultyams.ui.lecturer.LecturerAttendancePanel;
+import com.facultyams.ui.lecturer.LecturerMedicalPanel;
+import com.facultyams.ui.lecturer.LecturerUi;
+import com.facultyams.ui.lecturer.MarksEntryPanel;
+import com.facultyams.ui.lecturer.ResultsPanel;
+import com.facultyams.ui.lecturer.StudentResultsPanel;
+import com.facultyams.ui.lecturer.StudentsPanel;
+import com.facultyams.util.UIUtil;
 
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JComponent;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTabbedPane;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
+import javax.swing.SwingConstants;
+import javax.swing.border.EmptyBorder;
+import java.awt.BorderLayout;
+import java.awt.CardLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.GridLayout;
+import java.util.List;
+
+/**
+ * Lecturer window. Opened by {@link DashboardRouter} after a lecturer logs in; it works for the
+ * logged-in user only and cannot be started on its own. Every screen loads its data from the
+ * database through the lecturer services, which enforce what this lecturer may see and change.
+ */
 public class LecturerDashboard extends JFrame {
-    private final NoticeService noticeService = new NoticeService();
-    private final MarksService marksService = new MarksService();
-    private final GPAService gpaService = new GPAService();
-    private final LecturerService lecturerService = new LecturerService();
-    private final CourseMaterialService courseMaterialService = new CourseMaterialService();
+
+    private static final long serialVersionUID = 1L;
+
+    private final transient NoticeService noticeService = new NoticeService();
+    private final transient LecturerService lecturerService = new LecturerService();
 
     private final CardLayout cardLayout = new CardLayout();
     private final JPanel mainContent = new JPanel(cardLayout);
@@ -42,19 +67,38 @@ public class LecturerDashboard extends JFrame {
     private final Color backgroundColor = new Color(244, 247, 251);
     private final Color textColor = new Color(40, 69, 99);
 
-    public LecturerDashboard() {
+    /** Section name -> the object that reloads that section's data when it is opened. */
+    private final java.util.Map<String, Refreshable> pages = new java.util.LinkedHashMap<>();
+
+    /**
+     * Refuses anyone who is not the logged-in lecturer (same rule as the other role windows).
+     *
+     * @throws IllegalStateException when the session user is not this lecturer
+     */
+    static void requireLecturerSession(User user) {
+        if (user == null || Session.getCurrentUser() != user || !Session.hasRole(Role.LECTURER)) {
+            throw new IllegalStateException(Role.LECTURER.getDisplayName() + " access required.");
+        }
+    }
+
+    public LecturerDashboard(User user) {
+        requireLecturerSession(user);
         setTitle("FacultyAMS - Lecturer Portal");
         setSize(1200, 750);
+        setMinimumSize(new Dimension(1000, 600));
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
 
-        createHeader();
+        createHeader(user);
+        createPages();
         createSidebar();
-        createDashboard();
+        showSection("Dashboard");
     }
 
-    private void createHeader() {
+    // ------------------------------------------------------------------ frame
+
+    private void createHeader(User user) {
         JPanel header = new JPanel(new BorderLayout());
         header.setBackground(navy);
         header.setBorder(new EmptyBorder(15, 20, 15, 20));
@@ -63,12 +107,19 @@ public class LecturerDashboard extends JFrame {
         title.setFont(new Font("Arial", Font.BOLD, 22));
         title.setForeground(Color.WHITE);
 
+        JLabel who = new JLabel(user.getFullName() + "   ");
+        who.setForeground(Color.WHITE);
+
         JButton notification = new JButton("Notices");
         notification.addActionListener(e -> showSection("Notices"));
 
-        header.add(title, BorderLayout.WEST);
-        header.add(notification, BorderLayout.EAST);
+        JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        right.setOpaque(false);
+        right.add(who);
+        right.add(notification);
 
+        header.add(title, BorderLayout.WEST);
+        header.add(right, BorderLayout.EAST);
         add(header, BorderLayout.NORTH);
     }
 
@@ -85,32 +136,17 @@ public class LecturerDashboard extends JFrame {
         menuTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
         sidebar.add(menuTitle);
 
-        String[] items = {
-                "Dashboard",
-                "My Profile",
-                "Course Materials",
-                "Upload Exam Marks",
-                "Undergraduate Details",
-                "Exam Eligibility",
-                "Marks, Grades and GPA",
-                "Attendance and Medical Records",
-                "Notices"
-        };
-
-        for (String item : items) {
+        for (String item : pages.keySet()) {
             JButton button = createMenuButton(item);
-
             button.addActionListener(e -> showSection(item));
-
             sidebar.add(button);
             sidebar.add(Box.createVerticalStrut(5));
         }
 
-        JButton backButton = createMenuButton("Back");
-        backButton.addActionListener(e -> dispose());
-
+        JButton logout = createMenuButton("Logout");
+        logout.addActionListener(e -> DashboardRouter.logout(this));
         sidebar.add(Box.createVerticalGlue());
-        sidebar.add(backButton);
+        sidebar.add(logout);
 
         add(sidebar, BorderLayout.WEST);
     }
@@ -127,591 +163,171 @@ public class LecturerDashboard extends JFrame {
         button.setFocusPainted(false);
         button.setAlignmentX(Component.LEFT_ALIGNMENT);
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
-
         return button;
     }
 
-    private void createDashboard() {
+    // ------------------------------------------------------------------ pages
+
+    private void createPages() {
         mainContent.setBackground(backgroundColor);
 
-        mainContent.add(createHomePanel(), "Dashboard");
-        mainContent.add(createProfilePanel(), "My Profile");
-        mainContent.add(createUploadMarksPanel(), "Upload Exam Marks");
-
-        String[] sections = {
-                "Course Materials",
-                "Undergraduate Details",
-                "Exam Eligibility",
-                "Marks, Grades and GPA",
-                "Attendance and Medical Records",
-                "Notices"
-        };
-
-        for (String section : sections) {
-            if (section.equals("Marks, Grades and GPA")) {
-                mainContent.add(createMarksViewPanel(), section);
-
-            } else if (section.equals("Course Materials")) {
-                mainContent.add(createCourseMaterialsPanel(), section);
-
-            } else if (section.equals("Exam Eligibility")) {
-                mainContent.add(createExamEligibilityPanel(), section);
-
-            } else if (section.equals("Undergraduate Details")) {
-                mainContent.add(createUndergraduateDetailsPanel(), section);
-            } else if (section.equals("Attendance and Medical Records")) {
-                mainContent.add(createAttendanceMedicalPanel(), section);
-
-        } else if (section.equals("Notices")) {
-                mainContent.add(createNoticesPanel(), section);
-            }  else {
-                mainContent.add(createPlaceholder(section), section);
-            }
-        }
-
-        add(mainContent, BorderLayout.CENTER);
-        showSection("Dashboard");
-    }
-
-    private JPanel createHomePanel() {
-        JPanel panel = new JPanel(new BorderLayout(0, 15));
-        panel.setBackground(backgroundColor);
-        panel.setBorder(new EmptyBorder(25, 30, 25, 30));
-
-        JLabel heading = new JLabel("Lecturer Dashboard");
-        heading.setFont(new Font("Arial", Font.BOLD, 25));
-        heading.setForeground(navy);
-
-        JLabel welcome = new JLabel("Welcome back, Lecturer!");
-        welcome.setFont(new Font("Arial", Font.PLAIN, 15));
-        welcome.setForeground(textColor);
-
-        JPanel top = new JPanel(new GridLayout(2, 1, 0, 8));
-        top.setOpaque(false);
-        top.add(heading);
-        top.add(welcome);
-
-        JPanel cards = new JPanel(new GridLayout(2, 2, 15, 15));
-        cards.setPreferredSize(new Dimension(650, 350));
-        cards.setMaximumSize(new Dimension(650, 350));
-        cards.setMinimumSize(new Dimension(650, 350)); cards.setPreferredSize(new Dimension(650, 350));
-        cards.setMaximumSize(new Dimension(650, 350)); cards.setOpaque(false);
-
-        addDashboardCard(cards, "Course Materials");
-        addDashboardCard(cards, "Upload Exam Marks");
-        addDashboardCard(cards, "Undergraduate Details");
-        addDashboardCard(cards, "Marks, Grades and GPA");
-
-        panel.add(top, BorderLayout.NORTH);
-
-        JPanel cardsContainer = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 10));
-        cardsContainer.setOpaque(false);
-        cardsContainer.add(cards);
-
-        panel.add(cardsContainer, BorderLayout.CENTER);
-        return panel;
-    }
-
-    private void addDashboardCard(JPanel panel, String destination) {
-        JButton card = new JButton(
-                "<html><center><b>" + destination
-                        + "</b><br>Open section</center></html>"
-        );
-
-        card.setFont(new Font("Arial", Font.PLAIN, 16));
-        card.setBackground(Color.WHITE);
-        card.setForeground(navy);
-        card.setFocusPainted(false);
-        card.setCursor(new Cursor(Cursor.HAND_CURSOR));
-
-        card.addActionListener(e -> showSection(destination));
-
-        panel.add(card);
-    }
-//Dashboard -> LecturerService -> LecturerDAO -> MySQL
-
-
-    private JPanel createProfilePanel() {
-
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(backgroundColor);
-        panel.setBorder(new EmptyBorder(25, 25, 25, 25));
-
-        JLabel heading = new JLabel("My Profile");
-        heading.setFont(new Font("Arial", Font.BOLD, 23));
-        heading.setForeground(navy);
-
-        JPanel profilePanel = new JPanel();
-        profilePanel.setLayout(new BoxLayout(profilePanel, BoxLayout.Y_AXIS));
-        profilePanel.setBackground(Color.WHITE);
-        profilePanel.setBorder(new EmptyBorder(25, 25, 25, 25));
-
-        try {
-
-            Lecturer lecturer = lecturerService.findByLecturerID(2);
-
-            profilePanel.add(createProfileRow(
-                    "Lecturer ID:",
-                    String.valueOf(lecturer.getLecturerID())
-            ));
-
-            profilePanel.add(Box.createVerticalStrut(6));
-
-            profilePanel.add(createProfileRow(
-                    "Name:",
-                    lecturer.getFullName()
-            ));
-
-            profilePanel.add(Box.createVerticalStrut(6));
-
-            profilePanel.add(createProfileRow(
-                    "Email:",
-                    lecturer.getEmail()
-            ));
-
-            profilePanel.add(Box.createVerticalStrut(6));
-
-            profilePanel.add(createProfileRow(
-                    "Phone:",
-                    lecturer.getPhone()
-            ));
-
-            profilePanel.add(Box.createVerticalStrut(6));
-
-            profilePanel.add(createProfileRow(
-                    "Designation:",
-                    lecturer.getDesignation()
-            ));
-
-            profilePanel.add(Box.createVerticalStrut(6));
-
-            profilePanel.add(createProfileRow(
-                    "Specialisation:",
-                    lecturer.getSpecialisation()
-            ));
-
-        } catch (Exception e) {
-
-            profilePanel.add(new JLabel("Unable to load lecturer profile."));
-            profilePanel.add(new JLabel(e.getMessage()));
-        }
-        panel.add(heading, BorderLayout.NORTH);
-        panel.add(profilePanel, BorderLayout.CENTER);
-
-        JButton updateButton = new JButton("Edit Profile");
-
-        updateButton.addActionListener(e -> {
-
-            JTextField nameField = new JTextField();
-            JTextField emailField = new JTextField();
-            JTextField phoneField = new JTextField();
-
-            try {
-
-                Lecturer lecturer = lecturerService.findByLecturerID(2);
-
-                nameField.setText(lecturer.getFullName());
-                emailField.setText(lecturer.getEmail());
-                phoneField.setText(lecturer.getPhone());
-
-            } catch (Exception ex) {
-
-                JOptionPane.showMessageDialog(
-                        panel,
-                        "Unable to load profile: " + ex.getMessage(),
-                        "Error",
-                        JOptionPane.ERROR_MESSAGE
-                );
-
-                return;
-            }
-
-            JPanel form = new JPanel(new GridLayout(3, 2, 10, 10));
-
-            form.add(new JLabel("Name:"));
-            form.add(nameField);
-
-            form.add(new JLabel("Email:"));
-            form.add(emailField);
-
-            form.add(new JLabel("Phone:"));
-            form.add(phoneField);
-
-            int result = JOptionPane.showConfirmDialog(
-                    panel,
-                    form,
-                    "Edit Profile",
-                    JOptionPane.OK_CANCEL_OPTION
-            );
-
-            if (result == JOptionPane.OK_OPTION) {
-
-                try {
-
-                    Lecturer lecturer = lecturerService.findByLecturerID(2);
-
-                    lecturerService.updateProfile(
-                            lecturer.getUserID(),
-                            nameField.getText(),
-                            emailField.getText(),
-                            phoneField.getText(),
-                            lecturer.getProfilePicture()
-                    );
-
-                    JOptionPane.showMessageDialog(
-                            panel,
-                            "Profile updated successfully."
-                    );
-
-                    mainContent.remove(panel);
-
-                    JPanel refreshedProfile = createProfilePanel();
-                    mainContent.add(refreshedProfile, "My Profile");
-
-                    mainContent.revalidate();
-                    mainContent.repaint();
-
-                    showSection("My Profile");
-
-                } catch (Exception ex) {
-
-                    JOptionPane.showMessageDialog(
-                            panel,
-                            "Could not update profile: " + ex.getMessage(),
-                            "Error",
-                            JOptionPane.ERROR_MESSAGE
-                    );
-                }
-            }
-        });
-
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT,0,5));
-        buttonPanel.setOpaque(false);
-        buttonPanel.add(updateButton);
-
-        JPanel profileContainer = new JPanel();
-        profileContainer.setLayout(new BoxLayout(profileContainer, BoxLayout.Y_AXIS));
-        profileContainer.setOpaque(false);
-
-        profileContainer.add(profilePanel);
-        profileContainer.add(Box.createVerticalStrut(10));
-        profileContainer.add(buttonPanel);
-
-        panel.add(profileContainer, BorderLayout.CENTER);
-
-        return panel;
-    }
-
-    private JPanel createProfileRow(String labelText, String valueText) {
-
-        JPanel row = new JPanel(new BorderLayout());
-        row.setOpaque(false);
-        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
-
-        JLabel label = new JLabel(labelText);
-        label.setPreferredSize(new Dimension(120, 30));
-
-        JLabel value = new JLabel(valueText);
-
-        row.add(label, BorderLayout.WEST);
-        row.add(value, BorderLayout.CENTER);
-
-        return row;
-    }
-
-
-    private JPanel createUploadMarksPanel() {
-        JPanel panel = new JPanel(new BorderLayout(0, 15));
-        panel.setBackground(backgroundColor);
-        panel.setBorder(new EmptyBorder(25, 25, 25, 25));
-
-        JLabel heading = new JLabel("Upload Exam Marks");
-        heading.setFont(new Font("Arial", Font.BOLD, 23));
-        heading.setForeground(navy);
-
-        JPanel form = new JPanel(new GridLayout(0, 2, 12, 12));
-        form.setBackground(Color.WHITE);
-        form.setBorder(new EmptyBorder(20, 20, 20, 20));
-
-        JComboBox<String> courseCombo = new JComboBox<>();
-        JTextField registrationNoField = new JTextField();
-        Map<String, Integer> courseIds = new LinkedHashMap<>();
-
-        JTextField caMarksField = new JTextField();
-        JTextField finalMarksField = new JTextField();
-
-        // Load courses and students from the database.
-        // Load courses from the database.
-        try {
-            Map<Integer, String> courses = new CourseDAO().getAllCourses();
-
-            for (Map.Entry<Integer, String> entry : courses.entrySet()) {
-                courseCombo.addItem(entry.getValue());
-                courseIds.put(entry.getValue(), entry.getKey());
-            }
-
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(
-                    panel,
-                    "Could not load courses: " + ex.getMessage(),
-                    "Database Error",
-                    JOptionPane.ERROR_MESSAGE
-            );
-        }
-
-        form.add(new JLabel("Course:"));
-        form.add(courseCombo);
-
-        form.add(new JLabel("Student Registration No:"));
-        form.add(registrationNoField);
-
-        form.add(new JLabel("CA Marks (0-100):"));
-        form.add(caMarksField);
-
-        form.add(new JLabel("Final Marks (0-100):"));
-        form.add(finalMarksField);
-
-
-
-        JButton saveButton = new JButton("Save Marks");
-
-        saveButton.addActionListener(e -> {
-            try {
-                String courseLabel = (String) courseCombo.getSelectedItem();
-                String registrationNo = registrationNoField.getText().trim();
-
-                if (courseLabel == null || registrationNo.isEmpty()) {
-                    throw new IllegalArgumentException(
-                            "Please select a course and enter a student registration number."
-                    );
-                }
-                int courseId = courseIds.get(courseLabel);
-                int studentId =
-                        new StudentDAO().findStudentIdByRegistrationNo(registrationNo);
-
-                if (studentId == -1) {
-                    throw new IllegalArgumentException(
-                            "Student registration number not found: " + registrationNo
-                    );
-                }
-                double caMarks =
-                        Double.parseDouble(caMarksField.getText().trim());
-
-                double finalMarks =
-                        Double.parseDouble(finalMarksField.getText().trim());
-
-
-                if (!marksService.isValidateMarks(caMarks)
-                        || !marksService.isValidateMarks(finalMarks)) {
-                    throw new IllegalArgumentException(
-                            "Marks must be between 0 and 100."
-                    );
-                }
-
-
-
-                Marks marks = new Marks(
-                        0,
-                        studentId,
-                        courseId,
-                        caMarks,
-                        finalMarks,
-                        "",
-                        marksService.isCAEligible(caMarks)
-                );
-
-                marksService.saveMarks(marks);
-
-                JOptionPane.showMessageDialog(
-                        panel,
-                        "Marks saved successfully for "
-                                + registrationNo + " - " + courseLabel
-                );
-
-                caMarksField.setText("");
-                finalMarksField.setText("");
-
-            } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(
-                        panel,
-                        "Enter valid numeric values for the marks.",
-                        "Invalid Input",
-                        JOptionPane.ERROR_MESSAGE
-                );
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(
-                        panel,
-                        "Could not save marks: " + ex.getMessage(),
-                        "Error",
-                        JOptionPane.ERROR_MESSAGE
-                );
-            }
-        });
-
-        JPanel bottom = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        bottom.setOpaque(false);
-        bottom.add(saveButton);
-
-        panel.add(heading, BorderLayout.NORTH);
-        panel.add(form, BorderLayout.CENTER);
-        panel.add(bottom, BorderLayout.SOUTH);
-
-        return panel;
-    }
-
-    private JPanel createUndergraduateDetailsPanel() {
-        JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBackground(backgroundColor);
-        panel.setBorder(new EmptyBorder(25, 25, 25, 25));
-
-        JLabel heading = new JLabel("Undergraduate Details");
-        heading.setFont(new Font("Arial", Font.BOLD, 23));
-        heading.setForeground(navy);
-
-        JTextArea detailsArea = new JTextArea();
-        detailsArea.setEditable(false);
-        detailsArea.setFont(new Font("Arial", Font.PLAIN, 14));
-
-        JButton refreshButton = new JButton("Refresh Students");
-
-        refreshButton.addActionListener(e -> {
-            try {
-                List<String> students =
-                        new StudentDAO().getUndergraduateDetails();
-
-                if (students.isEmpty()) {
-                    detailsArea.setText("No undergraduate records found.");
-                } else {
-                    detailsArea.setText(String.join("\n\n", students));
-                    detailsArea.setCaretPosition(0);
-                }
-
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(
-                        panel,
-                        "Could not load undergraduate details: "
-                                + ex.getMessage(),
-                        "Database Error",
-                        JOptionPane.ERROR_MESSAGE
-                );
-            }
-        });
-
-        JPanel top = new JPanel(new BorderLayout());
-        top.setOpaque(false);
-        top.add(heading, BorderLayout.WEST);
-        top.add(refreshButton, BorderLayout.EAST);
-
-        panel.add(top, BorderLayout.NORTH);
-        panel.add(new JScrollPane(detailsArea), BorderLayout.CENTER);
-
-        refreshButton.doClick();
-
-        return panel;
-    }
-
-
-    private JPanel createAttendanceMedicalPanel() {
-        JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBackground(backgroundColor);
-        panel.setBorder(new EmptyBorder(25, 25, 25, 25));
-
-        JLabel heading = new JLabel("Attendance and Medical Records");
-        heading.setFont(new Font("Arial", Font.BOLD, 23));
-        heading.setForeground(navy);
+        addPage("Dashboard", "Lecturer Dashboard", new DashboardHomePanel(this::showSection));
+        addPage("My Profile", "My Profile", new ProfilePage());
+        addPage("Evaluation Components", "Evaluation Components", new EvaluationComponentsPanel());
+        addPage("Marks Entry", "Marks Entry", new MarksEntryPanel());
+        addPage("Exam Eligibility", "Exam Eligibility (CA and attendance)", new EligibilityPanel());
+        addPage("Final Results and Grades", "Final Results and Grades", new ResultsPanel());
+        addPage("Student Results and GPA", "Student Academic Results, SGPA and CGPA", new StudentResultsPanel());
 
         JTabbedPane tabs = new JTabbedPane();
-
-        JTextArea attendanceArea = new JTextArea();
-        attendanceArea.setEditable(false);
-        attendanceArea.setFont(new Font("Arial", Font.PLAIN, 14));
-
-        JTextArea medicalArea = new JTextArea();
-        medicalArea.setEditable(false);
-        medicalArea.setFont(new Font("Arial", Font.PLAIN, 14));
-
-        JButton refreshAttendance = new JButton("Refresh Attendance");
-        JButton refreshMedical = new JButton("Refresh Medical Records");
-
-        refreshAttendance.addActionListener(e -> {
-            try {
-                List<String> records =
-                        new AttendanceMedicalDAO().getAttendanceRecords();
-
-                attendanceArea.setText(records.isEmpty()
-                        ? "No attendance records found."
-                        : String.join("\n\n", records));
-
-                attendanceArea.setCaretPosition(0);
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(
-                        panel,
-                        "Could not load attendance: " + ex.getMessage(),
-                        "Database Error",
-                        JOptionPane.ERROR_MESSAGE
-                );
+        LecturerAttendancePanel attendance = new LecturerAttendancePanel();
+        LecturerMedicalPanel medical = new LecturerMedicalPanel();
+        tabs.addTab("Attendance", attendance);
+        tabs.addTab("Medical Records", medical);
+        tabs.addChangeListener(e -> ((Refreshable) tabs.getSelectedComponent()).refresh());
+        addPage("Attendance and Medical Records", "Attendance and Medical Records", new Refreshable() {
+            @Override
+            public void refresh() {
+                ((Refreshable) tabs.getSelectedComponent()).refresh();
             }
-        });
+        }, tabs);
 
-        refreshMedical.addActionListener(e -> {
-            try {
-                List<String> records =
-                        new AttendanceMedicalDAO().getMedicalRecords();
+        addPage("Undergraduate Details", "Undergraduate Details", new StudentsPanel());
+        addPage("Course Materials", "Course Materials", new CourseMaterialsPanel());
+        addPage("Notices", "Notices", new NoticesPage());
 
-                medicalArea.setText(records.isEmpty()
-                        ? "No medical records found."
-                        : String.join("\n\n", records));
-
-                medicalArea.setCaretPosition(0);
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(
-                        panel,
-                        "Could not load medical records: " + ex.getMessage(),
-                        "Database Error",
-                        JOptionPane.ERROR_MESSAGE
-                );
-            }
-        });
-
-        JPanel attendanceTab = new JPanel(new BorderLayout(5, 5));
-        attendanceTab.add(refreshAttendance, BorderLayout.NORTH);
-        attendanceTab.add(new JScrollPane(attendanceArea), BorderLayout.CENTER);
-
-        JPanel medicalTab = new JPanel(new BorderLayout(5, 5));
-        medicalTab.add(refreshMedical, BorderLayout.NORTH);
-        medicalTab.add(new JScrollPane(medicalArea), BorderLayout.CENTER);
-
-        tabs.addTab("Attendance", attendanceTab);
-        tabs.addTab("Medical Records", medicalTab);
-
-        panel.add(heading, BorderLayout.NORTH);
-        panel.add(tabs, BorderLayout.CENTER);
-
-        refreshAttendance.doClick();
-        refreshMedical.doClick();
-
-        return panel;
+        add(mainContent, BorderLayout.CENTER);
     }
 
-        private JPanel createNoticesPanel() {
-            JPanel panel = new JPanel(new BorderLayout(10, 10));
-            panel.setBackground(backgroundColor);
-            panel.setBorder(new EmptyBorder(25, 25, 25, 25));
+    private <T extends JComponent & Refreshable> void addPage(String key, String heading, T content) {
+        addPage(key, heading, content, content);
+    }
 
-            JLabel heading = new JLabel("Notices");
-            heading.setFont(new Font("Arial", Font.BOLD, 23));
-            heading.setForeground(navy);
+    private void addPage(String key, String heading, Refreshable refresher, JComponent content) {
+        JPanel page = new JPanel(new BorderLayout(0, 12));
+        page.setBackground(backgroundColor);
+        page.setBorder(new EmptyBorder(25, 25, 25, 25));
+        JLabel title = new JLabel(heading);
+        title.setFont(new Font("Arial", Font.BOLD, 23));
+        title.setForeground(navy);
+        page.add(title, BorderLayout.NORTH);
+        page.add(content, BorderLayout.CENTER);
+        mainContent.add(page, key);
+        pages.put(key, refresher);
+    }
 
-            JTextField searchField = new JTextField(20);
-            JButton searchButton = new JButton("Search");
-            JButton refreshButton = new JButton("Refresh");
+    private void showSection(String name) {
+        if (!pages.containsKey(name)) {
+            return;
+        }
+        cardLayout.show(mainContent, name);
+        pages.get(name).refresh();
+    }
 
-            JTextArea noticesArea = new JTextArea();
+    // ------------------------------------------------------------------ profile
+
+    /** Profile of the LOGGED-IN lecturer (taken from the session, never a fixed id). */
+    private final class ProfilePage extends JPanel implements Refreshable {
+        private static final long serialVersionUID = 1L;
+        private final JPanel rows = new JPanel();
+        private final JLabel status = new JLabel(" ");
+
+        ProfilePage() {
+            super(new BorderLayout(0, 10));
+            setOpaque(false);
+            rows.setLayout(new BoxLayout(rows, BoxLayout.Y_AXIS));
+            rows.setBackground(Color.WHITE);
+            rows.setBorder(new EmptyBorder(25, 25, 25, 25));
+
+            JButton edit = new JButton("Edit Profile");
+            edit.addActionListener(e -> editProfile());
+            JPanel buttons = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 5));
+            buttons.setOpaque(false);
+            buttons.add(edit);
+
+            JPanel center = new JPanel(new BorderLayout(0, 10));
+            center.setOpaque(false);
+            center.add(rows, BorderLayout.NORTH);
+            center.add(buttons, BorderLayout.CENTER);
+            add(center, BorderLayout.CENTER);
+            add(status, BorderLayout.SOUTH);
+        }
+
+        @Override
+        public void refresh() {
+            LecturerUi.load(this, status, lecturerService::getCurrentLecturer, this::show);
+        }
+
+        private void show(Lecturer l) {
+            rows.removeAll();
+            addRow("Lecturer ID:", String.valueOf(l.getLecturerID()));
+            addRow("Name:", l.getFullName());
+            addRow("Email:", l.getEmail());
+            addRow("Phone:", l.getPhone() == null ? "" : l.getPhone());
+            addRow("Designation:", l.getDesignation());
+            rows.revalidate();
+            rows.repaint();
+            status.setText(" ");
+        }
+
+        private void addRow(String label, String value) {
+            JPanel row = new JPanel(new BorderLayout());
+            row.setOpaque(false);
+            row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
+            JLabel l = new JLabel(label);
+            l.setPreferredSize(new Dimension(120, 30));
+            row.add(l, BorderLayout.WEST);
+            row.add(new JLabel(value), BorderLayout.CENTER);
+            rows.add(row);
+            rows.add(Box.createVerticalStrut(6));
+        }
+
+        private void editProfile() {
+            LecturerUi.load(this, status, lecturerService::getCurrentLecturer, current -> {
+                JTextField name = new JTextField(current.getFullName());
+                JTextField email = new JTextField(current.getEmail());
+                JTextField phone = new JTextField(current.getPhone());
+                JPanel form = new JPanel(new GridLayout(3, 2, 10, 10));
+                form.add(new JLabel("Name:"));
+                form.add(name);
+                form.add(new JLabel("Email:"));
+                form.add(email);
+                form.add(new JLabel("Phone:"));
+                form.add(phone);
+                if (JOptionPane.showConfirmDialog(this, form, "Edit Profile",
+                        JOptionPane.OK_CANCEL_OPTION) != JOptionPane.OK_OPTION) {
+                    return;
+                }
+                LecturerUi.load(this, status, () -> {
+                    lecturerService.updateProfile(current.getUserID(), name.getText(), email.getText(),
+                            phone.getText(), current.getProfilePicture());
+                    return Boolean.TRUE;
+                }, ok -> {
+                    UIUtil.showInfo(this, "Profile updated successfully.");
+                    refresh();
+                });
+            });
+        }
+    }
+
+    // ------------------------------------------------------------------ notices (read-only)
+
+    private final class NoticesPage extends JPanel implements Refreshable {
+        private static final long serialVersionUID = 1L;
+        private final JTextField searchField = new JTextField(20);
+        private final JTextArea noticesArea = new JTextArea();
+        private final JLabel status = new JLabel(" ");
+
+        NoticesPage() {
+            super(new BorderLayout(10, 10));
+            setOpaque(false);
             noticesArea.setEditable(false);
             noticesArea.setFont(new Font("Arial", Font.PLAIN, 14));
             noticesArea.setLineWrap(true);
             noticesArea.setWrapStyleWord(true);
 
+            JButton searchButton = new JButton("Search");
+            JButton refreshButton = new JButton("Refresh");
             JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
             searchPanel.setOpaque(false);
             searchPanel.add(new JLabel("Search notices:"));
@@ -719,515 +335,40 @@ public class LecturerDashboard extends JFrame {
             searchPanel.add(searchButton);
             searchPanel.add(refreshButton);
 
-            JPanel topPanel = new JPanel(new BorderLayout(0, 10));
-            topPanel.setOpaque(false);
-            topPanel.add(heading, BorderLayout.NORTH);
-            topPanel.add(searchPanel, BorderLayout.CENTER);
-
-            searchButton.addActionListener(e ->
-                    loadNotices(searchField.getText(), noticesArea));
-
-            searchField.addActionListener(e ->
-                    loadNotices(searchField.getText(), noticesArea));
-
+            searchButton.addActionListener(e -> refresh());
+            searchField.addActionListener(e -> refresh());
             refreshButton.addActionListener(e -> {
                 searchField.setText("");
-                loadNotices("", noticesArea);
+                refresh();
             });
-
-            panel.add(topPanel, BorderLayout.NORTH);
-            panel.add(new JScrollPane(noticesArea), BorderLayout.CENTER);
-
-            loadNotices("", noticesArea);
-
-            return panel;
+            add(searchPanel, BorderLayout.NORTH);
+            add(new JScrollPane(noticesArea), BorderLayout.CENTER);
+            add(status, BorderLayout.SOUTH);
         }
 
-        private void loadNotices(String keyword, JTextArea noticesArea) {
-            try {
-                List<Notice> notices;
-
-                if (keyword == null || keyword.isBlank()) {
-                    notices = noticeService.getAllNotices();
-                } else {
-                    notices = noticeService.searchNotices(keyword.trim());
-                }
-
-                if (notices.isEmpty()) {
-                    noticesArea.setText("No notices found.");
-                } else {
-                    StringBuilder output = new StringBuilder();
-
-                    for (Notice notice : notices) {
-                        output.append("Notice ID: ")
-                                .append(notice.getNoticeId())
-                                .append("\nTitle: ")
-                                .append(notice.getTitle())
-                                .append("\nDate: ")
-                                .append(notice.getNoticeDate())
-                                .append("\nCreated By: ")
-                                .append(notice.getCreatedByName() == null
-                                        ? "Unknown"
-                                        : notice.getCreatedByName())
-                                .append("\nContent: ")
-                                .append(notice.getContent())
-                                .append("\n")
-                                .append("----------------------------------------")
-                                .append("\n\n");
-                    }
-
-                    noticesArea.setText(output.toString());
-                }
-
-                noticesArea.setCaretPosition(0);
-
-            } catch (Exception ex) {
-                noticesArea.setText(
-                        "Could not load notices: " + ex.getMessage());
-            }
+        @Override
+        public void refresh() {
+            String keyword = searchField.getText();
+            LecturerUi.load(this, status, () -> keyword == null || keyword.isBlank()
+                    ? noticeService.getAllNotices() : noticeService.searchNotices(keyword.trim()), this::show);
         }
-    private JPanel createPlaceholder(String section) {
 
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(backgroundColor);
-        panel.setBorder(new EmptyBorder(25, 25, 25, 25));
-
-        JLabel heading = new JLabel(section);
-        heading.setFont(new Font("Arial", Font.BOLD, 23));
-        heading.setForeground(navy);
-
-        JLabel message = new JLabel(
-                "The " + section + " section is ready for development."
-        );
-        message.setFont(new Font("Arial", Font.PLAIN, 14));
-        message.setForeground(textColor);
-
-        JPanel content = new JPanel(new GridLayout(2, 1, 0, 12));
-        content.setOpaque(false);
-        content.add(heading);
-        content.add(message);
-
-        panel.add(content, BorderLayout.NORTH);
-
-        return panel;
-    }
-
-    private void showSection(String name) {
-        cardLayout.show(mainContent, name);
-    }
-
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            LecturerDashboard dashboard = new LecturerDashboard();
-            dashboard.setVisible(true);
-        });
-    }
-
-
-    private JPanel createMarksViewPanel() {
-        JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBorder(new EmptyBorder(25, 25, 25, 25));
-        panel.setBackground(backgroundColor);
-
-        JLabel heading = new JLabel("Marks, Grades and GPA");
-        heading.setFont(new Font("Arial", Font.BOLD, 23));
-        heading.setForeground(navy);
-
-        JTextField registrationNoField = new JTextField(18);
-        JButton searchButton = new JButton("Search Results");
-
-        JTextArea resultArea = new JTextArea(16, 40);
-        resultArea.setEditable(false);
-        resultArea.setFont(new Font("Arial", Font.PLAIN, 14));
-        resultArea.setLineWrap(true);
-        resultArea.setWrapStyleWord(true);
-
-        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        searchPanel.setOpaque(false);
-        searchPanel.add(new JLabel("Student Registration No:"));
-        searchPanel.add(registrationNoField);
-        searchPanel.add(searchButton);
-
-        JPanel topPanel = new JPanel(new BorderLayout(0, 15));
-        topPanel.setOpaque(false);
-        topPanel.add(heading, BorderLayout.NORTH);
-        topPanel.add(searchPanel, BorderLayout.CENTER);
-
-        searchButton.addActionListener(e -> {
-            try {
-                String registrationNo =
-                        registrationNoField.getText().trim();
-
-                if (registrationNo.isEmpty()) {
-                    JOptionPane.showMessageDialog(
-                            panel,
-                            "Please enter a student registration number."
-                    );
-                    return;
+        private void show(List<Notice> notices) {
+            if (notices.isEmpty()) {
+                noticesArea.setText("No notices found.");
+            } else {
+                StringBuilder out = new StringBuilder();
+                for (Notice n : notices) {
+                    out.append("Title: ").append(n.getTitle())
+                            .append("\nDate: ").append(n.getNoticeDate())
+                            .append("\nPosted by: ").append(n.getCreatedByName() == null ? "Unknown" : n.getCreatedByName())
+                            .append("\n").append(n.getContent())
+                            .append("\n----------------------------------------\n\n");
                 }
-
-                List<String> results =
-                        marksService.findMarksByRegistrationNo(registrationNo);
-
-                if (results.isEmpty()) {
-                    resultArea.setText(
-                            "No saved marks found for " + registrationNo
-                    );
-                    return;
-                }
-
-                StringBuilder output = new StringBuilder();
-
-                output.append(String.join("\n\n", results));
-
-                Map<Integer, Double> sgpaResults =
-                        gpaService.calculateSGPA(registrationNo);
-
-                double cgpa =
-                        gpaService.calculateCGPA(registrationNo);
-
-                output.append("\n\n========== GPA SUMMARY ==========\n");
-
-                if (sgpaResults.isEmpty()) {
-                    output.append("SGPA: No GPA data available\n");
-                } else {
-                    for (Map.Entry<Integer, Double> entry
-                            : sgpaResults.entrySet()) {
-
-                        output.append("Semester ")
-                                .append(entry.getKey())
-                                .append("\n");
-
-                        output.append("SGPA: ")
-                                .append(String.format("%.2f", entry.getValue()))
-                                .append("\n\n");
-                    }
-                }
-
-                output.append("CGPA: ")
-                        .append(String.format("%.2f", cgpa))
-                        .append("\n");
-
-                resultArea.setText(output.toString());
-                resultArea.setCaretPosition(0);
-
-            } catch (Exception ex) {
-                resultArea.setText(
-                        "Could not retrieve marks and GPA: "
-                                + ex.getMessage()
-                );
+                noticesArea.setText(out.toString());
             }
-        });
-
-        JPanel content = new JPanel(new BorderLayout(0, 10));
-        content.setOpaque(false);
-        content.add(topPanel, BorderLayout.NORTH);
-        content.add(new JScrollPane(resultArea), BorderLayout.CENTER);
-
-        panel.add(content, BorderLayout.CENTER);
-
-        return panel;
-    }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    private JPanel createExamEligibilityPanel() { //clculates exam eligibility
-        JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBackground(backgroundColor);
-        panel.setBorder(new EmptyBorder(25, 25, 25, 25));
-
-        JLabel heading = new JLabel("Exam Eligibility");
-        heading.setFont(new Font("Arial", Font.BOLD, 23));
-        heading.setForeground(navy);
-
-        JTextField caField = new JTextField(10);
-        JTextField attendanceField = new JTextField(10);
-        JButton checkButton = new JButton("Check Eligibility");
-        JLabel resultLabel = new JLabel("Enter marks and attendance.");
-
-        JPanel form = new JPanel(new GridLayout(3, 2, 10, 10));
-        form.add(new JLabel("CA Marks (0-100):"));
-        form.add(caField);
-        form.add(new JLabel("Attendance (0-100%):"));
-        form.add(attendanceField);
-        form.add(new JLabel(""));
-        form.add(checkButton);
-
-        checkButton.addActionListener(e -> {
-            try {
-                double ca = Double.parseDouble(caField.getText().trim());
-                double attendance = Double.parseDouble(
-                        attendanceField.getText().trim());
-
-                boolean eligible =
-                        marksService.isExamEligiblity(ca, attendance);
-
-                resultLabel.setText(eligible
-                        ? "Eligible for final examination"
-                        : "Not eligible for final examination");
-
-            } catch (NumberFormatException ex) {
-                resultLabel.setText("Enter valid numeric values.");
-            } catch (IllegalArgumentException ex) {
-                resultLabel.setText(ex.getMessage());
-            }
-        });
-
-        JPanel top = new JPanel(new BorderLayout(0, 15));
-        top.setOpaque(false);
-        top.add(heading, BorderLayout.NORTH);
-        top.add(form, BorderLayout.CENTER);
-
-        panel.add(top, BorderLayout.NORTH);
-        panel.add(resultLabel, BorderLayout.CENTER);
-
-        return panel;
-    }
-    private JPanel createCourseMaterialsPanel() {
-        JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBackground(backgroundColor);
-        panel.setBorder(new EmptyBorder(25, 25, 25, 25));
-
-        JLabel heading = new JLabel("Course Materials");
-        heading.setFont(new Font("Arial", Font.BOLD, 23));
-        heading.setForeground(navy);
-
-        JTextArea materialsArea = new JTextArea();
-        materialsArea.setEditable(false);
-        materialsArea.setFont(new Font("Arial", Font.PLAIN, 14));
-
-        JButton refreshButton = new JButton("Refresh Materials");
-        JButton addButton = new JButton("Add Material");//to add new course materials
-        JButton updateButton = new JButton("Update Material");
-        updateButton.addActionListener(e -> {
-            JTextField materialIdField = new JTextField();
-            JTextField courseIdField = new JTextField();
-            JTextField descriptionField = new JTextField();
-            JTextField notesField = new JTextField();
-            JTextField referencesField = new JTextField();
-
-            JPanel form = new JPanel(new GridLayout(0, 2, 8, 8));
-
-            form.add(new JLabel("Material ID:"));
-            form.add(materialIdField);
-
-            form.add(new JLabel("Course ID:"));
-            form.add(courseIdField);
-
-            form.add(new JLabel("Description:"));
-            form.add(descriptionField);
-
-            form.add(new JLabel("Notes:"));
-            form.add(notesField);
-
-            form.add(new JLabel("References:"));
-            form.add(referencesField);
-
-            int result = JOptionPane.showConfirmDialog(
-                    panel,
-                    form,
-                    "Update Course Material",
-                    JOptionPane.OK_CANCEL_OPTION,
-                    JOptionPane.PLAIN_MESSAGE
-            );
-
-            if (result == JOptionPane.OK_OPTION) {
-                try {
-                    int materialID = Integer.parseInt(
-                            materialIdField.getText().trim()
-                    );
-
-                    int courseID = Integer.parseInt(
-                            courseIdField.getText().trim()
-                    );
-
-                    if (materialID <= 0 || courseID <= 0) {
-                        throw new IllegalArgumentException(
-                                "Material ID and Course ID must be greater than zero."
-                        );
-                    }
-
-                    CourseMaterial material = new CourseMaterial(
-                            materialID,
-                            courseID,
-                            descriptionField.getText().trim(),
-                            notesField.getText().trim(),
-                            referencesField.getText().trim()
-                    );
-
-                    boolean updated =
-                            courseMaterialService.updateMaterial(material);
-
-                    if (updated) {
-                        JOptionPane.showMessageDialog(
-                                panel,
-                                "Course material updated successfully."
-                        );
-                        refreshButton.doClick();
-                    } else {
-                        JOptionPane.showMessageDialog(
-                                panel,
-                                "No material was updated. Check the Material ID."
-                        );
-                    }
-
-                } catch (NumberFormatException ex) {
-                    JOptionPane.showMessageDialog(
-                            panel,
-                            "Please enter valid numeric IDs."
-                    );
-                } catch (Exception ex) {
-                    JOptionPane.showMessageDialog(
-                            panel,
-                            "Could not update material: " + ex.getMessage(),
-                            "Error",
-                            JOptionPane.ERROR_MESSAGE
-                    );
-                }
-            }
-        });
-        addButton.addActionListener(e -> {// a from to add material details
-            JTextField courseIdField = new JTextField();
-            JTextField descriptionField = new JTextField();
-            JTextField notesField = new JTextField();
-            JTextField referencesField = new JTextField();
-
-            JPanel form = new JPanel(new GridLayout(0, 2, 8, 8));
-
-            form.add(new JLabel("Course ID:"));
-            form.add(courseIdField);
-
-            form.add(new JLabel("Description:"));
-            form.add(descriptionField);
-
-            form.add(new JLabel("Notes:"));
-            form.add(notesField);
-
-            form.add(new JLabel("References:"));
-            form.add(referencesField);
-
-            int result = JOptionPane.showConfirmDialog(
-                    panel,
-                    form,
-                    "Add Course Material",
-                    JOptionPane.OK_CANCEL_OPTION,
-                    JOptionPane.PLAIN_MESSAGE
-            );
-
-            if (result == JOptionPane.OK_OPTION) {
-                try {
-                    int courseID = Integer.parseInt(
-                            courseIdField.getText().trim()
-                    );
-
-                    if (courseID <= 0) {
-                        throw new IllegalArgumentException(
-                                "Course ID must be greater than zero."
-                        );
-                    }
-
-                    CourseMaterial material = new CourseMaterial(
-                            0,
-                            courseID,
-                            descriptionField.getText().trim(),
-                            notesField.getText().trim(),
-                            referencesField.getText().trim()
-                    );
-
-                    boolean saved = courseMaterialService.addMaterial(material);
-
-                    if (saved) {
-                        JOptionPane.showMessageDialog(
-                                panel,
-                                "Course material added successfully."
-                        );
-                    }
-
-                } catch (NumberFormatException ex) {
-                    JOptionPane.showMessageDialog(
-                            panel,
-                            "Please enter a valid numeric Course ID."
-                    );
-                } catch (Exception ex) {
-                    JOptionPane.showMessageDialog(
-                            panel,
-                            "Could not add material: " + ex.getMessage(),
-                            "Error",
-                            JOptionPane.ERROR_MESSAGE
-                    );
-                }
-            }
-        });
-
-
-
-
-
-
-        refreshButton.addActionListener(e -> {
-            try {
-                List<CourseMaterial> materials =
-                        courseMaterialService.getAllMaterials();
-
-                materialsArea.setText("");
-
-                if (materials.isEmpty()) {
-                    materialsArea.setText("No course materials found.");
-                } else {
-                    for (CourseMaterial material : materials) {
-                        materialsArea.append(
-                                "Material ID: " + material.getMaterialID() + "\n"
-                                        + "Course ID: " + material.getCourseID() + "\n"
-                                        + "Description: " + material.getDescription() + "\n"
-                                        + "Notes: " + material.getNotes() + "\n"
-                                        + "References: " + material.getReferenceText() + "\n"
-                                        + "----------------------------------------\n"
-                        );
-                    }
-                }
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(
-                        panel,
-                        "Could not load materials: " + ex.getMessage(),
-                        "Error",
-                        JOptionPane.ERROR_MESSAGE
-                );
-            }
-        });
-
-        JPanel top = new JPanel(new BorderLayout());
-        top.setOpaque(false);
-
-        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        buttons.setOpaque(false);
-        buttons.add(addButton);
-        buttons.add(updateButton);
-        buttons.add(refreshButton);
-
-        top.add(heading, BorderLayout.WEST);
-        top.add(buttons, BorderLayout.EAST);
-
-        panel.add(top, BorderLayout.NORTH);
-        panel.add(new JScrollPane(materialsArea), BorderLayout.CENTER);
-
-        refreshButton.doClick();
-
-        return panel;
+            noticesArea.setCaretPosition(0);
+            status.setText(" ");
+        }
     }
 }
-
-
-//exam eligibility according to the srs

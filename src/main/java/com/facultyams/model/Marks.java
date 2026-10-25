@@ -10,6 +10,7 @@ public class Marks {
     private boolean isEligible;
     private double overallMark;
     private double gradePoints;
+    private boolean published;
     public Marks(){
 
     }
@@ -97,5 +98,14 @@ public class Marks {
 
     public void setGradePoints(double gradePoints) {
         this.gradePoints = gradePoints;
+    }
+
+    /** True once the lecturer has published the result; published results are locked. */
+    public boolean isPublished() {
+        return published;
+    }
+
+    public void setPublished(boolean published) {
+        this.published = published;
     }
 }

@@ -10,7 +10,7 @@ public class LecturerServiceTest {
         LecturerService service = new LecturerService();
 
         try {
-            Lecturer lecturer = service.findByLecturerID(1);
+            Lecturer lecturer = service.findByLecturerID(2);
 
             System.out.println("Lecturer Service Test Passed");
             System.out.println("Lecturer ID: " + lecturer.getLecturerID());

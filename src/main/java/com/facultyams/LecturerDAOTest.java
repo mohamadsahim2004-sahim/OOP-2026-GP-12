@@ -4,7 +4,7 @@ import com.facultyams.model.Lecturer;
 public class LecturerDAOTest {
     public static void main(String[] args) {
         LecturerDAO lecturerDAO = new LecturerDAO();
-        Lecturer lecturer = lecturerDAO.findByLecturerID(1);
+        Lecturer lecturer = lecturerDAO.findByLecturerID(2);
         if (lecturer != null) {
             System.out.println("Lecturer found");
             System.out.println("Lecturer ID: " + lecturer.getLecturerID());
