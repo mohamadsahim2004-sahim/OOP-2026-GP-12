@@ -7,7 +7,6 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.time.LocalDate;
 
 import com.facultyams.config.DatabaseConnection;
 import com.facultyams.exception.DatabaseException;

@@ -18,9 +18,10 @@ public class TechnicalOfficerShell extends AppShell {
         addPage("dashboard", "Dashboard", "Dashboard", new TODashboardPanel(this));
         addPage("mark", "Attendance Management", "Attendance Management", new ClassAttendancePanel());
         addPage("records", "Attendance Records/Summary", "Attendance Records / Summary", new AttendancePanel());
+        addPage("medicalRecords", "Medical Records", "Medical Records", new MedicalRecordsPanel());
         addPage("submission", "Medical Submission", "Medical Submission", new MedicalSubmissionPanel());
         addPage("approval", "Medical Approval", "Medical Approval", new MedicalApprovalPanel());
-        addPage("medical", "Medical", "Medical Management", new MedicalPanel());
-        addPage("reports", "Reports", "Attendance Reports", new AttendanceReportPanel());
+        addPage("attendanceReports", "Attendance Reports", "Attendance Reports", new AttendanceReportPanel());
+        addPage("medicalReports", "Medical Reports", "Medical Reports", new MedicalReportPanel());
     }
 }
