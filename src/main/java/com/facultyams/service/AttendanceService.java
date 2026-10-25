@@ -50,4 +50,13 @@ public class AttendanceService {
         }
         return list;
     }
+    //  how many sessions this student attended (used by the summary page)
+    public int getPresentCount(int userId, int componentId) {
+        return attendanceDAO.countPresent(userId, componentId);
+    }
+
+    // how many absent sessions were covered by an approved medical
+    public int getApprovedCount(int userId, int componentId) {
+        return medicalDAO.countApproved(userId, componentId);
+    }
 }

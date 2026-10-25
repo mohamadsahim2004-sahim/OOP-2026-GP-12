@@ -2,6 +2,7 @@ package com.facultyams.ui.technical;
 
 import com.facultyams.dao.AttendanceDAO;
 import com.facultyams.model.Attendance;
+import com.facultyams.service.AttendanceService;
 import com.facultyams.ui.admin.Refreshable;
 
 import javax.swing.JButton;
@@ -22,12 +23,14 @@ import java.util.List;
 public class AttendancePanel extends JPanel implements Refreshable {
 
     private AttendanceDAO dao = new AttendanceDAO();
+    private AttendanceService service = new AttendanceService();
 
     private JTextField studentField = new JTextField(5);
-    private JTextField componentField = new JTextField(5);
+    private JTextField componentField = new JTextField("1", 5);
     private JTextField sessionField = new JTextField(4);
     private JTextField dateField = new JTextField(LocalDate.now().toString(), 8);
     private JComboBox<String> statusBox = new JComboBox<>(new String[]{"present", "absent"});
+    private JLabel summaryLabel = new JLabel(" ");
 
     private DefaultTableModel tableModel = new DefaultTableModel(
             new String[]{"ID", "Student", "Component", "Session", "Date", "Status"}, 0);
@@ -59,13 +62,14 @@ public class AttendancePanel extends JPanel implements Refreshable {
 
         JPanel top = new JPanel(new BorderLayout());
         top.add(form, BorderLayout.NORTH);
-        top.add(actionRow, BorderLayout.SOUTH);
+        top.add(actionRow, BorderLayout.CENTER);
+        top.add(summaryLabel, BorderLayout.SOUTH);
 
         saveButton.addActionListener(e -> saveAttendance());
         viewButton.addActionListener(e -> loadTable());
         updateButton.addActionListener(e -> updateStatus());
 
-        table.setDefaultEditor(Object.class, null);   
+        table.setDefaultEditor(Object.class, null);
 
         add(top, BorderLayout.NORTH);
         add(new JScrollPane(table), BorderLayout.CENTER);
@@ -90,9 +94,10 @@ public class AttendancePanel extends JPanel implements Refreshable {
         } catch (NumberFormatException ex) {
             showError("Student ID, Component ID and Session must be numbers");
         } catch (DateTimeParseException ex) {
-            showError("Date must be like 2026-10-23");
+            showError("Date must be like 2026-10-25");
         } catch (IllegalArgumentException ex) {
-            showError(ex.getMessage());   }
+            showError(ex.getMessage());
+        }
     }
 
     private void updateStatus() {
@@ -117,14 +122,37 @@ public class AttendancePanel extends JPanel implements Refreshable {
             int studentId = Integer.parseInt(studentField.getText().trim());
             List<Attendance> list = dao.getAttendanceByUser(studentId);
 
-            tableModel.setRowCount(0);   
+            tableModel.setRowCount(0);
             for (Attendance a : list) {
                 tableModel.addRow(new Object[]{
                         a.getAttendanceId(), a.getUserId(), a.getComponentId(),
                         a.getSessionNo(), a.getDate(), a.getStatus()});
             }
+            showSummary(studentId);
         } catch (NumberFormatException ex) {
             showError("Enter a valid Student ID");
+        }
+    }
+
+    private void showSummary(int studentId) {
+        try {
+            int componentId = Integer.parseInt(componentField.getText().trim());
+            int total = AttendanceService.TOTAL_SESSIONS;
+            int present = service.getPresentCount(studentId, componentId);
+            int approved = service.getApprovedCount(studentId, componentId);
+            int absent = total - present - approved;
+            double percentage = service.calculatePercentage(present, approved, total);
+
+            String eligible = "No";
+            if (service.isEligible(percentage)) {
+                eligible = "Yes";
+            }
+
+            summaryLabel.setText(String.format(
+                    "Total sessions: %d     Present: %d     Approved medical: %d     Absent: %d     Attendance: %.1f%%     Eligible: %s",
+                    total, present, approved, absent, percentage, eligible));
+        } catch (NumberFormatException ex) {
+            summaryLabel.setText(" ");
         }
     }
 

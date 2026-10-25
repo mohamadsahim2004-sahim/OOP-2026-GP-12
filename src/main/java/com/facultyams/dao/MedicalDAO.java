@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDate;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,6 +12,7 @@ import java.util.List;
 import com.facultyams.config.DatabaseConnection;
 import com.facultyams.exception.DatabaseException;
 import com.facultyams.model.Medical;
+
 
 public class MedicalDAO {
 
@@ -119,5 +121,64 @@ public class MedicalDAO {
             System.out.println("Error: " + e.getMessage());
         }
         return null;
+    }
+    //  medicals of all students (or one student), filtered using status and date range.
+    public List<Object[]> searchMedicals(String status, int studentId, LocalDate from, LocalDate to) {
+        List<Object[]> rows = new ArrayList<>();
+        String sql = "SELECT m.medical_id, a.user_id, u.full_name, a.session_no, "
+                   + "m.submitted_date, m.reason, m.approval_status "
+                   + "FROM medical m "
+                   + "JOIN session_attendance a ON m.attendance_id = a.attendance_id "
+                   + "JOIN users u ON a.user_id = u.user_id "
+                   + "WHERE (? = 'all' OR m.approval_status = ?) "
+                   + "AND (? = 0 OR a.user_id = ?) "
+                   + "AND m.submitted_date BETWEEN ? AND ? "
+                   + "ORDER BY m.medical_id";
+
+        try (Connection con = DatabaseConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setString(1, status);
+            ps.setString(2, status);
+            ps.setInt(3, studentId);
+            ps.setInt(4, studentId);
+            ps.setDate(5, java.sql.Date.valueOf(from));
+            ps.setDate(6, java.sql.Date.valueOf(to));
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                rows.add(new Object[]{
+                    rs.getInt("medical_id"),
+                    rs.getInt("user_id"),
+                    rs.getString("full_name"),
+                    rs.getInt("session_no"),
+                    rs.getDate("submitted_date"),
+                    rs.getString("reason"),
+                    rs.getString("approval_status")
+                });
+            }
+
+        } catch (SQLException | DatabaseException e) {
+            System.out.println("Error: " + e.getMessage());
+        }
+        return rows;
+    }
+
+    // how many medicals have this status 
+    public int countByStatus(String status) {
+        String sql = "SELECT COUNT(*) FROM medical WHERE approval_status = ?";
+
+        try (Connection con = DatabaseConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setString(1, status);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+
+        } catch (SQLException | DatabaseException e) {
+            System.out.println("Error: " + e.getMessage());
+        }
+        return 0;
     }
 }

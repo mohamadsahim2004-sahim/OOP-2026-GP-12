@@ -4,9 +4,10 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.time.LocalDate;
 
 import com.facultyams.config.DatabaseConnection;
 import com.facultyams.exception.DatabaseException;
@@ -14,61 +15,159 @@ import com.facultyams.model.Attendance;
 
 public class AttendanceDAO {
 
-    public boolean addAttendance(Attendance a) {
-        String sql = "INSERT INTO session_attendance (user_id, component_id, session_no, date, status) VALUES (?, ?, ?, ?, ?)";
+ public boolean addAttendance(Attendance a) {
+ String sql = "INSERT INTO session_attendance (user_id, component_id, session_no, date, status) VALUES (?, ?, ?, ?, ?)";
 
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setInt(1, a.getUserId());
-            ps.setInt(2, a.getComponentId());
-            ps.setInt(3, a.getSessionNo());
-            ps.setDate(4, java.sql.Date.valueOf(a.getDate()));
-            ps.setString(5, a.getStatus());
-            ps.executeUpdate();
-            return true;
+ try (Connection con = DatabaseConnection.getConnection();
+PreparedStatement ps = con.prepareStatement(sql)) {
+        ps.setInt(1, a.getUserId());
+        ps.setInt(2, a.getComponentId());
+        ps.setInt(3, a.getSessionNo());
+        ps.setDate(4, java.sql.Date.valueOf(a.getDate()));
+        ps.setString(5, a.getStatus());
+        ps.executeUpdate();
+    return true;
 
         } catch (SQLException | DatabaseException e) {
-            System.out.println("Error: " + e.getMessage());
-            return false;
-        }
+                 System.out.println("Error: " + e.getMessage());
+        return false;
     }
+ }
 
-    public List<Attendance> getAttendanceByUser(int userId) {
-        List<Attendance> list = new ArrayList<>();
+        public List<Attendance> getAttendanceByUser(int userId) {
+            List<Attendance> list = new ArrayList<>();
         String sql = "SELECT * FROM session_attendance WHERE user_id = ?";
 
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
+        try (Connection con = DatabaseConnection.getConnection();       
+            PreparedStatement ps = con.prepareStatement(sql)) {
 
-            ps.setInt(1, userId);
-            ResultSet rs = ps.executeQuery();
-            while (rs.next()) {
-                Attendance a = new Attendance(
-                    rs.getInt("attendance_id"),
-                    rs.getInt("user_id"),
-                    rs.getInt("component_id"),
-                    rs.getInt("session_no"),
-                    rs.getDate("date").toLocalDate(),
-                    rs.getString("status")
-                );
+                    ps.setInt(1, userId);
+                    ResultSet rs = ps.executeQuery();
+        while (rs.next()) {
+         Attendance a = new Attendance(
+             rs.getInt("attendance_id"),
+             rs.getInt("user_id"),
+             rs.getInt("component_id"),
+            rs.getInt("session_no"),
+            rs.getDate("date").toLocalDate(),
+            rs.getString("status")
+                                    );
                 list.add(a);
-            }
+}
 
         } catch (SQLException | DatabaseException e) {
             System.out.println("Error: " + e.getMessage());
-        }
+    }
         return list;
     }
 
     public int countPresent(int userId, int componentId) {
         String sql = "SELECT COUNT(*) FROM session_attendance "
-                   + "WHERE user_id = ? AND component_id = ? AND status = 'present'";
+            + "WHERE user_id = ? AND component_id = ? AND status = 'present'";
+
+        try (Connection con = DatabaseConnection.getConnection();
+            PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setInt(1, userId);
+            ps.setInt(2, componentId);
+            ResultSet rs = ps.executeQuery();
+    if (rs.next()) {
+    return rs.getInt(1);
+ }
+
+        } catch (SQLException | DatabaseException e) {
+        System.out.println("Error: " + e.getMessage());
+ }
+        return 0;
+ }
+
+    public List<Integer> getStudentIdsByComponent(int componentId) {
+        List<Integer> ids = new ArrayList<>();
+        String sql = "SELECT DISTINCT user_id FROM session_attendance WHERE component_id = ?";
+
+            try (Connection con = DatabaseConnection.getConnection();
+            PreparedStatement ps = con.prepareStatement(sql)) {
+
+                ps.setInt(1    , componentId);
+                ResultSet rs = ps.executeQuery();
+             while (rs.next()) {
+            ids.add(rs.getInt("user_id"));
+ }
+
+            }       catch (SQLException | DatabaseException e) {
+ System.out.println("Error: " + e.getMessage());
+ }
+    return ids;
+ }
+
+        public boolean updateStatus(int attendanceId, String status) {
+    if (!status.equals("present") && !status.equals("absent")) {
+            throw new IllegalArgumentException("Status must be present or absent");
+ }
+        String sql = "UPDATE session_attendance SET status = ? WHERE attendance_id = ?";
+
+        try (Connection con = DatabaseConnection.getConnection();
+PreparedStatement ps = con.prepareStatement(sql)) {
+
+        ps.setString(1, status);
+        ps.setInt(2, attendanceId);
+        ps.executeUpdate();
+    return true;
+
+ } catch (SQLException | DatabaseException e) {
+ System.out.println("Error: " + e.getMessage());
+ return false;
+ }
+}
+    // find the attendance_id of one session 
+    public int findAttendanceId(int userId, int componentId, int sessionNo) {
+        String sql = "SELECT attendance_id FROM session_attendance "
+                   + "WHERE user_id = ? AND component_id = ? AND session_no = ?";
 
         try (Connection con = DatabaseConnection.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
 
             ps.setInt(1, userId);
             ps.setInt(2, componentId);
+            ps.setInt(3, sessionNo);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                return rs.getInt("attendance_id");
+            }
+
+        } catch (SQLException | DatabaseException e) {
+            System.out.println("Error: " + e.getMessage());
+        }
+        return -1;
+    }
+
+    //  every student with the name
+    public List<Object[]> getAllStudents() {
+        List<Object[]> rows = new ArrayList<>();
+        String sql = "SELECT s.user_id, u.full_name FROM students s "
+                   + "JOIN users u ON s.user_id = u.user_id ORDER BY s.user_id";
+
+        try (Connection con = DatabaseConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                rows.add(new Object[]{rs.getInt("user_id"), rs.getString("full_name")});
+            }
+
+        } catch (SQLException | DatabaseException e) {
+            System.out.println("Error: " + e.getMessage());
+        }
+        return rows;
+    }
+
+    //  total number of students
+    public int countStudents() {
+        String sql = "SELECT COUNT(*) FROM students";
+
+        try (Connection con = DatabaseConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+
             ResultSet rs = ps.executeQuery();
             if (rs.next()) {
                 return rs.getInt(1);
@@ -80,42 +179,23 @@ public class AttendanceDAO {
         return 0;
     }
 
-    public List<Integer> getStudentIdsByComponent(int componentId) {
-        List<Integer> ids = new ArrayList<>();
-        String sql = "SELECT DISTINCT user_id FROM session_attendance WHERE component_id = ?";
+    //how many records on one date have this status
+    public int countOnDate(LocalDate date, String status) {
+        String sql = "SELECT COUNT(*) FROM session_attendance WHERE date = ? AND status = ?";
 
         try (Connection con = DatabaseConnection.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
 
-            ps.setInt(1, componentId);
+            ps.setDate(1, java.sql.Date.valueOf(date));
+            ps.setString(2, status);
             ResultSet rs = ps.executeQuery();
-            while (rs.next()) {
-                ids.add(rs.getInt("user_id"));
+            if (rs.next()) {
+                return rs.getInt(1);
             }
 
         } catch (SQLException | DatabaseException e) {
             System.out.println("Error: " + e.getMessage());
         }
-        return ids;
-    }
-
-    public boolean updateStatus(int attendanceId, String status) {
-        if (!status.equals("present") && !status.equals("absent")) {
-            throw new IllegalArgumentException("Status must be present or absent");
-        }
-        String sql = "UPDATE session_attendance SET status = ? WHERE attendance_id = ?";
-
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-
-            ps.setString(1, status);
-            ps.setInt(2, attendanceId);
-            ps.executeUpdate();
-            return true;
-
-        } catch (SQLException | DatabaseException e) {
-            System.out.println("Error: " + e.getMessage());
-            return false;
-        }
+        return 0;
     }
 }

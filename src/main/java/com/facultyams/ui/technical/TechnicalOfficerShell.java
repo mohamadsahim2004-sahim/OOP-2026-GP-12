@@ -15,7 +15,11 @@ public class TechnicalOfficerShell extends AppShell {
 
     @Override
     protected void registerPages() {
-        addPage("attendance", "Attendance", "Attendance Management", new AttendancePanel());
+        addPage("dashboard", "Dashboard", "Dashboard", new TODashboardPanel(this));
+        addPage("mark", "Attendance Management", "Attendance Management", new ClassAttendancePanel());
+        addPage("records", "Attendance Records/Summary", "Attendance Records / Summary", new AttendancePanel());
+        addPage("submission", "Medical Submission", "Medical Submission", new MedicalSubmissionPanel());
+        addPage("approval", "Medical Approval", "Medical Approval", new MedicalApprovalPanel());
         addPage("medical", "Medical", "Medical Management", new MedicalPanel());
         addPage("reports", "Reports", "Attendance Reports", new AttendanceReportPanel());
     }
