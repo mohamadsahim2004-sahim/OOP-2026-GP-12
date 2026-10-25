@@ -12,16 +12,18 @@
 --   departments(department_id), courses(course_id)
 --
 -- Run:  mysql -u root -p < database/schema.sql
+-- This script never drops anything: it only creates what is missing, so it is safe to
+-- re-run on an existing database. To wipe a throw-away development database, use
+-- database/dev_reset_database.sql (separate file, deliberately NOT part of normal setup).
 -- =============================================================================
 
-DROP DATABASE IF EXISTS faculty_ams;
-CREATE DATABASE faculty_ams CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE IF NOT EXISTS faculty_ams CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE faculty_ams;
 
 -- -----------------------------------------------------------------------------
 -- Departments
 -- -----------------------------------------------------------------------------
-CREATE TABLE departments (
+CREATE TABLE IF NOT EXISTS departments (
                              department_id   INT          NOT NULL AUTO_INCREMENT,
                              department_code VARCHAR(10)  NOT NULL,
                              department_name VARCHAR(100) NOT NULL,
@@ -35,7 +37,7 @@ CREATE TABLE departments (
 -- Users (common data for every role)
 -- password_hash stores a salted PBKDF2 hash produced by security.PasswordUtil
 -- -----------------------------------------------------------------------------
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
                        user_id         INT          NOT NULL AUTO_INCREMENT,
                        username        VARCHAR(30)  NOT NULL,
                        password_hash   VARCHAR(255) NOT NULL,
@@ -49,6 +51,7 @@ CREATE TABLE users (
                        created_at      TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
                        updated_at      TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                        CONSTRAINT pk_users PRIMARY KEY (user_id),
+                       INDEX idx_users_role (role),
                        CONSTRAINT uq_users_username UNIQUE (username),
                        CONSTRAINT uq_users_email UNIQUE (email),
                        CONSTRAINT fk_users_department FOREIGN KEY (department_id)
@@ -56,12 +59,11 @@ CREATE TABLE users (
                            ON UPDATE CASCADE ON DELETE RESTRICT
 ) ENGINE = InnoDB;
 
-CREATE INDEX idx_users_role ON users (role);
 
 -- -----------------------------------------------------------------------------
 -- Lecturer-specific data (1:1 with users where role = LECTURER)
 -- -----------------------------------------------------------------------------
-CREATE TABLE lecturers (
+CREATE TABLE IF NOT EXISTS lecturers (
                            user_id     INT         NOT NULL,
                            designation VARCHAR(50) NOT NULL DEFAULT 'Lecturer',
                            CONSTRAINT pk_lecturers PRIMARY KEY (user_id),
@@ -74,7 +76,7 @@ CREATE TABLE lecturers (
 -- Student (undergraduate) specific data (1:1 with users where role = STUDENT)
 -- student_status covers regular, repeat and batch-missed undergraduates
 -- -----------------------------------------------------------------------------
-CREATE TABLE students (
+CREATE TABLE IF NOT EXISTS students (
                           user_id         INT         NOT NULL,
                           registration_no VARCHAR(20) NOT NULL,
                           batch           VARCHAR(10) NOT NULL,
@@ -90,7 +92,7 @@ CREATE TABLE students (
 -- Courses (course units). Every course belongs to a department.
 -- lecturer_id = course coordinator / lecturer in charge (optional)
 -- -----------------------------------------------------------------------------
-CREATE TABLE courses (
+CREATE TABLE IF NOT EXISTS courses (
                          course_id      INT          NOT NULL AUTO_INCREMENT,
                          course_code    VARCHAR(10)  NOT NULL,
                          course_name    VARCHAR(100) NOT NULL,
@@ -102,6 +104,7 @@ CREATE TABLE courses (
                          lecturer_id    INT          NULL,
                          created_at     TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
                          CONSTRAINT pk_courses PRIMARY KEY (course_id),
+                         INDEX idx_courses_level_semester (academic_level, semester),
                          CONSTRAINT uq_courses_code UNIQUE (course_code),
                          CONSTRAINT chk_courses_credits CHECK (credits BETWEEN 1 AND 6),
                          CONSTRAINT chk_courses_level CHECK (academic_level BETWEEN 1 AND 4),
@@ -113,5 +116,3 @@ CREATE TABLE courses (
                              REFERENCES lecturers (user_id)
                              ON UPDATE CASCADE ON DELETE SET NULL
 ) ENGINE = InnoDB;
-
-CREATE INDEX idx_courses_level_semester ON courses (academic_level, semester);
