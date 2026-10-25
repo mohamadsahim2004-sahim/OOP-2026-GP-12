@@ -1,10 +1,5 @@
 package com.facultyams.ui.admin;
 
-public class TimeTableFormPanel {
-    
-}
-package com.facultyams.ui.admin;
-
 import com.facultyams.exception.AuthorizationException;
 import com.facultyams.exception.DatabaseException;
 import com.facultyams.exception.ValidationException;

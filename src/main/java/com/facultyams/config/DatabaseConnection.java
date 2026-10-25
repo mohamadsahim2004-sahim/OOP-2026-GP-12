@@ -100,6 +100,11 @@ public final class DatabaseConnection {
         try {
             return DriverManager.getConnection(url, user, password);
         } catch (SQLException e) {
+            if (e.getMessage() != null && e.getMessage().contains("No suitable driver")) {
+                throw new DatabaseException("The MySQL driver (mysql-connector-j) is not on the classpath, so the "
+                        + "app was started without its libraries. Close the app and start it with run-admin.bat "
+                        + "(or follow RUN_ADMIN.md, step 3).", e);
+            }
             throw new DatabaseException("Cannot connect to the database. Check that MySQL is running and "
                     + "that db.url / db.user / db.password are correct. (" + e.getMessage() + ")", e);
         }

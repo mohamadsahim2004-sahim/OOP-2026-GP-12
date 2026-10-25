@@ -1,0 +1,12 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Run Faculty AMS",
+            "request": "launch",
+            "mainClass": "com.facultyams.Main",
+            "classPaths": ["$Auto", "${workspaceFolder}/target/classes", "${workspaceFolder}/target/lib/*"]
+        }
+    ]
+}
