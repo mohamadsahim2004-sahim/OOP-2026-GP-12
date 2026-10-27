@@ -10,6 +10,7 @@ import com.facultyams.ui.admin.AdminIcons.Kind;
 import com.facultyams.ui.admin.AdminTheme;
 import com.facultyams.util.UIUtil;
 
+import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -26,32 +27,33 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
-import java.awt.Font;
+import java.awt.Image;
 import java.awt.GradientPaint;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.RenderingHints;
-import java.awt.event.ComponentAdapter;
-import java.awt.event.ComponentEvent;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
+import java.io.IOException;
+import java.net.URL;
 import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 
 /**
- * Login screen: a welcome panel on the left and the sign-in form on the right (the form alone on narrow
- * windows). Credentials are checked against the database by {@link AuthService} on a background thread, so the
- * window stays responsive; problems are shown inline under the form.
+ * Login screen: a full-window background (the campus photo {@code /images/login-bg.jpg} from the classpath when
+ * it exists, otherwise a navy gradient drawn in code) with a centred white sign-in card. Credentials are
+ * checked against the database by {@link AuthService} on a background thread, so the window stays
+ * responsive; problems are shown inline under the form.
  */
 public class LoginPanel extends JPanel {
 
     private static final long serialVersionUID = 1L;
     private static final int FORM_WIDTH = 340;
-    /** Below this width the welcome panel is hidden so the form always fits (small / tablet windows). */
-    private static final int HERO_MIN_WIDTH = 760;
+    /** Optional campus photo; when absent the gradient fallback is painted instead. */
+    private static final transient Image BACKGROUND = loadBackground();
 
     private final transient AuthService authService = new AuthService();
     private final transient Consumer<User> onSuccess;
@@ -59,36 +61,14 @@ public class LoginPanel extends JPanel {
     private final JPasswordField passwordField = new JPasswordField(20);
     private final JButton loginButton = new JButton("Login");
     private final JTextArea errorText = AdminTheme.errorText();
-    private final JPanel hero = new Hero();
 
     /** @param onSuccess called with the logged-in user (the session has already been started) */
     public LoginPanel(Consumer<User> onSuccess) {
         super(new GridBagLayout());
         this.onSuccess = onSuccess;
         setOpaque(true);
-        setBackground(Color.WHITE);
-
-        GridBagConstraints c = new GridBagConstraints();
-        c.fill = GridBagConstraints.BOTH;
-        c.weighty = 1;
-        c.gridy = 0;
-        c.gridx = 0;
-        c.weightx = 0.46;
-        add(hero, c);
-        c.gridx = 1;
-        c.weightx = 0.54;
-        add(buildForm(), c);
-
-        addComponentListener(new ComponentAdapter() {
-            @Override
-            public void componentResized(ComponentEvent e) {
-                boolean show = getWidth() >= HERO_MIN_WIDTH;
-                if (hero.isVisible() != show) {
-                    hero.setVisible(show);
-                    revalidate();
-                }
-            }
-        });
+        setBackground(AdminTheme.NAVY_DARK);
+        add(new Card(buildForm()));
         loginButton.addActionListener(e -> performLogin());
         usernameField.addActionListener(e -> passwordField.requestFocusInWindow());
         passwordField.addActionListener(e -> performLogin());
@@ -98,15 +78,16 @@ public class LoginPanel extends JPanel {
         JPanel form = new JPanel();
         form.setLayout(new BoxLayout(form, BoxLayout.Y_AXIS));
         form.setOpaque(false);
-        form.setPreferredSize(new Dimension(FORM_WIDTH, 460));
+        form.setPreferredSize(new Dimension(FORM_WIDTH, 470));
 
-        JLabel badge = new JLabel(AdminIcons.of(Kind.CAP, 30, AdminTheme.BLUE), JLabel.CENTER);
+        JLabel badge = new JLabel(AdminIcons.of(Kind.SHIELD, 44, AdminTheme.NAVY_DARK), JLabel.CENTER);
         badge.setAlignmentX(Component.CENTER_ALIGNMENT);
-        JLabel title = new JLabel("Welcome Back");
-        title.setFont(AdminTheme.TITLE);
+        JLabel title = new JLabel("<html><div style='text-align:center'>Faculty Academic<br>Management System</div></html>",
+                JLabel.CENTER);
+        title.setFont(AdminTheme.TITLE.deriveFont(21f));
         title.setForeground(AdminTheme.TEXT);
         title.setAlignmentX(Component.CENTER_ALIGNMENT);
-        JLabel subtitle = AdminTheme.muted("Enter your credentials to continue");
+        JLabel subtitle = AdminTheme.muted("Login to Continue");
         subtitle.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         errorText.setName("login.error");
@@ -340,61 +321,76 @@ public class LoginPanel extends JPanel {
         }
     }
 
-    /** Navy welcome panel with a soft campus skyline drawn in code (no image files needed). */
-    private static final class Hero extends JPanel {
+    /** The white rounded sign-in card with a soft shadow, centred on the background. */
+    private static final class Card extends JPanel {
         private static final long serialVersionUID = 1L;
+        private static final int ARC = 20;
+        private static final int SHADOW = 6;
 
-        Hero() {
+        Card(JComponent content) {
             super(new BorderLayout());
             setOpaque(false);
-            setPreferredSize(new Dimension(380, 400));
-            setBorder(BorderFactory.createEmptyBorder(0, 40, 56, 32));
-            JPanel text = new JPanel();
-            text.setLayout(new BoxLayout(text, BoxLayout.Y_AXIS));
-            text.setOpaque(false);
-            JLabel welcome = new JLabel("Welcome Back!");
-            welcome.setFont(new Font("SansSerif", Font.BOLD, 32));
-            welcome.setForeground(Color.WHITE);
-            JLabel name = new JLabel("Faculty Academic Management System");
-            name.setFont(new Font("SansSerif", Font.BOLD, 15));
-            name.setForeground(new Color(0x9CC0FF));
-            JLabel about = new JLabel("<html>Log in to manage your faculty<br>and keep everything organized.</html>");
-            about.setFont(AdminTheme.FONT.deriveFont(14f));
-            about.setForeground(new Color(0xDCE6F7));
-            for (JLabel l : new JLabel[] {welcome, name, about}) {
-                l.setAlignmentX(0f);
-            }
-            text.add(welcome);
-            text.add(Box.createVerticalStrut(8));
-            text.add(name);
-            text.add(Box.createVerticalStrut(14));
-            text.add(about);
-            JPanel bottom = new JPanel(new BorderLayout());
-            bottom.setOpaque(false);
-            bottom.add(text, BorderLayout.SOUTH);
-            add(bottom, BorderLayout.CENTER);
+            setBorder(BorderFactory.createEmptyBorder(24 + SHADOW, 28 + SHADOW, 24 + SHADOW, 28 + SHADOW));
+            add(content, BorderLayout.CENTER);
         }
 
         @Override
         protected void paintComponent(Graphics g) {
             Graphics2D g2 = (Graphics2D) g.create();
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            int w = getWidth();
-            int h = getHeight();
+            for (int i = SHADOW; i > 0; i--) {
+                g2.setColor(new Color(0, 0, 0, 7));
+                g2.fillRoundRect(SHADOW - i, SHADOW - i + 3, getWidth() - 2 * (SHADOW - i), getHeight() - 2 * (SHADOW - i), ARC + i, ARC + i);
+            }
+            g2.setColor(Color.WHITE);
+            g2.fillRoundRect(SHADOW, SHADOW, getWidth() - 2 * SHADOW, getHeight() - 2 * SHADOW, ARC, ARC);
+            g2.dispose();
+        }
+    }
+
+    /** Reads the optional campus photo from the classpath; null (gradient fallback) if it is missing or unreadable. */
+    private static Image loadBackground() {
+        for (String name : new String[] {"/images/login-bg.jpg", "/images/login-bg.png"}) {
+            URL url = LoginPanel.class.getResource(name);
+            if (url != null) {
+                try {
+                    return ImageIO.read(url);
+                } catch (IOException e) {
+                    System.err.println("Could not read login background " + name + ": " + e.getMessage());
+                }
+            }
+        }
+        return null;
+    }
+
+    @Override
+    protected void paintComponent(Graphics g) {
+        Graphics2D g2 = (Graphics2D) g.create();
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+        int w = getWidth();
+        int h = getHeight();
+        if (BACKGROUND != null && BACKGROUND.getWidth(null) > 0) {
+            // "cover": scale so the photo fills the window, centred, then darken slightly for contrast
+            double scale = Math.max(w / (double) BACKGROUND.getWidth(null), h / (double) BACKGROUND.getHeight(null));
+            int iw = (int) Math.ceil(BACKGROUND.getWidth(null) * scale);
+            int ih = (int) Math.ceil(BACKGROUND.getHeight(null) * scale);
+            g2.drawImage(BACKGROUND, (w - iw) / 2, (h - ih) / 2, iw, ih, null);
+            g2.setColor(new Color(10, 31, 77, 110));
+            g2.fillRect(0, 0, w, h);
+        } else {
             g2.setPaint(new GradientPaint(0, 0, AdminTheme.NAVY_DARK, w, h, new Color(0x1B4DB5)));
             g2.fillRect(0, 0, w, h);
             g2.setColor(new Color(255, 255, 255, 14));
             g2.fillOval(-w / 3, -h / 6, w, w);
             g2.fillOval(w / 2, h / 5, w, w);
-            // skyline of campus buildings fading into the background
-            g2.setColor(new Color(255, 255, 255, 20));
+            g2.setColor(new Color(255, 255, 255, 20));   // soft campus skyline
             int[][] blocks = {{0, 150, 70}, {60, 210, 90}, {160, 120, 60}, {230, 240, 110}, {350, 170, 80}};
             for (int[] b : blocks) {
                 int bh = (int) (b[1] * h / 640.0 * 1.1);
                 g2.fillRect(b[0] * w / 420, h - bh, b[2] * w / 420, bh);
             }
-            AdminIcons.of(Kind.CAP, 54, new Color(255, 255, 255, 235)).paintIcon(this, g2, 40, 48);
-            g2.dispose();
         }
+        g2.dispose();
     }
 }

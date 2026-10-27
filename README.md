@@ -24,7 +24,7 @@ mysql -u root -p faculty_ams < database/migrations/001_sample_notices_timetables
 ```
 The last file (demo notices/timetables) is optional. It must run after `sample_data.sql`.
 
-**1b. Existing database** (never drops data; safe to re-run). `schema.sql` can also be re-run safely:
+**1b. Existing database** (never drops data; safe to re-run; `schema.sql` is also safe to re-run):
 ```
 mysql -u root -p faculty_ams < database/migrations/001_notices_timetables.sql
 mysql -u root -p faculty_ams < database/migrations/002_department_head.sql
@@ -52,6 +52,9 @@ mvn dependency:copy-dependencies -DoutputDirectory=target/lib
 java -cp "target/classes;target/lib/*" com.facultyams.Main
 ```
 (On macOS/Linux use `:` instead of `;` in the classpath.)
+
+**Login background (optional).** The login screen shows a navy gradient. To use a campus photo instead, save it as
+`src/main/resources/images/login-bg.jpg` (or `.png`), then rebuild with `mvn clean compile`.
 
 ## 4. Login
 `database/sample_data.sql` documents these test accounts (loaded by step 1a):

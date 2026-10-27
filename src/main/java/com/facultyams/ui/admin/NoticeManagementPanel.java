@@ -23,8 +23,8 @@ import java.util.List;
 public class NoticeManagementPanel extends AbstractManagementPanel<Notice> {
 
     private static final long serialVersionUID = 1L;
-    private static final String[] COLUMNS = {"ID", "Title", "Date", "Posted by", "Actions"};
-    private static final int ACTIONS_COLUMN = 4;
+    private static final String[] COLUMNS = {"ID", "Title", "Content", "Date", "Posted by", "Actions"};
+    private static final int ACTIONS_COLUMN = 5;
 
     private final transient NoticeService noticeService;
     final JTextField searchField = searchField("Search notices...");
@@ -38,9 +38,10 @@ public class NoticeManagementPanel extends AbstractManagementPanel<Notice> {
         this.noticeService = noticeService;
         liveSearch(searchField, this::refresh);
         setToolbar(filterRow(260, new double[0], searchField), addButton("Add Notice", this::addNotice));
-        table.getColumnModel().getColumn(1).setPreferredWidth(320);
-        table.getColumnModel().getColumn(2).setPreferredWidth(110);
-        table.getColumnModel().getColumn(3).setPreferredWidth(160);
+        table.getColumnModel().getColumn(1).setPreferredWidth(170);
+        table.getColumnModel().getColumn(2).setPreferredWidth(300);
+        table.getColumnModel().getColumn(3).setPreferredWidth(100);
+        table.getColumnModel().getColumn(4).setPreferredWidth(140);
         RowActions.install(table, ACTIONS_COLUMN,
                 new RowActions.Action(AdminIcons.Kind.EYE, new Color(0x475569), new Color(0xEEF2F7), "View",
                         this::viewRow),
@@ -55,8 +56,17 @@ public class NoticeManagementPanel extends AbstractManagementPanel<Notice> {
 
     @Override
     protected Object[] toRow(Notice n) {
-        return new Object[] {code('N', n.getNoticeId()), n.getTitle(), n.getNoticeDate(),
+        return new Object[] {code('N', n.getNoticeId()), n.getTitle(), preview(n.getContent()), n.getNoticeDate(),
                 n.getCreatedByName() == null ? "-" : n.getCreatedByName(), ""};
+    }
+
+    /** One-line preview of the notice text for the table; the full text is shown by the View button. */
+    private static String preview(String content) {
+        if (content == null) {
+            return "";
+        }
+        String oneLine = content.replaceAll("\\s+", " ").trim();
+        return oneLine.length() <= 70 ? oneLine : oneLine.substring(0, 67) + "...";
     }
 
     // ------------------------------------------------------------------ actions

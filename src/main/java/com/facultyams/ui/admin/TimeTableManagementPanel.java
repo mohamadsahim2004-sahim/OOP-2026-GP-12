@@ -111,12 +111,12 @@ public class TimeTableManagementPanel extends AbstractManagementPanel<TimeTable>
         setToolbar(filterRow(110, new double[] {2, 1.5, 1, 1.4}, searchField, departmentFilter, yearFilter, semesterFilter), actions);
 
         addView(WEEK, grid.scroll());
-        int[] widths = {0, 100, 125, 95, 160, 165, 55, 110};
+        int[] widths = {0, 100, 125, 110, 160, 150, 55, 110};
         for (int i = 1; i < widths.length; i++) {
             table.getColumnModel().getColumn(i).setPreferredWidth(widths[i]);
         }
         RowActions.install(table, ACTIONS_COLUMN, this::editRow, this::deleteRow);
-        showView(WEEK);
+        showView(LIST);
     }
 
     private static DefaultListCellRenderer labelRenderer(String none, String prefix) {

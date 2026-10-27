@@ -3,6 +3,7 @@ package com.facultyams.ui.admin;
 import com.facultyams.exception.AuthorizationException;
 import com.facultyams.exception.DatabaseException;
 import com.facultyams.service.AdminService;
+import com.facultyams.ui.admin.AdminIcons.Kind;
 
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -73,10 +74,10 @@ public class DashboardPanel extends JPanel implements Refreshable {
     }
 
     private final transient AdminService adminService;
-    private final StatCard usersCard = new StatCard("users", "Total Users", AdminTheme.CARD_BLUE);
-    private final StatCard departmentsCard = new StatCard("departments", "Departments", AdminTheme.CARD_GREEN);
-    private final StatCard coursesCard = new StatCard("courses", "Courses", AdminTheme.CARD_PURPLE);
-    private final StatCard noticesCard = new StatCard("notices", "Notices", AdminTheme.CARD_ORANGE);
+    private final StatCard usersCard = new StatCard("users", "Total Users", AdminTheme.CARD_BLUE, Kind.USERS);
+    private final StatCard departmentsCard = new StatCard("departments", "Departments", AdminTheme.CARD_GREEN, Kind.BUILDING);
+    private final StatCard coursesCard = new StatCard("courses", "Courses", AdminTheme.CARD_PURPLE, Kind.BOOK);
+    private final StatCard noticesCard = new StatCard("notices", "Notices", AdminTheme.CARD_ORANGE, Kind.MEGAPHONE);
     private final JTextArea errorText = AdminTheme.errorText();
     private final JButton retryButton = new JButton("Retry");
     private final JPanel errorRow = new JPanel(new BorderLayout(12, 0));
@@ -124,14 +125,14 @@ public class DashboardPanel extends JPanel implements Refreshable {
 
         JPanel actions = new JPanel(new GridLayout(1, 5, 14, 0));
         actions.setOpaque(false);
-        actions.setPreferredSize(new Dimension(100, 80));
-        actions.setMaximumSize(new Dimension(Integer.MAX_VALUE, 80));
+        actions.setPreferredSize(new Dimension(100, 104));
+        actions.setMaximumSize(new Dimension(Integer.MAX_VALUE, 104));
         actions.setAlignmentX(LEFT_ALIGNMENT);
-        actions.add(action("User", AdminShell.PAGE_USERS, navigate));
-        actions.add(action("Department", AdminShell.PAGE_DEPARTMENTS, navigate));
-        actions.add(action("Course", AdminShell.PAGE_COURSES, navigate));
-        actions.add(action("Notice", AdminShell.PAGE_NOTICES, navigate));
-        actions.add(action("Timetable", AdminShell.PAGE_TIMETABLES, navigate));
+        actions.add(action("Users", "User", Kind.USERS, AdminShell.PAGE_USERS, navigate));
+        actions.add(action("Departments", "Department", Kind.BUILDING, AdminShell.PAGE_DEPARTMENTS, navigate));
+        actions.add(action("Courses", "Course", Kind.BOOK, AdminShell.PAGE_COURSES, navigate));
+        actions.add(action("Notices", "Notice", Kind.MEGAPHONE, AdminShell.PAGE_NOTICES, navigate));
+        actions.add(action("Timetables", "Timetable", Kind.CALENDAR, AdminShell.PAGE_TIMETABLES, navigate));
 
         JPanel column = new JPanel();
         column.setOpaque(false);
@@ -147,12 +148,16 @@ public class DashboardPanel extends JPanel implements Refreshable {
     }
 
     /**
-     * One quick action. The text is split over two lines ("Department" / "Management") so all five fit
-     * side by side even at the window's minimum width; the plain name is kept as tooltip and accessible name.
+     * One quick action: an icon above "Manage / Departments" (two lines, so all five fit side by side even at
+     * the window's minimum width); the plain "Department Management" is kept as tooltip and accessible name.
      */
-    private static JButton action(String subject, String pageKey, Consumer<String> navigate) {
+    private static JButton action(String plural, String subject, Kind icon, String pageKey, Consumer<String> navigate) {
         String label = subject + " Management";
-        JButton b = new JButton("<html><div style='text-align:center'>" + subject + "<br>Management</div></html>");
+        JButton b = new JButton("<html><div style='text-align:center'>Manage<br>" + plural + "</div></html>",
+                AdminIcons.of(icon, 30, AdminTheme.BLUE));
+        b.setVerticalTextPosition(SwingConstants.BOTTOM);
+        b.setHorizontalTextPosition(SwingConstants.CENTER);
+        b.setIconTextGap(8);
         b.setName("quick." + pageKey);
         b.setToolTipText("Open " + label);
         b.getAccessibleContext().setAccessibleName(label);
@@ -241,27 +246,41 @@ public class DashboardPanel extends JPanel implements Refreshable {
 
         private static final long serialVersionUID = 1L;
 
-        private final JLabel valueLabel = new JLabel(LOADING, SwingConstants.CENTER);
+        private final JLabel valueLabel = new JLabel(LOADING, SwingConstants.LEFT);
         private final String caption;
         private final Color color;
+        private final JLabel iconLabel;
         private String error;
 
-        StatCard(String key, String caption, Color color) {
+        StatCard(String key, String caption, Color color, Kind icon) {
             super(new BorderLayout());
             this.caption = caption;
             this.color = color;
             putClientProperty(AdminTheme.SKIP, Boolean.TRUE);
             setName("card." + key);
             setOpaque(false);
-            setBorder(BorderFactory.createEmptyBorder(14, 10, 14, 10));
-            JLabel captionLabel = new JLabel(caption, SwingConstants.CENTER);
+            setBorder(BorderFactory.createEmptyBorder(14, 18, 14, 14));
+            iconLabel = new JLabel(AdminIcons.of(icon, 40, Color.WHITE));
+            iconLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 14));
+            JLabel captionLabel = new JLabel(caption, SwingConstants.LEFT);
             captionLabel.setForeground(Color.WHITE);
             captionLabel.setFont(AdminTheme.FONT_BOLD);
             valueLabel.setName("card." + key + ".value");
             valueLabel.setForeground(Color.WHITE);
             valueLabel.setFont(valueLabel.getFont().deriveFont(java.awt.Font.BOLD, 38f));
-            add(captionLabel, BorderLayout.NORTH);
-            add(valueLabel, BorderLayout.CENTER);
+            JPanel text = new JPanel(new BorderLayout());
+            text.setOpaque(false);
+            text.add(captionLabel, BorderLayout.NORTH);
+            text.add(valueLabel, BorderLayout.CENTER);
+            add(iconLabel, BorderLayout.WEST);
+            add(text, BorderLayout.CENTER);
+        }
+
+        /** The icon is dropped on narrow cards (small windows) so the caption and the number keep their room. */
+        @Override
+        public void doLayout() {
+            iconLabel.setVisible(getWidth() >= 180);
+            super.doLayout();
         }
 
         void setFigure(Figure figure) {

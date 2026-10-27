@@ -24,7 +24,7 @@ import java.util.List;
 public class UserManagementPanel extends AbstractManagementPanel<User> {
 
     private static final long serialVersionUID = 1L;
-    private static final String[] COLUMNS = {"ID", "Username", "Full Name", "Email", "Role", "Department", "Status", "Actions"};
+    private static final String[] COLUMNS = {"ID", "Full Name", "Username", "Email", "Role", "Department", "Status", "Actions"};
     private static final int STATUS_COLUMN = 6;
     private static final int ACTIONS_COLUMN = 7;
 
@@ -61,7 +61,7 @@ public class UserManagementPanel extends AbstractManagementPanel<User> {
         liveSearch(searchField, this::refresh);
         setToolbar(filterRow(200, new double[] {2, 1}, searchField, roleFilter), addButton("Add User", this::addUser));
 
-        int[] widths = {0, 100, 130, 155, 108, 140, 92};
+        int[] widths = {0, 130, 100, 155, 108, 140, 92};
         for (int i = 1; i < widths.length; i++) {
             table.getColumnModel().getColumn(i).setPreferredWidth(widths[i]);
         }
@@ -83,7 +83,7 @@ public class UserManagementPanel extends AbstractManagementPanel<User> {
 
     @Override
     protected Object[] toRow(User u) {
-        return new Object[] {code('U', u.getUserId()), u.getUsername(), u.getFullName(), u.getEmail(),
+        return new Object[] {code('U', u.getUserId()), u.getFullName(), u.getUsername(), u.getEmail(),
                 u.getRole().getDisplayName(), u.getDepartmentName() == null ? "-" : u.getDepartmentName(),
                 u.isActive() ? "Active" : "Inactive", ""};
     }

@@ -99,7 +99,11 @@ public abstract class AppShell extends JPanel {
         content.setOpaque(true);
         content.setBackground(AdminTheme.PANEL_BG);
         buildUserChip();
-        add(content, BorderLayout.CENTER);
+        JPanel main = new JPanel(new BorderLayout());
+        main.setOpaque(false);
+        main.add(buildTopBar(), BorderLayout.NORTH);
+        main.add(content, BorderLayout.CENTER);
+        add(main, BorderLayout.CENTER);
         addComponentListener(new ComponentAdapter() {
             @Override
             public void componentResized(ComponentEvent e) {
@@ -172,7 +176,6 @@ public abstract class AppShell extends JPanel {
         if (!pages.containsKey(key)) {
             return;
         }
-        pageHeaders.get(key).add(userChip, BorderLayout.EAST); // the user chip lives in the visible page's header
         cards.show(content, key);
         currentPage = key;
         navButtons.forEach((k, b) -> {
@@ -247,6 +250,19 @@ public abstract class AppShell extends JPanel {
         sidebar.add(Box.createVerticalGlue());
         sidebar.add(navButton(LOGOUT, "Logout", Kind.LOGOUT));
         return sidebar;
+    }
+
+    /** Navy bar across the top of the content area: the system name on the left, the signed-in user on the right. */
+    private JPanel buildTopBar() {
+        JPanel bar = new JPanel(new BorderLayout());
+        bar.setBackground(AdminTheme.HEADER_BLUE);
+        bar.setBorder(BorderFactory.createEmptyBorder(9, 28, 9, 20));
+        JLabel title = new JLabel("Faculty Academic Management System");
+        title.setForeground(Color.WHITE);
+        title.setFont(AdminTheme.FONT_BOLD.deriveFont(15f));
+        bar.add(title, BorderLayout.WEST);
+        bar.add(userChip, BorderLayout.EAST);
+        return bar;
     }
 
     private void buildUserChip() {

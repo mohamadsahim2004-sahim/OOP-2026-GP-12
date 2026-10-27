@@ -9,12 +9,12 @@ import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import javax.swing.JTabbedPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.SwingWorker;
 import javax.swing.table.DefaultTableModel;
 import java.awt.BorderLayout;
+import java.awt.CardLayout;
 import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -33,15 +33,50 @@ public class SettingsPanel extends JPanel implements Refreshable {
     private final JTextField portField = readOnlyField();
     private final JTextField databaseField = readOnlyField();
     private final JTextField userField = readOnlyField();
+    private final CardLayout cards = new CardLayout();
+    private final JPanel body = new JPanel(cards);
+    private final JButton databaseTab = new JButton("Database Connection");
+    private final JButton rolesTab = new JButton("Role Management");
 
     public SettingsPanel() {
-        super(new BorderLayout());
-        JTabbedPane tabs = new JTabbedPane();
-        tabs.addTab("Database Connection", buildDatabaseTab());
-        tabs.addTab("Role Management", buildRoleTab());
-        add(tabs, BorderLayout.CENTER);
+        super(new BorderLayout(0, 14));
+        body.setOpaque(false);
+        body.add(card(buildDatabaseTab()), "database");
+        body.add(card(buildRoleTab()), "roles");
+
+        JPanel switcher = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        switcher.setOpaque(false);
+        switcher.add(databaseTab);
+        switcher.add(rolesTab);
+        databaseTab.addActionListener(e -> showTab("database"));
+        rolesTab.addActionListener(e -> showTab("roles"));
+        add(switcher, BorderLayout.NORTH);
+        add(body, BorderLayout.CENTER);
         AdminTheme.apply(this);
         resultLabel.setFont(AdminTheme.FONT_BOLD);
+        showTab("database");
+    }
+
+    /** Pill-style switch between the two sections; the selected one is blue, the other light. */
+    private void showTab(String name) {
+        boolean database = "database".equals(name);
+        if (database) {
+            AdminTheme.primary(databaseTab);
+            AdminTheme.secondary(rolesTab);
+        } else {
+            AdminTheme.secondary(databaseTab);
+            AdminTheme.primary(rolesTab);
+        }
+        cards.show(body, name);
+    }
+
+    /** White rounded card around one section. */
+    private static JPanel card(JPanel content) {
+        RoundedPanel card = new RoundedPanel(new BorderLayout());
+        card.setBorder(BorderFactory.createEmptyBorder(6, 6, 6, 6));
+        content.setOpaque(false);
+        card.add(content, BorderLayout.CENTER);
+        return card;
     }
 
     private static JTextField readOnlyField() {

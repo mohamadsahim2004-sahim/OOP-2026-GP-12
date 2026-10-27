@@ -1145,12 +1145,12 @@ public final class NoticeTimetableChecks {
         np.refresh();
         JTable nt = tableWithColumn(np, "Posted by");
         check("notice screen lists the notices from the database", nt != null && nt.getRowCount() == 2);
-        check("notice table shows ID, Title, Date, Posted by and Actions",
-                nt != null && nt.getColumnCount() == 5 && "Posted by".equals(nt.getColumnName(3))
-                        && "System Administrator".equals(String.valueOf(nt.getValueAt(0, 3))));
+                check("notice table shows ID, Title, Content, Date, Posted by and Actions",
+                nt != null && nt.getColumnCount() == 6 && "Posted by".equals(nt.getColumnName(4))
+                        && "System Administrator".equals(String.valueOf(nt.getValueAt(0, 4))));
         check("notice row shows its title and date",
                 nt != null && "Exam Notice".equals(String.valueOf(nt.getValueAt(0, 1)))
-                        && "2026-09-20".equals(String.valueOf(nt.getValueAt(0, 2))));
+                        && "2026-09-20".equals(String.valueOf(nt.getValueAt(0, 3))));
         JTextComponent nSearch = fieldWithHint(np, "Search notices...");
         check("notice screen has a search box", nSearch != null);
         nSearch.setText("exam");
