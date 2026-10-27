@@ -1061,6 +1061,17 @@ public final class LecturerChecks {
         cm.refresh();
         check("course materials: empty state message", text(cm).contains("No course materials yet"));
 
+        Method wrap = Class.forName("com.facultyams.dao.JdbcSupport").getDeclaredMethod("wrap", java.sql.SQLException.class);
+        wrap.setAccessible(true);
+        String schemaMsg = ((DatabaseException) wrap.invoke(null,
+                new java.sql.SQLException("Unknown column 'm.course_id' in 'where clause'", "42S22"))).getMessage();
+        check("outdated / missing lecturer tables give guidance (migration 005 + LecturerDbCheck) and keep the database's own message",
+                schemaMsg.contains("005_lecturer_module.sql") && schemaMsg.contains("LecturerDbCheck") && schemaMsg.contains("Unknown column"));
+        check("missing table (MySQL 42S02) is recognised too", ((DatabaseException) wrap.invoke(null,
+                new java.sql.SQLException("Table 'faculty_ams.marks' doesn't exist", "42S02"))).getMessage().contains("005_lecturer_module.sql"));
+        check("other database errors are NOT mislabelled as a schema problem", !((DatabaseException) wrap.invoke(null,
+                new java.sql.SQLException("Lock wait timeout exceeded", "40001"))).getMessage().contains("005_lecturer_module"));
+
         Session.end();
         EvaluationComponentsPanel denied = new EvaluationComponentsPanel(s.access, s.evaluation);
         denied.refresh();

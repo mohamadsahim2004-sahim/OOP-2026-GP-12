@@ -22,6 +22,43 @@
 USE faculty_ams;
 
 -- -----------------------------------------------------------------------------
+-- Compatibility guard.
+-- The undergraduate branch uses tables with the SAME NAMES but DIFFERENT columns
+-- (marks: course_code / score ..., course_materials: course_code / title ...).
+-- "CREATE TABLE IF NOT EXISTS" would silently keep such a table and every Lecturer
+-- screen would then fail with "Unknown column". A table that lacks the Lecturer key
+-- columns is therefore RENAMED to <name>_other_module (nothing is deleted; undo with
+-- RENAME TABLE <name>_other_module TO <name>;) and the Lecturer table is created below.
+-- -----------------------------------------------------------------------------
+-- marks: required columns marksid, student_id, course_id
+SET @has   := (SELECT COUNT(*) FROM information_schema.TABLES
+               WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'marks');
+SET @keys  := (SELECT COUNT(*) FROM information_schema.COLUMNS
+               WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'marks' AND COLUMN_NAME IN ('marksid', 'student_id', 'course_id'));
+SET @taken := (SELECT COUNT(*) FROM information_schema.TABLES
+               WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'marks_other_module');
+SET @ddl := IF(@has > 0 AND @keys < 3 AND @taken = 0,
+    'RENAME TABLE marks TO marks_other_module',
+    IF(@has > 0 AND @keys < 3,
+       'SELECT ''WARNING: marks has an incompatible structure and marks_other_module already exists - rename or drop one of them by hand, then run this script again'' AS warning',
+       'SELECT ''marks: no incompatible table found'' AS info'));
+PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- course_materials: required columns materialID, courseID
+SET @has   := (SELECT COUNT(*) FROM information_schema.TABLES
+               WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'course_materials');
+SET @keys  := (SELECT COUNT(*) FROM information_schema.COLUMNS
+               WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'course_materials' AND COLUMN_NAME IN ('materialID', 'courseID'));
+SET @taken := (SELECT COUNT(*) FROM information_schema.TABLES
+               WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'course_materials_other_module');
+SET @ddl := IF(@has > 0 AND @keys < 2 AND @taken = 0,
+    'RENAME TABLE course_materials TO course_materials_other_module',
+    IF(@has > 0 AND @keys < 2,
+       'SELECT ''WARNING: course_materials has an incompatible structure and course_materials_other_module already exists - rename or drop one of them by hand, then run this script again'' AS warning',
+       'SELECT ''course_materials: no incompatible table found'' AS info'));
+PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- -----------------------------------------------------------------------------
 -- Enrollment: which students take which course (used to scope lecturer access)
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS enrollments (
@@ -29,9 +66,9 @@ CREATE TABLE IF NOT EXISTS enrollments (
     course_id  INT       NOT NULL,
     enrolled_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (student_id, course_id),
-    CONSTRAINT fk_enrollments_student FOREIGN KEY (student_id)
+    CONSTRAINT fk_lm_enrollments_student FOREIGN KEY (student_id)
         REFERENCES students (user_id) ON UPDATE CASCADE ON DELETE CASCADE,
-    CONSTRAINT fk_enrollments_course FOREIGN KEY (course_id)
+    CONSTRAINT fk_lm_enrollments_course FOREIGN KEY (course_id)
         REFERENCES courses (course_id) ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE = InnoDB;
 
@@ -52,9 +89,9 @@ CREATE TABLE IF NOT EXISTS evaluation_component (
     created_at        TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (eval_component_id),
     CONSTRAINT uq_eval_component_name UNIQUE (course_id, component_name),
-    CONSTRAINT chk_eval_max CHECK (max_marks > 0),
-    CONSTRAINT chk_eval_weight CHECK (weightage > 0 AND weightage <= 100),
-    CONSTRAINT fk_eval_component_course FOREIGN KEY (course_id)
+    CONSTRAINT chk_lm_eval_max CHECK (max_marks > 0),
+    CONSTRAINT chk_lm_eval_weight CHECK (weightage > 0 AND weightage <= 100),
+    CONSTRAINT fk_lm_eval_component_course FOREIGN KEY (course_id)
         REFERENCES courses (course_id) ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE = InnoDB;
 
@@ -66,12 +103,12 @@ CREATE TABLE IF NOT EXISTS component_marks (
     entered_by        INT          NULL,
     updated_at        TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (student_id, eval_component_id),
-    CONSTRAINT chk_component_marks_nonneg CHECK (marks_obtained >= 0),
-    CONSTRAINT fk_component_marks_student FOREIGN KEY (student_id)
+    CONSTRAINT chk_lm_component_marks_nonneg CHECK (marks_obtained >= 0),
+    CONSTRAINT fk_lm_component_marks_student FOREIGN KEY (student_id)
         REFERENCES students (user_id) ON UPDATE CASCADE ON DELETE CASCADE,
-    CONSTRAINT fk_component_marks_component FOREIGN KEY (eval_component_id)
+    CONSTRAINT fk_lm_component_marks_component FOREIGN KEY (eval_component_id)
         REFERENCES evaluation_component (eval_component_id) ON UPDATE CASCADE ON DELETE RESTRICT,
-    CONSTRAINT fk_component_marks_user FOREIGN KEY (entered_by)
+    CONSTRAINT fk_lm_component_marks_user FOREIGN KEY (entered_by)
         REFERENCES users (user_id) ON UPDATE CASCADE ON DELETE SET NULL
 ) ENGINE = InnoDB;
 
@@ -93,13 +130,55 @@ CREATE TABLE IF NOT EXISTS marks (
     published_at DATETIME     NULL,
     PRIMARY KEY (marksid),
     CONSTRAINT uq_marks_student_course UNIQUE (student_id, course_id),
-    CONSTRAINT fk_marks_student FOREIGN KEY (student_id)
+    CONSTRAINT fk_lm_marks_student FOREIGN KEY (student_id)
         REFERENCES students (user_id) ON UPDATE CASCADE ON DELETE CASCADE,
-    CONSTRAINT fk_marks_course FOREIGN KEY (course_id)
+    CONSTRAINT fk_lm_marks_course FOREIGN KEY (course_id)
         REFERENCES courses (course_id) ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE = InnoDB;
 
--- If `marks` already existed (older lecturer database), add what is missing.
+-- If `marks` already existed (older lecturer database), add every column that is missing.
+SET @col := (SELECT COUNT(*) FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'marks' AND COLUMN_NAME = 'obtainMarks');
+SET @ddl := IF(@col = 0,
+    'ALTER TABLE marks ADD COLUMN obtainMarks DECIMAL(5,2) NOT NULL DEFAULT 0',
+    'SELECT ''marks.obtainMarks already exists'' AS info');
+PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @col := (SELECT COUNT(*) FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'marks' AND COLUMN_NAME = 'finalMarks');
+SET @ddl := IF(@col = 0,
+    'ALTER TABLE marks ADD COLUMN finalMarks DECIMAL(5,2) NOT NULL DEFAULT 0',
+    'SELECT ''marks.finalMarks already exists'' AS info');
+PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @col := (SELECT COUNT(*) FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'marks' AND COLUMN_NAME = 'grade');
+SET @ddl := IF(@col = 0,
+    'ALTER TABLE marks ADD COLUMN grade VARCHAR(3) NULL',
+    'SELECT ''marks.grade already exists'' AS info');
+PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @col := (SELECT COUNT(*) FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'marks' AND COLUMN_NAME = 'isEligible');
+SET @ddl := IF(@col = 0,
+    'ALTER TABLE marks ADD COLUMN isEligible BOOLEAN NOT NULL DEFAULT FALSE',
+    'SELECT ''marks.isEligible already exists'' AS info');
+PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @col := (SELECT COUNT(*) FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'marks' AND COLUMN_NAME = 'overall_mark');
+SET @ddl := IF(@col = 0,
+    'ALTER TABLE marks ADD COLUMN overall_mark DECIMAL(5,2) NULL',
+    'SELECT ''marks.overall_mark already exists'' AS info');
+PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @col := (SELECT COUNT(*) FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'marks' AND COLUMN_NAME = 'grade_points');
+SET @ddl := IF(@col = 0,
+    'ALTER TABLE marks ADD COLUMN grade_points DECIMAL(3,2) NULL',
+    'SELECT ''marks.grade_points already exists'' AS info');
+PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
 SET @col := (SELECT COUNT(*) FROM information_schema.COLUMNS
              WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'marks' AND COLUMN_NAME = 'published');
 SET @ddl := IF(@col = 0,
@@ -138,7 +217,7 @@ CREATE TABLE IF NOT EXISTS course_materials (
     notes         TEXT         NULL,
     referenceText TEXT         NULL,
     PRIMARY KEY (materialID),
-    CONSTRAINT fk_course_materials_course FOREIGN KEY (courseID)
+    CONSTRAINT fk_lm_course_materials_course FOREIGN KEY (courseID)
         REFERENCES courses (course_id) ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE = InnoDB;
 

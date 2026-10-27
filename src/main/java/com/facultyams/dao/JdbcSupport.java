@@ -82,6 +82,16 @@ final class JdbcSupport {
     }
 
     static DatabaseException wrap(SQLException e) {
-        return new DatabaseException("Database error: " + e.getMessage(), e);
+        String message = e.getMessage() == null ? "" : e.getMessage();
+        String lower = message.toLowerCase();
+        boolean schemaProblem = "42S02".equals(e.getSQLState()) || "42S22".equals(e.getSQLState())
+                || lower.contains("doesn't exist") || lower.contains("unknown column")
+                || lower.contains("no such table") || lower.contains("no such column");
+        if (schemaProblem) {
+            return new DatabaseException("The lecturer tables in this database are missing or out of date. "
+                    + "Run database/migrations/005_lecturer_module.sql, or run com.facultyams.LecturerDbCheck "
+                    + "to see exactly what is wrong. (Database said: " + message + ")", e);
+        }
+        return new DatabaseException("Database error: " + message, e);
     }
 }
