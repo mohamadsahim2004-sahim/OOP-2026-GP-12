@@ -10,9 +10,9 @@ import com.facultyams.model.*;
 
 /** Reads upcoming submission deadlines from course activities. */
 public class DeadlineService {
-    private final CourseService courseService;
+    private final StudentCourseService courseService;
 
-    public DeadlineService(CourseService courseService) {
+    public DeadlineService(StudentCourseService courseService) {
         this.courseService = Objects.requireNonNull(courseService);
     }
 
@@ -21,7 +21,7 @@ public class DeadlineService {
 
         LocalDate today = LocalDate.now();
         List<Deadline> deadlines = new ArrayList<>();
-        for (Course course : courseService.findCourses("ST1001")) {
+        for (CourseSummary course : courseService.findCourses("ST1001")) {
             for (Section section : courseService.sections(course.id())) {
                 for (Activity activity : courseService.activities(section.id())) {
                     if (activity instanceof Assignment assignment && assignment.dueAt() != null) {

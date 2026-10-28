@@ -7,15 +7,15 @@ import javax.swing.SwingWorker;
 
 import com.facultyams.model.CourseAttendance;
 import com.facultyams.model.SessionAttendance;
-import com.facultyams.service.AttendanceService;
+import com.facultyams.service.StudentAttendanceService;
 
 /**
  * Controller for off-EDT attendance data loading.
  */
 public class AttendanceController {
-    private final AttendanceService attendanceService;
+    private final StudentAttendanceService attendanceService;
 
-    public AttendanceController(AttendanceService attendanceService) {
+    public AttendanceController(StudentAttendanceService attendanceService) {
         this.attendanceService = attendanceService;
     }
 

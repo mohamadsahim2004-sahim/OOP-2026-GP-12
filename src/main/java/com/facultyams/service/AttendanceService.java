@@ -1,23 +1,53 @@
 package com.facultyams.service;
 
-import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
-import com.facultyams.model.CourseAttendance;
-import com.facultyams.model.SessionAttendance;
+import com.facultyams.dao.AttendanceDAO;
+import com.facultyams.dao.MedicalDAO;
+import com.facultyams.model.AttendanceSummary;
 
-/**
- * Service contract for querying attendance and class sessions.
- */
-public interface AttendanceService {
-    List<CourseAttendance> summary(String studentId);
-    List<SessionAttendance> sessionsBetween(String studentId, LocalDate from, LocalDate to);
-    List<SessionAttendance> sessionsForCourse(String studentId, String courseCode);
-    void markSessionsMedicalApproved(List<String> sessionIds);
-    void addAttendanceListener(AttendanceListener listener);
+public class AttendanceService {
 
-    @FunctionalInterface
-    interface AttendanceListener {
-        void onAttendanceUpdated();
+    public static final int TOTAL_SESSIONS = 15;
+
+    private AttendanceDAO attendanceDAO = new AttendanceDAO();
+    private MedicalDAO medicalDAO = new MedicalDAO();
+
+    public double calculatePercentage(int present, int approvedMedical, int totalSessions) {
+        if (totalSessions <= 0) {
+            throw new IllegalArgumentException("Total sessions must be greater than 0");
+        }
+        return 100.0 * (present + approvedMedical) / totalSessions;
+    }
+
+    public boolean isEligible(double percentage) {
+        return percentage >= 80;
+    }
+
+    public double getStudentPercentage(int userId, int componentId) {
+        int present = attendanceDAO.countPresent(userId, componentId);
+        int approved = medicalDAO.countApproved(userId, componentId);
+        return calculatePercentage(present, approved, TOTAL_SESSIONS);
+    }
+
+    public double getCombinedPercentage(int userId, int theoryId, int practicalId) {
+        int present = attendanceDAO.countPresent(userId, theoryId)
+                    + attendanceDAO.countPresent(userId, practicalId);
+        int approved = medicalDAO.countApproved(userId, theoryId)
+                     + medicalDAO.countApproved(userId, practicalId);
+        return calculatePercentage(present, approved, TOTAL_SESSIONS * 2);
+    }
+
+    public List<AttendanceSummary> getBatchSummary(int componentId) {
+        List<AttendanceSummary> list = new ArrayList<>();
+        List<Integer> ids = attendanceDAO.getStudentIdsByComponent(componentId);
+
+        for (int id : ids) {
+            double percentage = getStudentPercentage(id, componentId);
+            boolean eligible = isEligible(percentage);
+            list.add(new AttendanceSummary(id, percentage, eligible));
+        }
+        return list;
     }
 }

@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 
-import com.facultyams.model.Course;
+import com.facultyams.model.CourseSummary;
 import com.facultyams.model.CourseStatus;
 import com.facultyams.model.SortOption;
 
@@ -25,16 +25,16 @@ public final class CourseFilter {
     }
 
     /** Returns a newly filtered and sorted course list. */
-    public List<Course> apply(List<Course> courses) {
-        List<Course> result = new ArrayList<>();
-        for (Course course : courses) {
+    public List<CourseSummary> apply(List<CourseSummary> courses) {
+        List<CourseSummary> result = new ArrayList<>();
+        for (CourseSummary course : courses) {
             if (matchesSearch(course) && matchesStatus(course)) result.add(course);
         }
         result.sort(sortOption.comparator());
         return result;
     }
 
-    private boolean matchesSearch(Course course) {
+    private boolean matchesSearch(CourseSummary course) {
         if (searchText.isEmpty()) return true;
         return contains(course.code()) || contains(course.title()) || contains(course.lecturerName());
     }
@@ -43,7 +43,7 @@ public final class CourseFilter {
         return value != null && value.toLowerCase(Locale.ROOT).contains(searchText);
     }
 
-    private boolean matchesStatus(Course course) {
+    private boolean matchesStatus(CourseSummary course) {
         boolean currentSemester = course.semester().equalsIgnoreCase(this.currentSemester);
         return switch (status) {
             case ALL -> true;

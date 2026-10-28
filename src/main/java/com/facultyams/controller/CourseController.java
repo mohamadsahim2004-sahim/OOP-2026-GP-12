@@ -5,8 +5,8 @@ import javax.swing.JComponent;
 import javax.swing.SwingWorker;
 
 import com.facultyams.model.Assignment;
-import com.facultyams.model.Course;
-import com.facultyams.service.CourseService;
+import com.facultyams.model.CourseSummary;
+import com.facultyams.service.StudentCourseService;
 import com.facultyams.service.SubmissionService;
 import com.facultyams.ui.views.AssignmentView;
 import com.facultyams.ui.views.CourseOverviewView;
@@ -16,7 +16,7 @@ import com.facultyams.ui.views.CoursePageView;
  * Controller orchestrating course navigation, async data loading, and view state transitions.
  */
 public class CourseController {
-    private final CourseService courseService;
+    private final StudentCourseService courseService;
     private final SubmissionService submissionService;
     private final Navigator navigator;
     private final String studentId;
@@ -25,9 +25,9 @@ public class CourseController {
     private CoursePageView pageView;
     private AssignmentView assignmentView;
     private JComponent enrollmentLegacyView;
-    private Course currentCourse;
+    private CourseSummary currentCourse;
 
-    public CourseController(CourseService courseService, SubmissionService submissionService,
+    public CourseController(StudentCourseService courseService, SubmissionService submissionService,
                             Navigator navigator, String studentId) {
         this.courseService = courseService;
         this.submissionService = submissionService;
@@ -54,26 +54,33 @@ public class CourseController {
     }
 
     public void loadCourses() {
-        new SwingWorker<List<Course>, Void>() {
+        new SwingWorker<List<CourseSummary>, Void>() {
             @Override
-            protected List<Course> doInBackground() {
+            protected List<CourseSummary> doInBackground() {
                 return courseService.findCourses(studentId);
             }
 
             @Override
             protected void done() {
                 try {
-                    List<Course> courses = get();
+                    List<CourseSummary> courses = get();
                     if (overviewView != null) {
                         overviewView.setCourses(courses);
                     }
-                } catch (Exception ignored) {
+                } catch (Exception ex) {
+                    Throwable cause = ex.getCause() == null ? ex : ex.getCause();
+                    if (overviewView != null) {
+                        overviewView.setCourses(List.of());
+                        javax.swing.JOptionPane.showMessageDialog(overviewView,
+                                cause.getMessage() == null ? "Courses could not be loaded." : cause.getMessage(),
+                                "Courses", javax.swing.JOptionPane.WARNING_MESSAGE);
+                    }
                 }
             }
         }.execute();
     }
 
-    public void openCourse(Course course) {
+    public void openCourse(CourseSummary course) {
         this.currentCourse = course;
         if (pageView != null) {
             pageView.loadCourse(course);
@@ -82,7 +89,7 @@ public class CourseController {
     }
 
     public boolean openCourseByCode(String courseCode) {
-        Course course = courseService.findCourses(studentId).stream()
+        CourseSummary course = courseService.findCourses(studentId).stream()
                 .filter(item -> item.code().equalsIgnoreCase(courseCode))
                 .findFirst().orElse(null);
         if (course == null) return false;
@@ -91,7 +98,7 @@ public class CourseController {
     }
 
     public boolean showSubmission(String courseCode, String submissionId) {
-        Course course = courseService.findCourses(studentId).stream()
+        CourseSummary course = courseService.findCourses(studentId).stream()
                 .filter(item -> item.code().equalsIgnoreCase(courseCode))
                 .findFirst().orElse(null);
         if (course == null) return false;
@@ -129,6 +136,7 @@ public class CourseController {
 
     public void navigateToOverview() {
         navigator.resetToRoot();
+        loadCourses();   // enrollment may have changed
     }
 
     public void navigateToCoursePage() {

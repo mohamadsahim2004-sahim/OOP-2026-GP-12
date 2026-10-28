@@ -6,15 +6,15 @@ import java.util.function.Consumer;
 import javax.swing.SwingWorker;
 
 import com.facultyams.model.MedicalRequest;
-import com.facultyams.service.MedicalService;
+import com.facultyams.service.StudentMedicalService;
 
 /**
  * Controller orchestrating asynchronous medical excuse operations.
  */
 public class MedicalController {
-    private final MedicalService medicalService;
+    private final StudentMedicalService medicalService;
 
-    public MedicalController(MedicalService medicalService) {
+    public MedicalController(StudentMedicalService medicalService) {
         this.medicalService = medicalService;
     }
 
@@ -42,26 +42,6 @@ public class MedicalController {
             @Override
             protected Void doInBackground() {
                 medicalService.withdraw(requestId);
-                return null;
-            }
-
-            @Override
-            protected void done() {
-                try {
-                    get();
-                    if (onSuccess != null) onSuccess.run();
-                } catch (Exception ex) {
-                    if (onError != null) onError.accept(ex);
-                }
-            }
-        }.execute();
-    }
-
-    public void approve(String requestId, Runnable onSuccess, Consumer<Exception> onError) {
-        new SwingWorker<Void, Void>() {
-            @Override
-            protected Void doInBackground() {
-                medicalService.approve(requestId);
                 return null;
             }
 
