@@ -1,54 +1,106 @@
--- SRMS Sample Data matching Abhishek Verma Dashboard
+-- =============================================================================
+-- FoT-AMS sample data (shared foundation: departments, users, courses)
+-- Run AFTER schema.sql:  mysql -u root -p faculty_ams < database/sample_data.sql
+--
+-- Test logins (password is the same for every user of a role):
+--   ADMIN              admin                     / admin123
+--   LECTURER           lec.perera ... lec.bandara / lecturer123
+--   TECHNICAL_OFFICER  to.kumara ... to.wijesinghe / officer123
+--   STUDENT            tg1001 ... tg1016, tg0950, tg0951, tg0960, tg0961 / student123
+--
+-- Fixed IDs are used so other modules can reference them in their own sample data:
+--   admin = 1, lecturers = 2-6, technical officers = 7-10, students = 11-30
+-- Course list: replace with the real B09 Level 2 Semester 1 timetable modules if they differ.
+-- Passwords are PBKDF2 hashes; create new ones with:
+--   java -cp target/classes com.facultyams.security.PasswordUtil <password>
+-- =============================================================================
 
-USE faculty_ams_db;
+USE faculty_ams;
 
--- 1. Insert User & Student
-INSERT INTO users (id, username, password_hash, full_name, email, role, phone_number)
-VALUES (1, 'abhishek', 'password123', 'Abhishek Verma', 'abhishek.verma@eng.university.ac.lk', 'STUDENT', '+94 77 123 4567')
-ON DUPLICATE KEY UPDATE full_name=VALUES(full_name);
+-- -----------------------------------------------------------------------------
+-- Departments
+-- -----------------------------------------------------------------------------
+INSERT INTO departments (department_id, department_code, department_name) VALUES
+                                                                              (1, 'DICT', 'Department of Information and Communication Technology'),
+                                                                              (2, 'DET',  'Department of Engineering Technology'),
+                                                                              (3, 'DBST', 'Department of Biosystems Technology'),
+                                                                              (4, 'DMS',  'Department of Multidisciplinary Studies');
 
-INSERT INTO students (id, reg_no, degree_program, academic_year, current_semester, cgpa, overall_rank, total_students, attendance_percentage, address, academic_advisor, emergency_contact, department)
-VALUES (1, 'TG/2021/842', 'B.Tech CSE - 3rd Year', '2021/2022', 'Semester 5', 8.45, 12, 120, 87.00, 'No. 45, University Crescent, Colombo 07', 'Prof. K. R. Jayawardena', '+94 71 987 6543 (Parent)', 'Computer Science & Engineering')
-ON DUPLICATE KEY UPDATE cgpa=VALUES(cgpa);
+-- -----------------------------------------------------------------------------
+-- Users: 1 admin, 5 lecturers, 4 technical officers, 20 students
+-- -----------------------------------------------------------------------------
+INSERT INTO users (user_id, username, password_hash, full_name, email, role, contact_number, profile_picture, department_id, is_active) VALUES
+                                                                                                                                            (1, 'admin', 'pbkdf2$65536$w77g4TtIZKt50Ruf7LXL+g==$HuFl6yEf6V+PmGbN+VGr2N6XjheTRT9fUYVGfhpmnpE=', 'System Administrator', 'admin@fot.example.lk', 'ADMIN', '0412222001', NULL, NULL, TRUE),
+                                                                                                                                            (2, 'lec.perera', 'pbkdf2$65536$FdpS9+ZsGAbslDVUlTaMIg==$RV3chOlbB18L4C/ablgIGrtH17XQf8XfX4/pRTLReG8=', 'Dr. Nimal Perera', 'lec.perera@fot.example.lk', 'LECTURER', '0711234001', NULL, 1, TRUE),
+                                                                                                                                            (3, 'lec.silva', 'pbkdf2$65536$mkLzeDT3J+CgkdfrPIl8eQ==$EygShxho8fn1Ssrx2KAIDlXMOKUg7CiutAiuAAcYe8g=', 'Ms. Kumari Silva', 'lec.silva@fot.example.lk', 'LECTURER', '0711234002', NULL, 1, TRUE),
+                                                                                                                                            (4, 'lec.fernando', 'pbkdf2$65536$s/uOBOamZR1LcAaNL+6eZg==$pLZx9D4v3RA7CDI5kVOfyBoUHEcCDod0BPCOnlGkEDg=', 'Mr. Ruwan Fernando', 'lec.fernando@fot.example.lk', 'LECTURER', '0711234003', NULL, 1, TRUE),
+                                                                                                                                            (5, 'lec.jayasuriya', 'pbkdf2$65536$teYAKzBT1t9FtcRJhW1sUw==$SPy8uostRXU1ySWEDXp8Ck131p5BcQewfekYegSIbyM=', 'Dr. Anoma Jayasuriya', 'lec.jayasuriya@fot.example.lk', 'LECTURER', '0711234004', NULL, 2, TRUE),
+                                                                                                                                            (6, 'lec.bandara', 'pbkdf2$65536$eutlx2AD6FHtwDM3rvO54A==$YTxhu55HJ31eSWCX9OIT8x33bLNrS/xPxrgXiUYLt04=', 'Mr. Saman Bandara', 'lec.bandara@fot.example.lk', 'LECTURER', '0711234005', NULL, 4, TRUE),
+                                                                                                                                            (7, 'to.kumara', 'pbkdf2$65536$hLj4tnO5qpZRcNVFQm9bOA==$xFvC9LQ3aZsI43rr1pwtFYOYfTQTG8FggWiE0319fvA=', 'Mr. Asela Kumara', 'to.kumara@fot.example.lk', 'TECHNICAL_OFFICER', '0722345001', NULL, 1, TRUE),
+                                                                                                                                            (8, 'to.dissanayake', 'pbkdf2$65536$OM6Tlkf0fCxRRshu21TZww==$QM8Z15Q7MNWnvW0vd8xvO1jWPH+NI3X4FVYYv9C2b0E=', 'Ms. Chamari Dissanayake', 'to.dissanayake@fot.example.lk', 'TECHNICAL_OFFICER', '0722345002', NULL, 1, TRUE),
+                                                                                                                                            (9, 'to.rathnayake', 'pbkdf2$65536$jtGVMLD7AZZ2Iqyldk3kFQ==$/RfBpXuVa2ZAWSpEGImE61kO9fgJLTkiYbsFqKfV6W8=', 'Mr. Pradeep Rathnayake', 'to.rathnayake@fot.example.lk', 'TECHNICAL_OFFICER', '0722345003', NULL, 2, TRUE),
+                                                                                                                                            (10, 'to.wijesinghe', 'pbkdf2$65536$+d8D0pSDh1jTXcE8ChbIxQ==$Q983q2aUPx5JTefZvf6orQ6V6ODL1TBax4avgRV/hcA=', 'Ms. Dilini Wijesinghe', 'to.wijesinghe@fot.example.lk', 'TECHNICAL_OFFICER', '0722345004', NULL, 3, TRUE),
+                                                                                                                                            (11, 'tg1001', 'pbkdf2$65536$+iCwnJOpjCugwurI63Ficw==$VCzkoldGbCyFKvgFoAoMGlv7CSiLNxKpaJo/LwR9Vbg=', 'Kasun Rajapaksha', 'tg1001@fot.example.lk', 'STUDENT', '0753456001', NULL, 1, TRUE),
+                                                                                                                                            (12, 'tg1002', 'pbkdf2$65536$/zFURwBQ4iulRHkeVXa5dA==$hZ33Bt0OFjUDXa3ZFgQQS9bDmSRPG/rZdce55TO/WH8=', 'Nethmi Herath', 'tg1002@fot.example.lk', 'STUDENT', '0753456002', NULL, 1, TRUE),
+                                                                                                                                            (13, 'tg1003', 'pbkdf2$65536$w4s7n0P6Bldog9I/yVu1KA==$3Ui1wJw4yuDS//LrtjzOrfOWSmyS6Up1sUFJvGetRho=', 'Isuru Gunasekara', 'tg1003@fot.example.lk', 'STUDENT', '0753456003', NULL, 1, TRUE),
+                                                                                                                                            (14, 'tg1004', 'pbkdf2$65536$VeYZRAvrHCSaC9BePFClzw==$M+q7iW40IujGydd6iJMkveeOys8GmEUdGFAssrxUMmI=', 'Sachini Weerasinghe', 'tg1004@fot.example.lk', 'STUDENT', '0753456004', NULL, 1, TRUE),
+                                                                                                                                            (15, 'tg1005', 'pbkdf2$65536$QBRF8Yx3wsUmDnNAMdJgPg==$UZJSSo//g7ylNs2UGstu12q4Vf/A97c2WUbgA34RuW8=', 'Tharindu Madushanka', 'tg1005@fot.example.lk', 'STUDENT', '0753456005', NULL, 1, TRUE),
+                                                                                                                                            (16, 'tg1006', 'pbkdf2$65536$RC8/+pRoEq+yRg3+dJpWig==$cSBpqAI1eDGmXQdj13hWhTIlCzB7+jbyCmhSSfZcNHs=', 'Hiruni Abeysekara', 'tg1006@fot.example.lk', 'STUDENT', '0753456006', NULL, 1, TRUE),
+                                                                                                                                            (17, 'tg1007', 'pbkdf2$65536$o34Vr8afcINDdwwIKXdTrw==$LXYHfd5s/A/4w/3CmUEYUM9AJZgPA9sMvRjr3jWJhbA=', 'Pasindu Senanayake', 'tg1007@fot.example.lk', 'STUDENT', '0753456007', NULL, 1, TRUE),
+                                                                                                                                            (18, 'tg1008', 'pbkdf2$65536$+6QIOqcbHlt77wB9bRvCsA==$2YeqQINswnqrQgtUii2dz+uHuR9EzStZlcGC1nHFFG0=', 'Dulani Karunaratne', 'tg1008@fot.example.lk', 'STUDENT', '0753456008', NULL, 1, TRUE),
+                                                                                                                                            (19, 'tg1009', 'pbkdf2$65536$C50F+tlGXBJUTvYXnXRc1Q==$rghHAjQzIBtwGcAo16O7AAPr0JkKX5bhXE7Ah8UnIDI=', 'Chamod Jayawardena', 'tg1009@fot.example.lk', 'STUDENT', '0753456009', NULL, 1, TRUE),
+                                                                                                                                            (20, 'tg1010', 'pbkdf2$65536$VU7KQRDbC6tip5rnPYb8Aw==$9hGSm/wOUvrllKQjGb3a3QcPMntpaLX7gUfSP0393Cc=', 'Ishara Samarasinghe', 'tg1010@fot.example.lk', 'STUDENT', '0753456010', NULL, 1, TRUE),
+                                                                                                                                            (21, 'tg1011', 'pbkdf2$65536$HvDoPK+GvaEfuWVlX3l2CQ==$Np7ob0KimJQpGildo1DrZCQsE5i6STzYQ7fJYRf7hpw=', 'Lahiru Wickramasinghe', 'tg1011@fot.example.lk', 'STUDENT', '0753456011', NULL, 1, TRUE),
+                                                                                                                                            (22, 'tg1012', 'pbkdf2$65536$SV0mFvTDSlxE39XoB07U5A==$vs41mmqW0LiJc7WH4C802MGhA08Lo1glD8QfJayGzWk=', 'Nadeesha Ekanayake', 'tg1012@fot.example.lk', 'STUDENT', '0753456012', NULL, 1, TRUE),
+                                                                                                                                            (23, 'tg1013', 'pbkdf2$65536$COhWyexGtkp01pxhzy5qYg==$XMvLn6sL5BeRJh0woMZ9BVL9iPEyMvEbrd8a21AwkfI=', 'Ravindu Hettiarachchi', 'tg1013@fot.example.lk', 'STUDENT', '0753456013', NULL, 1, TRUE),
+                                                                                                                                            (24, 'tg1014', 'pbkdf2$65536$0L5bUtRcxBJ2lAvpLhiGoQ==$d0JvZ8G7UCYpTVCB5Ly44O8HURcegYM2O3zyHBiPHVg=', 'Sewwandi Liyanage', 'tg1014@fot.example.lk', 'STUDENT', '0753456014', NULL, 1, TRUE),
+                                                                                                                                            (25, 'tg1015', 'pbkdf2$65536$eggkrUcIXS6++3TAlOlElg==$fp6UVU9KY5yGo1DHyBZCEygM8IyM3hhtdkZodx6vgHI=', 'Yasiru Amarasinghe', 'tg1015@fot.example.lk', 'STUDENT', '0753456015', NULL, 1, TRUE),
+                                                                                                                                            (26, 'tg1016', 'pbkdf2$65536$XhDCOMRG3w+0UeFDli0FGA==$psnVYfReg5bS6JpH5FWv0pzgPnaLSPbr5ejwKwiYkJs=', 'Thilini Kodikara', 'tg1016@fot.example.lk', 'STUDENT', '0753456016', NULL, 1, TRUE),
+                                                                                                                                            (27, 'tg0950', 'pbkdf2$65536$kBdxWfj9X5cmhVeUJDiEMw==$hrWkTi/cBc3aDKwryBQWhUFVXvUiaH8qrfRi6gwMhRc=', 'Malith Gamage', 'tg0950@fot.example.lk', 'STUDENT', '0753456017', NULL, 1, TRUE),
+                                                                                                                                            (28, 'tg0951', 'pbkdf2$65536$qcNEmR2dXDhvhwy+XPEsLw==$yy/XBsUz904JbkWDdTqUqnBqK94a89IoVczp/hkMkEk=', 'Oshadi Ranasinghe', 'tg0951@fot.example.lk', 'STUDENT', '0753456018', NULL, 1, TRUE),
+                                                                                                                                            (29, 'tg0960', 'pbkdf2$65536$0v1dfZ83PJU8QmiOESF2Mw==$AKlXiYTLWtfNPZeURuFY66BlOAcL04keI+yv5poObfA=', 'Dinuka Pathirana', 'tg0960@fot.example.lk', 'STUDENT', '0753456019', NULL, 1, TRUE),
+                                                                                                                                            (30, 'tg0961', 'pbkdf2$65536$HEBpRwEg45mre7VPOz10DA==$YGUIRpPpxqQXU+yBNNuQe2g5nVAkp2qu9S+S+VshcW0=', 'Hansani Munasinghe', 'tg0961@fot.example.lk', 'STUDENT', '0753456020', NULL, 1, TRUE);
 
--- 2. Insert Courses
-INSERT INTO courses (code, title, credits, department, semester, lecturer_name, course_type, schedule_time) VALUES
-('CS301', 'Data Structures', 4, 'CSE', 'Semester 5', 'Dr. A. Fernando', 'Core', 'Mon 08:30 - 10:30'),
-('CS302', 'Database Management Systems', 3, 'CSE', 'Semester 5', 'Prof. S. Perera', 'Core', 'Tue 08:30 - 10:30'),
-('CS303', 'Operating Systems', 3, 'CSE', 'Semester 5', 'Dr. N. Rajapakse', 'Core', 'Wed 08:30 - 11:30'),
-('CS304', 'Computer Networks', 3, 'CSE', 'Semester 5', 'Dr. M. Silva', 'Core', 'Tue 11:00 - 13:00'),
-('CS305', 'Software Engineering', 3, 'CSE', 'Semester 5', 'Mrs. T. Wickramasinghe', 'Core', 'Mon 10:45 - 12:45'),
-('CS306', 'Web Application Development', 2, 'CSE', 'Semester 5', 'Mr. R. Kumara', 'Elective', 'Mon 13:30 - 15:30'),
-('CS307', 'Mobile Application Development', 2, 'CSE', 'Semester 5', 'Dr. D. Wijesinghe', 'Elective', 'Thu 14:00 - 16:00'),
-('CS308', 'Artificial Intelligence Fundamentals', 3, 'CSE', 'Semester 5', 'Prof. C. Senaratne', 'Elective', 'Fri 14:00 - 17:00'),
-('CS309', 'Cyber Security & Cryptography', 3, 'CSE', 'Semester 5', 'Dr. K. Pathirana', 'Elective', 'Thu 08:30 - 11:30'),
-('MG301', 'Entrepreneurship & Innovation', 2, 'Management', 'Semester 5', 'Dr. H. Mendis', 'General', 'Wed 14:00 - 16:00')
-ON DUPLICATE KEY UPDATE title=VALUES(title);
+INSERT INTO lecturers (user_id, designation) VALUES
+                                                 (2, 'Senior Lecturer'),
+                                                 (3, 'Lecturer'),
+                                                 (4, 'Lecturer'),
+                                                 (5, 'Senior Lecturer'),
+                                                 (6, 'Lecturer (Probationary)');
 
--- 3. Marks (Matching Image Table)
-INSERT INTO marks (student_id, course_code, exam_type, grade, score, max_score, exam_date, semester, credits) VALUES
-(1, 'CS301', 'Mid Sem', 'A', 86.00, 100.00, '2024-05-12', 'Semester 5', 4),
-(1, 'CS302', 'Mid Sem', 'A+', 91.00, 100.00, '2024-05-10', 'Semester 5', 3),
-(1, 'CS303', 'Mid Sem', 'B+', 78.00, 100.00, '2024-05-08', 'Semester 5', 3),
-(1, 'CS304', 'Mid Sem', 'A', 85.00, 100.00, '2024-05-06', 'Semester 5', 3),
-(1, 'CS305', 'Mid Sem', 'A+', 92.00, 100.00, '2024-05-04', 'Semester 5', 3);
+-- REGULAR = batch B09, REPEAT and BATCH_MISSED = students from batch B08 following B09 modules
+INSERT INTO students (user_id, registration_no, batch, student_status) VALUES
+                                                                           (11, 'TG/2023/1001', 'B09', 'REGULAR'),
+                                                                           (12, 'TG/2023/1002', 'B09', 'REGULAR'),
+                                                                           (13, 'TG/2023/1003', 'B09', 'REGULAR'),
+                                                                           (14, 'TG/2023/1004', 'B09', 'REGULAR'),
+                                                                           (15, 'TG/2023/1005', 'B09', 'REGULAR'),
+                                                                           (16, 'TG/2023/1006', 'B09', 'REGULAR'),
+                                                                           (17, 'TG/2023/1007', 'B09', 'REGULAR'),
+                                                                           (18, 'TG/2023/1008', 'B09', 'REGULAR'),
+                                                                           (19, 'TG/2023/1009', 'B09', 'REGULAR'),
+                                                                           (20, 'TG/2023/1010', 'B09', 'REGULAR'),
+                                                                           (21, 'TG/2023/1011', 'B09', 'REGULAR'),
+                                                                           (22, 'TG/2023/1012', 'B09', 'REGULAR'),
+                                                                           (23, 'TG/2023/1013', 'B09', 'REGULAR'),
+                                                                           (24, 'TG/2023/1014', 'B09', 'REGULAR'),
+                                                                           (25, 'TG/2023/1015', 'B09', 'REGULAR'),
+                                                                           (26, 'TG/2023/1016', 'B09', 'REGULAR'),
+                                                                           (27, 'TG/2022/0950', 'B08', 'REPEAT'),
+                                                                           (28, 'TG/2022/0951', 'B08', 'REPEAT'),
+                                                                           (29, 'TG/2022/0960', 'B08', 'BATCH_MISSED'),
+                                                                           (30, 'TG/2022/0961', 'B08', 'BATCH_MISSED');
 
--- 4. Notices (Matching Image List)
-INSERT INTO notices (title, content, published_date, category, publisher, is_important) VALUES
-('End Semester Exam Schedule', 'The end semester exams will begin from 25th May 2024. All undergraduate students are requested to check their venue allocations.', '2024-05-15', 'Examinations', 'Senior Assistant Registrar', TRUE),
-('Result Declaration Notice', 'Results for Mid Semester Exams has been declared. Registered candidates can check provisional mark sheets online.', '2024-05-12', 'Academic', 'Office of the Dean', TRUE),
-('Project Submission Deadline', 'Final year project submission is due on 30th May 2024. Late submissions will receive grade deductions.', '2024-05-10', 'Academic', 'Project Coordinator', TRUE);
-
--- 5. Attendance
-INSERT INTO attendance (student_id, course_code, total_sessions, attended_sessions, last_attended_date) VALUES
-(1, 'CS301', 32, 28, '2024-05-10'),
-(1, 'CS302', 26, 24, '2024-05-09'),
-(1, 'CS303', 26, 22, '2024-05-08'),
-(1, 'CS304', 26, 23, '2024-05-07'),
-(1, 'CS305', 24, 21, '2024-05-06'),
-(1, 'CS306', 18, 14, '2024-05-03');
-
--- 6. Medical Records
-INSERT INTO medical_records (ref_no, student_id, course_code, start_date, end_date, reason, doctor_name, hospital_clinic, submission_date, status, admin_remarks) VALUES
-('MED-2024-001', 1, 'CS303', '2024-04-10', '2024-04-12', 'Viral Fever & Fatigue', 'Dr. M. K. Bandara', 'Colombo General Teaching Hospital', '2024-04-14', 'Approved', 'Verified by University Medical Officer.'),
-('MED-2024-002', 1, 'CS306', '2024-05-02', '2024-05-03', 'Severe Migraine', 'Dr. S. N. Alwis', 'City Care Healthcare Center', '2024-05-04', 'Pending', 'Awaiting review by Senior Student Counselor.');
+-- -----------------------------------------------------------------------------
+-- Courses (Level 2 Semester 1 ICT modules + examples from other departments)
+-- Last digit of the code = credits.
+-- -----------------------------------------------------------------------------
+INSERT INTO courses (course_id, course_code, course_name, credits, academic_level, semester, course_type, department_id, lecturer_id) VALUES
+                                                                                                                                          (1, 'ICT2113', 'Data Structures and Algorithms',            3, 2, 1, 'THEORY_AND_PRACTICAL', 1, 2),
+                                                                                                                                          (2, 'ICT2122', 'Object Oriented Programming',               2, 2, 1, 'THEORY',               1, 3),
+                                                                                                                                          (3, 'ICT2132', 'Object Oriented Programming Practicum',     2, 2, 1, 'PRACTICAL',            1, 3),
+                                                                                                                                          (4, 'ICT2142', 'Object Oriented Analysis and Design',       2, 2, 1, 'THEORY_AND_PRACTICAL', 1, 4),
+                                                                                                                                          (5, 'ICT2152', 'E-Commerce Implementation and Management',  2, 2, 1, 'THEORY',               1, 2),
+                                                                                                                                          (6, 'ENG2122', 'English III',                               2, 2, 1, 'THEORY',               4, 6),
+                                                                                                                                          (7, 'ETE2113', 'Electrical Circuit Analysis',               3, 2, 1, 'THEORY_AND_PRACTICAL', 2, 5),
+                                                                                                                                          (8, 'BST2112', 'Plant Biotechnology',                       2, 2, 1, 'THEORY',               3, NULL);

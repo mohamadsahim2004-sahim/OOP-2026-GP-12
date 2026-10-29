@@ -1,4 +1,76 @@
 package com.facultyams.util;
 
-public class UIUtil {
+import com.facultyams.exception.AuthenticationException;
+import com.facultyams.exception.AuthorizationException;
+import com.facultyams.exception.DatabaseException;
+import com.facultyams.exception.ValidationException;
+
+import javax.swing.JOptionPane;
+import java.awt.Component;
+import java.awt.GraphicsEnvironment;
+
+/**
+ * Small Swing helpers shared by all screens so error handling looks the same everywhere.
+ */
+public final class UIUtil {
+
+    private UIUtil() {
+        // utility class
+    }
+
+    public static void showInfo(Component parent, String message) {
+        if (GraphicsEnvironment.isHeadless()) {
+            System.err.println("[headless] INFO: " + message);
+            return;
+        }
+        JOptionPane.showMessageDialog(parent, message, "Information", JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    public static void showError(Component parent, String message) {
+        if (GraphicsEnvironment.isHeadless()) {
+            System.err.println("[headless] ERROR: " + message);
+            return;
+        }
+        JOptionPane.showMessageDialog(parent, message, "Error", JOptionPane.ERROR_MESSAGE);
+    }
+
+    public static boolean confirm(Component parent, String message) {
+        if (GraphicsEnvironment.isHeadless()) {
+            // nobody can answer: treat as "No" so a headless run never performs a destructive action
+            System.err.println("[headless] CONFIRM (answered No): " + message);
+            return false;
+        }
+        return JOptionPane.showConfirmDialog(parent, message, "Please confirm",
+                JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE) == JOptionPane.YES_OPTION;
+    }
+
+    /**
+     * Shows an appropriate dialog for any exception thrown by a service.
+     * Database errors are also logged to stderr for debugging.
+     */
+    public static void showException(Component parent, Exception e) {
+        if (GraphicsEnvironment.isHeadless()) {
+            // no screen (automated checks): log instead of opening a dialog
+            System.err.println("[headless] " + e.getClass().getSimpleName() + ": " + e.getMessage());
+            return;
+        }
+
+        if (e instanceof ValidationException) {
+            JOptionPane.showMessageDialog(parent, e.getMessage(), "Invalid input", JOptionPane.WARNING_MESSAGE);
+        } else if (e instanceof AuthenticationException) {
+            JOptionPane.showMessageDialog(parent, e.getMessage(), "Login failed", JOptionPane.ERROR_MESSAGE);
+        } else if (e instanceof AuthorizationException) {
+            JOptionPane.showMessageDialog(parent, e.getMessage(), "Access denied", JOptionPane.ERROR_MESSAGE);
+        } else if (e instanceof DatabaseException) {
+            System.err.println("Database error: " + e.getMessage());
+            if (e.getCause() != null) {
+                e.getCause().printStackTrace();
+            }
+            JOptionPane.showMessageDialog(parent, e.getMessage(), "Database error", JOptionPane.ERROR_MESSAGE);
+        } else {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(parent, "Unexpected error: " + e.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
 }
