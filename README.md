@@ -4,7 +4,7 @@
 
 **Database (run once, in this order, after `schema.sql` / `sample_data.sql`):**
 `database/migrations/003_attendance_medical.sql`, optionally `004_attendance_test_data.sql`, then
-`005_technical_officer_medical.sql` (adds medical evidence, reviewer/decision date, rejection reason; keeps existing rows).
+`007_technical_officer_medical.sql` (adds medical evidence, reviewer/decision date, rejection reason; keeps existing rows).
 
 **Run:** `mvn clean compile` then start `com.facultyams.Main` from your IDE.
 **Login:** `to.kumara` / `officer123` (other officers `to.dissanayake`, `to.rathnayake`, `to.wijesinghe`, same password).
