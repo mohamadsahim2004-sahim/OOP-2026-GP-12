@@ -80,9 +80,9 @@ public class LecturerAccessDAO {
     /** Medical only offsets an ABSENT session, so a present session is never counted twice. */
     static final String SQL_ATTENDANCE_AGG =
             "SELECT s.user_id, s.registration_no, u.full_name, " +
-                    "SUM(CASE WHEN sa.status = 'present' THEN 1 ELSE 0 END) AS present_count, " +
-                    "SUM(CASE WHEN sa.status <> 'present' THEN 1 ELSE 0 END) AS absent_count, " +
-                    "SUM(CASE WHEN sa.status <> 'present' AND md.approval_status = 'approved' THEN 1 ELSE 0 END) " +
+                    "SUM(CASE WHEN sa.status IN ('present', 'late') THEN 1 ELSE 0 END) AS present_count, " +
+                    "SUM(CASE WHEN sa.status = 'absent' THEN 1 ELSE 0 END) AS absent_count, " +
+                    "SUM(CASE WHEN sa.status = 'absent' AND md.approval_status = 'approved' THEN 1 ELSE 0 END) " +
                     "AS approved_medical " +
                     "FROM session_attendance sa " +
                     "JOIN course_component cc ON cc.component_id = sa.component_id " +

@@ -16,7 +16,7 @@ import java.util.List;
  *   <li>the screen is read-only: approving or rejecting is done by the technical officer.</li>
  * </ul>
  */
-public class MedicalService {
+public class LecturerMedicalService {
 
     public static final String PRIVACY_NOTICE =
             "Medical details are confidential. Only the approval status is shown; the reason is not available to lecturers.";
@@ -27,11 +27,11 @@ public class MedicalService {
     private final LecturerAccessService access;
     private final LecturerAccessDAO dao;
 
-    public MedicalService() {
+    public LecturerMedicalService() {
         this(new LecturerAccessService(), new LecturerAccessDAO());
     }
 
-    public MedicalService(LecturerAccessService access, LecturerAccessDAO dao) {
+    public LecturerMedicalService(LecturerAccessService access, LecturerAccessDAO dao) {
         this.access = access;
         this.dao = dao;
     }

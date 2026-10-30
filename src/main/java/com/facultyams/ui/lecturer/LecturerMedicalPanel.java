@@ -3,7 +3,7 @@ package com.facultyams.ui.lecturer;
 import com.facultyams.dao.LecturerAccessDAO.MedicalRow;
 import com.facultyams.model.Course;
 import com.facultyams.service.LecturerAccessService;
-import com.facultyams.service.MedicalService;
+import com.facultyams.service.LecturerMedicalService;
 
 import javax.swing.JButton;
 import javax.swing.JLabel;
@@ -20,23 +20,23 @@ public class LecturerMedicalPanel extends CoursePanel {
 
     private static final long serialVersionUID = 1L;
 
-    private final transient MedicalService service;
+    private final transient LecturerMedicalService service;
     private final DefaultTableModel model = LecturerUi.readOnlyModel(
             "Medical ID", "Reg. No", "Student", "Component", "Session", "Session date",
             "Submitted", "Status", "Reviewed by", "Reason");
 
     public LecturerMedicalPanel() {
-        this(new LecturerAccessService(), new MedicalService());
+        this(new LecturerAccessService(), new LecturerMedicalService());
     }
 
-    public LecturerMedicalPanel(LecturerAccessService access, MedicalService service) {
+    public LecturerMedicalPanel(LecturerAccessService access, LecturerMedicalService service) {
         super(access);
         this.service = service;
         JButton refreshButton = new JButton("Refresh");
         refreshButton.addActionListener(e -> refresh());
         toolbar.add(refreshButton);
 
-        JLabel privacy = new JLabel(MedicalService.PRIVACY_NOTICE);
+        JLabel privacy = new JLabel(LecturerMedicalService.PRIVACY_NOTICE);
         JPanel center = new JPanel(new BorderLayout(0, 6));
         center.setOpaque(false);
         center.add(privacy, BorderLayout.NORTH);

@@ -29,7 +29,7 @@ import com.facultyams.service.GPAService;
 import com.facultyams.service.LecturerAccessService;
 import com.facultyams.service.LecturerService;
 import com.facultyams.service.MarksService;
-import com.facultyams.service.MedicalService;
+import com.facultyams.service.LecturerMedicalService;
 import com.facultyams.service.ResultService;
 import com.facultyams.ui.lecturer.CourseMaterialsPanel;
 import com.facultyams.ui.lecturer.DashboardHomePanel;
@@ -527,7 +527,7 @@ public final class LecturerChecks {
         final MarksService marks = new MarksService(access, components, marksDao);
         final GPAService gpa = new GPAService(access, marksDao);
         final ResultService results = new ResultService(access, components, marksDao, gpa);
-        final MedicalService medical = new MedicalService(access, new FakeAccessDAO(w));
+        final LecturerMedicalService medical = new LecturerMedicalService(access, new FakeAccessDAO(w));
         final FakeLecturerDAO lecturerDao = new FakeLecturerDAO();
         final LecturerService lecturer = new LecturerService(lecturerDao, access, new FakeAccessDAO(w), components, marksDao);
         final CourseMaterialService materials = new CourseMaterialService(access, new FakeMaterialDAO(w));
