@@ -1,4 +1,4 @@
-package com.facultyams;
+package com.facultyams.service;
 
 import com.facultyams.exception.AuthorizationException;
 import com.facultyams.exception.ValidationException;
