@@ -3,7 +3,7 @@ package com.facultyams.ui.technical;
 import com.facultyams.exception.AuthorizationException;
 import com.facultyams.exception.DatabaseException;
 import com.facultyams.exception.ValidationException;
-import com.facultyams.service.MedicalService;
+import com.facultyams.service.TechnicalMedicalService;
 import com.facultyams.ui.admin.AdminTheme;
 import com.facultyams.ui.admin.Refreshable;
 import com.facultyams.util.UIUtil;
@@ -48,7 +48,7 @@ abstract class TechnicalPage extends JPanel implements Refreshable {
     private boolean actionRunning;
 
     /** Used by every page that opens a medical document. */
-    protected final transient MedicalService medicalService = new MedicalService();
+    protected final transient TechnicalMedicalService medicalService = new TechnicalMedicalService();
 
     protected TechnicalPage() {
         super(new BorderLayout(0, 8));

@@ -58,7 +58,7 @@ public class MedicalApprovalPanel extends TechnicalPage {
 
     @Override
     public void refresh() {
-        load("Loading pending medicals...", TechnicalMedicalService::listPending, this::show);
+        load("Loading pending medicals...", medicalService::listPending, this::show);
     }
 
     private void show(List<MedicalRow> pending) {
@@ -102,7 +102,7 @@ public class MedicalApprovalPanel extends TechnicalPage {
             return;
         }
         act("Saving the decision...", () -> {
-            TechnicalMedicalService.approve(m.medicalId());
+            medicalService.approve(m.medicalId());
             return m.medicalId();
         }, id -> {
             refreshAfter("Medical " + id + " approved.");
@@ -119,7 +119,7 @@ public class MedicalApprovalPanel extends TechnicalPage {
             return;
         }
         act("Saving the decision...", () -> {
-            TechnicalMedicalService.reject(m.medicalId(), reason);
+            medicalService.reject(m.medicalId(), reason);
             return m.medicalId();
         }, id -> {
             refreshAfter("Medical " + id + " rejected.");
@@ -127,7 +127,7 @@ public class MedicalApprovalPanel extends TechnicalPage {
     }
 
     private void refreshAfter(String successMessage) {
-        load("Reloading...", TechnicalMedicalService::listPending, list -> {
+        load("Reloading...", medicalService::listPending, list -> {
             show(list);
             showSuccess(successMessage);
         });

@@ -133,7 +133,7 @@ public class MedicalSubmissionPanel extends TechnicalPage {
             showError("Type a name or registration number to search for.");
             return;
         }
-        load("Searching students...", () -> TechnicalMedicalService.searchStudents(text), students -> {
+        load("Searching students...", () -> medicalService.searchStudents(text), students -> {
             fillingStudents = true;
             fillCombo(studentBox, "Select a student", students);
             fillingStudents = false;
@@ -158,8 +158,8 @@ public class MedicalSubmissionPanel extends TechnicalPage {
             return;
         }
         load("Loading " + student.fullName() + "...",
-                () -> new StudentData(TechnicalMedicalService.getSubmittableSessions(student.userId()),
-                        TechnicalMedicalService.listForStudent(student.userId())),
+                () -> new StudentData(medicalService.getSubmittableSessions(student.userId()),
+                        medicalService.listForStudent(student.userId())),
                 data -> {
                     absences = data.absences();
                     List<Object[]> a = new ArrayList<>();
@@ -245,11 +245,11 @@ public class MedicalSubmissionPanel extends TechnicalPage {
         }
         String reason = reasonArea.getText();
         Path file = chosenFile;
-        act("Submitting the medical...", () -> TechnicalMedicalService.submit(ids, reason, file), count -> {
+        act("Submitting the medical...", () -> medicalService.submit(ids, reason, file), count -> {
             clearForm();
             load("Reloading...", () -> {
                 StudentInfo s = selectedOf(studentBox, StudentInfo.class);
-                return new StudentData(TechnicalMedicalService.getSubmittableSessions(s.userId()), TechnicalMedicalService.listForStudent(s.userId()));
+                return new StudentData(medicalService.getSubmittableSessions(s.userId()), medicalService.listForStudent(s.userId()));
             }, data -> {
                 loadStudentDataFrom(data);
                 showSuccess(count + " medical(s) submitted. Status: Pending until a technical officer decides.");

@@ -25,15 +25,15 @@ import java.util.Map;
 public class TechnicalReportService {
 
     private final AttendanceService attendanceService;
-    private final TechnicalMedicalService TechnicalMedicalService;
+    private final TechnicalMedicalService medicalService;
 
     public TechnicalReportService() {
         this(new AttendanceService(), new TechnicalMedicalService());
     }
 
-    public TechnicalReportService(AttendanceService attendanceService, TechnicalMedicalService TechnicalMedicalService) {
+    public TechnicalReportService(AttendanceService attendanceService, TechnicalMedicalService medicalService) {
         this.attendanceService = attendanceService;
-        this.TechnicalMedicalService = TechnicalMedicalService;
+        this.medicalService = medicalService;
     }
 
     /**
@@ -86,7 +86,7 @@ public class TechnicalReportService {
     public ReportResult medicalReport(MedicalFilter filter, String filterText)
             throws ValidationException, DatabaseException {
         Session.requireRole(Role.TECHNICAL_OFFICER);
-        List<MedicalRow> data = TechnicalMedicalService.list(filter);
+        List<MedicalRow> data = medicalService.list(filter);
 
         int pending = 0;
         int approved = 0;
