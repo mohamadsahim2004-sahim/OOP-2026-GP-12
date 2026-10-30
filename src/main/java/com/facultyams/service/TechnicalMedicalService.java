@@ -32,7 +32,7 @@ import java.util.Map;
  *   <li>Approved medicals are counted by {@link AttendanceService} as attended sessions</li>
  * </ul>
  */
-public class MedicalService {
+public class TechnicalMedicalService {
 
     public static final String PENDING = "pending";
     public static final String APPROVED = "approved";
@@ -45,11 +45,11 @@ public class MedicalService {
     private final TechnicalLookupDAO lookupDAO;
     private final EvidenceStorage storage;
 
-    public MedicalService() {
+    public TechnicalMedicalService() {
         this(new MedicalDAO(), new TechnicalLookupDAO(), new EvidenceStorage());
     }
 
-    public MedicalService(MedicalDAO dao, TechnicalLookupDAO lookupDAO, EvidenceStorage storage) {
+    public TechnicalMedicalService(MedicalDAO dao, TechnicalLookupDAO lookupDAO, EvidenceStorage storage) {
         this.dao = dao;
         this.lookupDAO = lookupDAO;
         this.storage = storage;

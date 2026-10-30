@@ -8,7 +8,7 @@ import com.facultyams.model.TechnicalOfficer;
 import com.facultyams.security.EvidenceStorage;
 import com.facultyams.security.Session;
 import com.facultyams.service.AttendanceService;
-import com.facultyams.service.MedicalService;
+import com.facultyams.service.TechnicalMedicalService;
 import com.facultyams.util.CsvWriter;
 import com.facultyams.util.PdfWriter;
 import com.facultyams.util.ReportTable;
@@ -57,7 +57,7 @@ public class TechnicalOfficerChecks {
     private static void permissions() {
         Session.logout();
         AttendanceService a = new AttendanceService();
-        MedicalService m = new MedicalService();
+        TechnicalMedicalService m = new TechnicalMedicalService();
         check("logged-out user cannot load courses", denied(a::getCourses));
         check("logged-out user cannot approve", denied(() -> { m.approve(1); return null; }));
         Session.login(new Admin(1, "admin", "Admin", "a@x.lk"));
@@ -71,7 +71,7 @@ public class TechnicalOfficerChecks {
     private static void validation() {
         Session.login(new TechnicalOfficer(7, "to", "Tech Officer", "to@x.lk"));
         AttendanceService a = new AttendanceService();
-        MedicalService m = new MedicalService();
+        TechnicalMedicalService m = new TechnicalMedicalService();
         check("session 0 is rejected", invalid(() -> a.loadSheet(1, 0, "B1")));
         check("session 16 is rejected", invalid(() -> a.loadSheet(1, 16, "B1")));
         check("blank batch is rejected", invalid(() -> a.loadSheet(1, 1, " ")));

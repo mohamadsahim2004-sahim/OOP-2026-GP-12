@@ -1,7 +1,7 @@
 package com.facultyams.ui.technical;
 
 import com.facultyams.model.MedicalRow;
-import com.facultyams.service.MedicalService;
+import com.facultyams.service.TechnicalMedicalService;
 import com.facultyams.ui.admin.AdminTheme;
 import com.facultyams.util.Display;
 import com.facultyams.util.UIUtil;
@@ -58,7 +58,7 @@ public class MedicalApprovalPanel extends TechnicalPage {
 
     @Override
     public void refresh() {
-        load("Loading pending medicals...", medicalService::listPending, this::show);
+        load("Loading pending medicals...", TechnicalMedicalService::listPending, this::show);
     }
 
     private void show(List<MedicalRow> pending) {
@@ -102,7 +102,7 @@ public class MedicalApprovalPanel extends TechnicalPage {
             return;
         }
         act("Saving the decision...", () -> {
-            medicalService.approve(m.medicalId());
+            TechnicalMedicalService.approve(m.medicalId());
             return m.medicalId();
         }, id -> {
             refreshAfter("Medical " + id + " approved.");
@@ -119,7 +119,7 @@ public class MedicalApprovalPanel extends TechnicalPage {
             return;
         }
         act("Saving the decision...", () -> {
-            medicalService.reject(m.medicalId(), reason);
+            TechnicalMedicalService.reject(m.medicalId(), reason);
             return m.medicalId();
         }, id -> {
             refreshAfter("Medical " + id + " rejected.");
@@ -127,7 +127,7 @@ public class MedicalApprovalPanel extends TechnicalPage {
     }
 
     private void refreshAfter(String successMessage) {
-        load("Reloading...", medicalService::listPending, list -> {
+        load("Reloading...", TechnicalMedicalService::listPending, list -> {
             show(list);
             showSuccess(successMessage);
         });
@@ -139,8 +139,8 @@ public class MedicalApprovalPanel extends TechnicalPage {
         area.setLineWrap(true);
         area.setWrapStyleWord(true);
         area.getAccessibleContext().setAccessibleName("Reason for rejecting");
-        JLabel hint = new JLabel("Reason for rejecting (required, " + MedicalService.MIN_TEXT + "-"
-                + MedicalService.MAX_TEXT + " characters):");
+        JLabel hint = new JLabel("Reason for rejecting (required, " + TechnicalMedicalService.MIN_TEXT + "-"
+                + TechnicalMedicalService.MAX_TEXT + " characters):");
         JPanel p = new JPanel(new BorderLayout(0, 6));
         p.add(hint, BorderLayout.NORTH);
         p.add(new JScrollPane(area), BorderLayout.CENTER);
@@ -151,10 +151,10 @@ public class MedicalApprovalPanel extends TechnicalPage {
                 return null;
             }
             String text = area.getText().trim();
-            if (text.length() >= MedicalService.MIN_TEXT && text.length() <= MedicalService.MAX_TEXT) {
+            if (text.length() >= TechnicalMedicalService.MIN_TEXT && text.length() <= TechnicalMedicalService.MAX_TEXT) {
                 return text;
             }
-            hint.setText("Please enter between " + MedicalService.MIN_TEXT + " and " + MedicalService.MAX_TEXT
+            hint.setText("Please enter between " + TechnicalMedicalService.MIN_TEXT + " and " + TechnicalMedicalService.MAX_TEXT
                     + " characters:");
             hint.setForeground(AdminTheme.DANGER);
         }

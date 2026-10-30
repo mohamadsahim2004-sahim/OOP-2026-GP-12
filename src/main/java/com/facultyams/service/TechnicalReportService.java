@@ -25,15 +25,15 @@ import java.util.Map;
 public class TechnicalReportService {
 
     private final AttendanceService attendanceService;
-    private final MedicalService medicalService;
+    private final TechnicalMedicalService TechnicalMedicalService;
 
     public TechnicalReportService() {
-        this(new AttendanceService(), new MedicalService());
+        this(new AttendanceService(), new TechnicalMedicalService());
     }
 
-    public TechnicalReportService(AttendanceService attendanceService, MedicalService medicalService) {
+    public TechnicalReportService(AttendanceService attendanceService, TechnicalMedicalService TechnicalMedicalService) {
         this.attendanceService = attendanceService;
-        this.medicalService = medicalService;
+        this.TechnicalMedicalService = TechnicalMedicalService;
     }
 
     /**
@@ -86,7 +86,7 @@ public class TechnicalReportService {
     public ReportResult medicalReport(MedicalFilter filter, String filterText)
             throws ValidationException, DatabaseException {
         Session.requireRole(Role.TECHNICAL_OFFICER);
-        List<MedicalRow> data = medicalService.list(filter);
+        List<MedicalRow> data = TechnicalMedicalService.list(filter);
 
         int pending = 0;
         int approved = 0;
@@ -94,8 +94,8 @@ public class TechnicalReportService {
         List<List<String>> rows = new ArrayList<>();
         for (MedicalRow m : data) {
             switch (m.status()) {
-                case MedicalService.APPROVED -> approved++;
-                case MedicalService.REJECTED -> rejected++;
+                case TechnicalMedicalService.APPROVED -> approved++;
+                case TechnicalMedicalService.REJECTED -> rejected++;
                 default -> pending++;
             }
             rows.add(List.of(String.valueOf(m.medicalId()), m.registrationNo(), m.studentName(), m.batch(),

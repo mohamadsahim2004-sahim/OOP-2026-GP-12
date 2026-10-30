@@ -23,12 +23,12 @@ public class TechnicalDashboardService {
     public DashboardData load() throws DatabaseException {
         Session.requireRole(Role.TECHNICAL_OFFICER);
         Map<String, Integer> medicals = medicalDAO.countByStatus();
-        List<MedicalRow> pending = medicalDAO.findMedicals(MedicalFilter.none().withStatus(MedicalService.PENDING), RECENT);
+        List<MedicalRow> pending = medicalDAO.findMedicals(MedicalFilter.none().withStatus(TechnicalMedicalService.PENDING), RECENT);
         return new DashboardData(dao.countStudents(), dao.countAttendanceRecords(),
                 dao.countOnDate(java.time.LocalDate.now(), AttendanceService.PRESENT),
                 dao.countOnDate(java.time.LocalDate.now(), AttendanceService.ABSENT),
                 dao.countOnDate(java.time.LocalDate.now(), AttendanceService.LATE),
-                medicals.get(MedicalService.PENDING), medicals.get(MedicalService.APPROVED),
-                medicals.get(MedicalService.REJECTED), dao.recentSessions(RECENT), pending);
+                medicals.get(TechnicalMedicalService.PENDING), medicals.get(TechnicalMedicalService.APPROVED),
+                medicals.get(TechnicalMedicalService.REJECTED), dao.recentSessions(RECENT), pending);
     }
 }
