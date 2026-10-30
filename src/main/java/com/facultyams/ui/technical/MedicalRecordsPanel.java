@@ -1,8 +1,14 @@
 package com.facultyams.ui.technical;
 
-import com.facultyams.dao.MedicalDAO;
-import com.facultyams.ui.admin.Refreshable;
+import com.facultyams.exception.ValidationException;
+import com.facultyams.model.CourseInfo;
+import com.facultyams.model.MedicalFilter;
+import com.facultyams.model.MedicalRow;
+import com.facultyams.service.AttendanceService;
+import com.facultyams.util.Display;
 
+import javax.swing.BorderFactory;
+import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
@@ -10,68 +16,180 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
-import javax.swing.JTextField;
-import javax.swing.table.DefaultTableModel;
 import java.awt.BorderLayout;
-import java.awt.FlowLayout;
-import java.time.LocalDate;
+import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
-public class MedicalRecordsPanel extends JPanel implements Refreshable {
+/**
+ * Medical Records: every medical submission with its student, session, reason, document, status and decision,
+ * filterable by student, course, batch, status and submission date. Documents open through the service,
+ * which checks the user's role first.
+ */
+public class MedicalRecordsPanel extends TechnicalPage {
 
-    private MedicalDAO dao = new MedicalDAO();
+    private static final long serialVersionUID = 1L;
 
-    private JTextField studentField = new JTextField(6);
-    private JComboBox<String> statusBox = new JComboBox<>(new String[]{"all", "pending", "approved", "rejected"});
-    private JLabel countLabel = new JLabel(" ");
-
-    private DefaultTableModel tableModel = new DefaultTableModel(
-            new String[]{"ID", "Student", "Name", "Session", "Date", "Reason", "Status"}, 0);
-    private JTable table = new JTable(tableModel);
-
-    public MedicalRecordsPanel() {
-        setLayout(new BorderLayout(0, 10));
-
-        JPanel searchRow = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        searchRow.add(new JLabel("Student ID (empty = all students)"));
-        searchRow.add(studentField);
-        searchRow.add(new JLabel("Status"));
-        searchRow.add(statusBox);
-        JButton searchButton = new JButton("Search");
-        searchRow.add(searchButton);
-        searchRow.add(countLabel);
-
-        searchButton.addActionListener(e -> search());
-
-        table.setDefaultEditor(Object.class, null);
-
-        add(searchRow, BorderLayout.NORTH);
-        add(new JScrollPane(table), BorderLayout.CENTER);
+    private record Lookups(List<CourseInfo> courses, List<String> batches) {
     }
 
-    private void search() {
-        try {
-            int studentId = 0;   
-            if (!studentField.getText().trim().isEmpty()) {
-                studentId = Integer.parseInt(studentField.getText().trim());
-            }
-            String status = (String) statusBox.getSelectedItem();
+    private final transient AttendanceService lookupService = new AttendanceService();
+    private final HintField studentField = new HintField("Student name or reg no", 14);
+    private final JComboBox<Object> courseBox = new JComboBox<>();
+    private final JComboBox<Object> batchBox = new JComboBox<>();
+    private final JComboBox<String> statusBox = new JComboBox<>(new String[] {"All statuses", "Pending", "Approved", "Rejected"});
+    private final HintField fromField = new HintField("From (yyyy-MM-dd)", 9);
+    private final HintField toField = new HintField("To (yyyy-MM-dd)", 9);
+    private final ReadOnlyTableModel model = new ReadOnlyTableModel(
+            new String[] {"ID", "Reg No", "Student", "Batch", "Course", "Type", "Session", "Session date", "Submitted",
+                    "Reason", "Document", "Status", "Reviewed by", "Decided at"},
+            new Class<?>[] {Integer.class, String.class, String.class, String.class, String.class, String.class,
+                    Integer.class, String.class, String.class, String.class, String.class, String.class,
+                    String.class, String.class});
+    private final JTable table = table(model);
+    private transient List<MedicalRow> rows = List.of();
+    private boolean fillingLookups;
 
-            List<Object[]> rows = dao.searchMedicals(status, studentId,
-                    LocalDate.of(2000, 1, 1), LocalDate.of(2100, 1, 1));
+    public MedicalRecordsPanel() {
+        JButton search = button("Search", "Apply the filters", KeyEvent.VK_S, this::search);
+        JButton reset = button("Reset", "Clear all filters", KeyEvent.VK_R, this::reset);
+        JButton document = button("View Document", "Open the supporting document of the selected medical",
+                KeyEvent.VK_D, this::viewDocument);
+        JButton details = button("View Details", "Show everything about the selected medical", KeyEvent.VK_T,
+                this::showDetails);
+        studentField.addActionListener(e -> search());
+        fromField.addActionListener(e -> search());
+        toField.addActionListener(e -> search());
 
-            tableModel.setRowCount(0);
-            for (Object[] row : rows) {
-                tableModel.addRow(row);
+        JPanel filters = filterBar();
+        filters.add(studentField);
+        filters.add(labeled("Course", courseBox));
+        filters.add(labeled("Batch", batchBox));
+        filters.add(labeled("Status", statusBox));
+        filters.add(fromField);
+        filters.add(toField);
+        filters.add(search);
+        filters.add(reset);
+        filters.add(document);
+        filters.add(details);
+        JPanel top = new JPanel();
+        top.setLayout(new BoxLayout(top, BoxLayout.Y_AXIS));
+        top.add(filters);
+        top.add(statusArea());
+
+        table.getColumnModel().getColumn(11).setCellRenderer(new StatusRenderer());
+        table.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() == 2) {
+                    showDetails();
+                }
             }
-            countLabel.setText("Showing: " + rows.size());
-        } catch (NumberFormatException ex) {
-            JOptionPane.showMessageDialog(this, "Student ID must be a number", "Error", JOptionPane.ERROR_MESSAGE);
-        }
+        });
+        alignLeft(top);
+        add(top, BorderLayout.NORTH);
+        add(new JScrollPane(table), BorderLayout.CENTER);
     }
 
     @Override
     public void refresh() {
+        load("Loading filters...", () -> new Lookups(lookupService.getCourses(), lookupService.getBatches()), l -> {
+            fillingLookups = true;
+            fillCombo(courseBox, "All courses", l.courses());
+            fillCombo(batchBox, "All batches", l.batches());
+            fillingLookups = false;
+            search();
+        });
+    }
+
+    private void reset() {
+        studentField.setText("");
+        fromField.setText("");
+        toField.setText("");
+        statusBox.setSelectedIndex(0);
+        courseBox.setSelectedIndex(0);
+        batchBox.setSelectedIndex(0);
         search();
+    }
+
+    private void search() {
+        if (fillingLookups) {
+            return;
+        }
+        MedicalFilter f;
+        try {
+            CourseInfo course = selectedOf(courseBox, CourseInfo.class);
+            f = new MedicalFilter(studentField.getText(), null, course == null ? null : course.courseId(),
+                    batchBox.getSelectedIndex() > 0 ? String.valueOf(batchBox.getSelectedItem()) : null,
+                    statusBox.getSelectedIndex() > 0 ? String.valueOf(statusBox.getSelectedItem()).toLowerCase(Locale.ROOT) : null,
+                    parseDate(fromField.getText(), "The 'from' date"), parseDate(toField.getText(), "The 'to' date"));
+        } catch (ValidationException e) {
+            showError(e.getMessage());
+            return;
+        }
+        load("Loading medical records...", () -> medicalService.list(f), list -> {
+            rows = list;
+            List<Object[]> data = new ArrayList<>();
+            for (MedicalRow m : list) {
+                data.add(new Object[] {m.medicalId(), m.registrationNo(), m.studentName(), m.batch(), m.courseCode(),
+                        Display.capitalize(m.type()), m.sessionNo(), Display.date(m.sessionDate()),
+                        Display.date(m.submittedDate()), m.reason(),
+                        m.hasEvidence() ? Display.orDash(m.evidenceName()) : "None", Display.capitalize(m.status()),
+                        Display.orDash(m.reviewerName()), Display.dateTime(m.decidedAt())});
+            }
+            model.setRows(data);
+            showInfo(list.isEmpty() ? "No medical records match these filters."
+                    : list.size() + " medical records. Double-click a row for its full details.");
+        });
+    }
+
+    private MedicalRow selected() {
+        int row = selectedModelRow(table);
+        if (row < 0) {
+            showError("Select a medical from the table first.");
+            return null;
+        }
+        return rows.get(row);
+    }
+
+    private void viewDocument() {
+        MedicalRow m = selected();
+        if (m == null) {
+            return;
+        }
+        if (!m.hasEvidence()) {
+            showError("This medical has no supporting document.");
+            return;
+        }
+        openDocument(m.medicalId());
+    }
+
+    private void showDetails() {
+        MedicalRow m = selected();
+        if (m == null) {
+            return;
+        }
+        String html = "<html><body style='width:380px'><b>" + esc(m.studentName()) + "</b> (" + esc(m.registrationNo())
+                + ", batch " + esc(m.batch()) + ")<br>"
+                + esc(m.courseCode() + " " + m.courseName() + " - " + Display.capitalize(m.type())) + ", session "
+                + m.sessionNo() + " on " + Display.date(m.sessionDate()) + "<br><br>"
+                + "<b>Submitted:</b> " + Display.date(m.submittedDate()) + "<br>"
+                + "<b>Reason:</b> " + esc(m.reason()) + "<br>"
+                + "<b>Document:</b> " + esc(m.hasEvidence() ? Display.orDash(m.evidenceName()) : "none") + "<br>"
+                + "<b>Status:</b> " + Display.capitalize(m.status()) + "<br>"
+                + (m.reviewerName() == null ? "" : "<b>Reviewed by:</b> " + esc(m.reviewerName()) + " on "
+                        + Display.dateTime(m.decidedAt()) + "<br>")
+                + (m.rejectionReason() == null ? "" : "<b>Rejection reason:</b> " + esc(m.rejectionReason()) + "<br>")
+                + "</body></html>";
+        JLabel label = new JLabel(html);
+        label.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
+        JOptionPane.showMessageDialog(this, label, "Medical " + m.medicalId(), JOptionPane.PLAIN_MESSAGE);
+    }
+
+    static String esc(String s) {
+        return s == null ? "" : s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
     }
 }

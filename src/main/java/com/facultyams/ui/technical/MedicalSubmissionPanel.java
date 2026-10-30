@@ -1,106 +1,278 @@
 package com.facultyams.ui.technical;
 
-import com.facultyams.dao.AttendanceDAO;
-import com.facultyams.dao.MedicalDAO;
-import com.facultyams.model.Medical;
-import com.facultyams.model.User;
-import com.facultyams.security.Session;
-import com.facultyams.ui.admin.Refreshable;
+import com.facultyams.model.MedicalRow;
+import com.facultyams.model.StudentInfo;
+import com.facultyams.model.SubmittableSession;
+import com.facultyams.security.EvidenceStorage;
+import com.facultyams.util.Display;
 
+import javax.swing.BorderFactory;
+import javax.swing.BoxLayout;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JFileChooser;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JTextField;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.JTextArea;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.BorderLayout;
-import java.awt.FlowLayout;
-import java.awt.GridLayout;
-import java.time.LocalDate;
+import java.awt.Dimension;
+import java.awt.event.KeyEvent;
+import java.io.File;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
-public class MedicalSubmissionPanel extends JPanel implements Refreshable {
+/**
+ * Medical Submission: pick a student, pick one of their absent sessions that has no medical yet, give the reason
+ * and attach the document (PDF / JPG / PNG, up to 5 MB). The new medical is Pending. The student's earlier
+ * submissions and their status are listed underneath. The same rules are enforced by {@code TechnicalMedicalService},
+ * which a student screen can call for a student's own absences.
+ */
+public class MedicalSubmissionPanel extends TechnicalPage {
 
-    private AttendanceDAO attendanceDAO = new AttendanceDAO();
-    private MedicalDAO medicalDAO = new MedicalDAO();
+    private static final long serialVersionUID = 1L;
 
-    private JTextField studentField = new JTextField(20);
-    private JTextField componentField = new JTextField("1", 20);
-    private JTextField sessionField = new JTextField(20);
-    private JTextField reasonField = new JTextField(20);
+    private record StudentData(List<SubmittableSession> absences, List<MedicalRow> history) {
+    }
+
+    private final HintField searchField = new HintField("Student name or reg no", 16);
+    private final JComboBox<Object> studentBox = new JComboBox<>();
+    private final ReadOnlyTableModel absenceModel = ReadOnlyTableModel.ofStrings("Session date", "Course", "Subject", "Session");
+    private final JTable absenceTable = table(absenceModel);
+    private final HintField rangeFrom = new HintField("From (yyyy-MM-dd)", 9);
+    private final HintField rangeTo = new HintField("To (yyyy-MM-dd)", 9);
+    private final JTextArea reasonArea = new JTextArea(3, 30);
+    private final JLabel fileLabel = new JLabel("No document selected");
+    private final ReadOnlyTableModel historyModel = ReadOnlyTableModel.ofStrings(
+            "Submitted", "Course", "Session date", "Reason", "Document", "Status", "Decision", "Rejection reason");
+    private final JTable historyTable = table(historyModel);
+    private transient List<SubmittableSession> absences = List.of();
+    private transient Path chosenFile;
+    private boolean fillingStudents;
 
     public MedicalSubmissionPanel() {
-        setLayout(new BorderLayout(0, 10));
-
-        JPanel form = new JPanel(new GridLayout(5, 2, 10, 10));
-        form.add(new JLabel("Student ID"));
-        form.add(studentField);
-        form.add(new JLabel("Component ID (1 = theory)"));
-        form.add(componentField);
-        form.add(new JLabel("Absent session number"));
-        form.add(sessionField);
-        form.add(new JLabel("Reason"));
-        form.add(reasonField);
-
-        JButton submitButton = new JButton("Submit Medical");
-        JButton clearButton = new JButton("Clear");
-        form.add(submitButton);
-        form.add(clearButton);
-
-        submitButton.addActionListener(e -> submitMedical());
-        clearButton.addActionListener(e -> clearForm());
-
-        JPanel holder = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        holder.add(form);
-        add(holder, BorderLayout.NORTH);
-    }
-
-    private void submitMedical() {
-        try {
-            int studentId = Integer.parseInt(studentField.getText().trim());
-            int componentId = Integer.parseInt(componentField.getText().trim());
-            int sessionNo = Integer.parseInt(sessionField.getText().trim());
-            String reason = reasonField.getText().trim();
-            if (reason.isEmpty()) {
-                showError("Reason cannot be empty");
-                return;
+        JButton find = button("Find Student", "Search students by name or registration number", KeyEvent.VK_F, this::findStudents);
+        searchField.addActionListener(e -> findStudents());
+        studentBox.addActionListener(e -> {
+            if (!fillingStudents) {
+                loadStudentData();
             }
+        });
+        studentBox.setPrototypeDisplayValue("TG/2023/1001 - Chamari Dissanayake Wijesinghe");
 
-            int attendanceId = attendanceDAO.findAttendanceId(studentId, componentId, sessionNo);
-            if (attendanceId == -1) {
-                showError("No attendance record found for that student, component and session. Mark attendance first.");
-                return;
-            }
+        JPanel pick = filterBar();
+        pick.add(searchField);
+        pick.add(find);
+        pick.add(labeled("Student", studentBox));
 
-            String attendanceStatus = medicalDAO.getAttendanceStatus(attendanceId);
-            if (!attendanceStatus.equals("absent")) {
-                showError("A medical can be submitted only for an absent session");
-                return;
-            }
+        reasonArea.setLineWrap(true);
+        reasonArea.setWrapStyleWord(true);
+        reasonArea.getAccessibleContext().setAccessibleName("Reason for the medical");
+        JButton browse = button("Choose Document...", "Optionally attach the medical certificate (PDF, JPG or PNG, up to "
+                + EvidenceStorage.MAX_MB + " MB)", KeyEvent.VK_C, this::chooseFile);
+        JButton submit = button("Submit Medical", "Submit the medical for approval", KeyEvent.VK_M, this::submit);
+        JButton clear = button("Clear Form", "Clear the reason and document", 0, this::clearForm);
 
-            User me = Session.getCurrentUser();
-            Medical m = new Medical(attendanceId, me.getUserId(), LocalDate.now(), reason, "pending");
+        JPanel docRow = filterBar();
+        docRow.add(browse);
+        docRow.add(fileLabel);
+        JPanel buttons = filterBar();
+        buttons.add(submit);
+        buttons.add(clear);
 
-            if (medicalDAO.addMedical(m)) {
-                JOptionPane.showMessageDialog(this, "Medical submitted (pending approval)");
-                clearForm();
-            } else {
-                showError("Could not save. A medical may already exist for this session.");
-            }
-        } catch (NumberFormatException ex) {
-            showError("Student ID, Component ID and Session must be numbers");
+        JPanel form = new JPanel();
+        form.setLayout(new BoxLayout(form, BoxLayout.Y_AXIS));
+        form.add(heading("1. Student"));
+        form.add(pick);
+        form.add(heading("2. Absent sessions (select one or more, or pick a date range)"));
+        JPanel range = filterBar();
+        range.add(rangeFrom);
+        range.add(rangeTo);
+        range.add(button("Select Range", "Select every listed absence between the two dates", KeyEvent.VK_R, this::selectRange));
+        form.add(range);
+        absenceTable.setSelectionMode(javax.swing.ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+        JScrollPane absenceScroll = new JScrollPane(absenceTable);
+        absenceScroll.setPreferredSize(new Dimension(100, 130));
+        absenceScroll.setAlignmentX(LEFT_ALIGNMENT);
+        form.add(absenceScroll);
+        form.add(heading("3. Reason and optional document"));
+        JScrollPane reasonScroll = new JScrollPane(reasonArea);
+        reasonScroll.setAlignmentX(LEFT_ALIGNMENT);
+        reasonScroll.setMaximumSize(new Dimension(Integer.MAX_VALUE, 80));
+        form.add(reasonScroll);
+        form.add(docRow);
+        form.add(buttons);
+        form.add(statusArea());
+        form.setBorder(BorderFactory.createEmptyBorder(0, 0, 6, 0));
+        for (java.awt.Component c : form.getComponents()) {
+            ((javax.swing.JComponent) c).setAlignmentX(LEFT_ALIGNMENT);
         }
-    }
 
-    private void clearForm() {
-        studentField.setText("");
-        sessionField.setText("");
-        reasonField.setText("");
-    }
+        JPanel history = new JPanel(new BorderLayout(0, 4));
+        history.add(heading("Submission status of this student"), BorderLayout.NORTH);
+        history.add(new JScrollPane(historyTable), BorderLayout.CENTER);
+        historyTable.getColumnModel().getColumn(5).setCellRenderer(new StatusRenderer());
 
-    private void showError(String message) {
-        JOptionPane.showMessageDialog(this, message, "Error", JOptionPane.ERROR_MESSAGE);
+        add(form, BorderLayout.NORTH);
+        add(history, BorderLayout.CENTER);
     }
 
     @Override
     public void refresh() {
+        if (studentBox.getItemCount() > 0 && studentBox.getSelectedItem() instanceof StudentInfo) {
+            loadStudentData();
+        }
+    }
+
+    private void findStudents() {
+        String text = searchField.getText().trim();
+        if (text.isEmpty()) {
+            showError("Type a name or registration number to search for.");
+            return;
+        }
+        load("Searching students...", () -> medicalService.searchStudents(text), students -> {
+            fillingStudents = true;
+            fillCombo(studentBox, "Select a student", students);
+            fillingStudents = false;
+            if (students.isEmpty()) {
+                showInfo("No student matches \"" + text + "\".");
+                absenceModel.setRowCount(0);
+                historyModel.setRowCount(0);
+            } else if (students.size() == 1) {
+                studentBox.setSelectedIndex(1); // fires loadStudentData
+            } else {
+                showInfo(students.size() + " students found. Choose one from the Student list.");
+            }
+        });
+    }
+
+    private void loadStudentData() {
+        StudentInfo student = selectedOf(studentBox, StudentInfo.class);
+        if (student == null) {
+            absenceModel.setRowCount(0);
+            historyModel.setRowCount(0);
+            absences = List.of();
+            return;
+        }
+        load("Loading " + student.fullName() + "...",
+                () -> new StudentData(medicalService.getSubmittableSessions(student.userId()),
+                        medicalService.listForStudent(student.userId())),
+                data -> {
+                    absences = data.absences();
+                    List<Object[]> a = new ArrayList<>();
+                    for (SubmittableSession s : absences) {
+                        a.add(new Object[] {Display.date(s.date()), s.courseCode() + " - " + s.courseName(),
+                                Display.capitalize(s.type()), String.valueOf(s.sessionNo())});
+                    }
+                    absenceModel.setRows(a);
+                    List<Object[]> h = new ArrayList<>();
+                    for (MedicalRow m : data.history()) {
+                        h.add(new Object[] {Display.date(m.submittedDate()), m.courseCode() + " " + Display.capitalize(m.type()),
+                                Display.date(m.sessionDate()), m.reason(), m.hasEvidence() ? Display.orDash(m.evidenceName()) : "None",
+                                Display.capitalize(m.status()),
+                                m.reviewerName() == null ? "-" : m.reviewerName() + " " + Display.dateTime(m.decidedAt()),
+                                Display.orDash(m.rejectionReason())});
+                    }
+                    historyModel.setRows(h);
+                    showInfo(absences.isEmpty()
+                            ? student.fullName() + " has no absent sessions without a medical."
+                            : student.fullName() + " has " + absences.size() + " absent session(s) without a medical.");
+                });
+    }
+
+    private void chooseFile() {
+        JFileChooser chooser = new JFileChooser();
+        chooser.setDialogTitle("Choose the medical document");
+        chooser.setFileFilter(new FileNameExtensionFilter("Medical documents (PDF, JPG, PNG)", "pdf", "jpg", "jpeg", "png"));
+        if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+            File f = chooser.getSelectedFile();
+            chosenFile = f.toPath();
+            fileLabel.setText(f.getName() + "  (" + Math.max(1, f.length() / 1024) + " KB)");
+        }
+    }
+
+    private void clearForm() {
+        reasonArea.setText("");
+        chosenFile = null;
+        fileLabel.setText("No document selected");
+        clearMessages();
+    }
+
+    private void selectRange() {
+        try {
+            java.time.LocalDate from = parseDate(rangeFrom.getText(), "The 'from' date");
+            java.time.LocalDate to = parseDate(rangeTo.getText(), "The 'to' date");
+            if (from == null || to == null) {
+                showError("Enter both a from and a to date, for example 2026-10-01.");
+                return;
+            }
+            if (from.isAfter(to)) {
+                showError("The 'from' date must not be after the 'to' date.");
+                return;
+            }
+            absenceTable.clearSelection();
+            int count = 0;
+            for (int view = 0; view < absenceTable.getRowCount(); view++) {
+                java.time.LocalDate d = absences.get(absenceTable.convertRowIndexToModel(view)).date();
+                if (!d.isBefore(from) && !d.isAfter(to)) {
+                    absenceTable.addRowSelectionInterval(view, view);
+                    count++;
+                }
+            }
+            showInfo(count == 0 ? "This student has no listed absences between those dates."
+                    : count + " absence(s) selected in that date range.");
+        } catch (com.facultyams.exception.ValidationException e) {
+            showError(e.getMessage());
+        }
+    }
+
+    private void submit() {
+        if (selectedOf(studentBox, StudentInfo.class) == null) {
+            showError("Find and select a student first.");
+            return;
+        }
+        int[] viewRows = absenceTable.getSelectedRows();
+        if (viewRows.length == 0) {
+            showError("Select the absent session(s) the medical is for.");
+            return;
+        }
+        List<Integer> ids = new ArrayList<>();
+        for (int v : viewRows) {
+            ids.add(absences.get(absenceTable.convertRowIndexToModel(v)).attendanceId());
+        }
+        String reason = reasonArea.getText();
+        Path file = chosenFile;
+        act("Submitting the medical...", () -> medicalService.submit(ids, reason, file), count -> {
+            clearForm();
+            load("Reloading...", () -> {
+                StudentInfo s = selectedOf(studentBox, StudentInfo.class);
+                return new StudentData(medicalService.getSubmittableSessions(s.userId()), medicalService.listForStudent(s.userId()));
+            }, data -> {
+                loadStudentDataFrom(data);
+                showSuccess(count + " medical(s) submitted. Status: Pending until a technical officer decides.");
+            });
+        });
+    }
+
+    private void loadStudentDataFrom(StudentData data) {
+        absences = data.absences();
+        List<Object[]> a = new ArrayList<>();
+        for (SubmittableSession s : absences) {
+            a.add(new Object[] {Display.date(s.date()), s.courseCode() + " - " + s.courseName(),
+                    Display.capitalize(s.type()), String.valueOf(s.sessionNo())});
+        }
+        absenceModel.setRows(a);
+        List<Object[]> h = new ArrayList<>();
+        for (MedicalRow m : data.history()) {
+            h.add(new Object[] {Display.date(m.submittedDate()), m.courseCode() + " " + Display.capitalize(m.type()),
+                    Display.date(m.sessionDate()), m.reason(), m.hasEvidence() ? Display.orDash(m.evidenceName()) : "None",
+                    Display.capitalize(m.status()),
+                    m.reviewerName() == null ? "-" : m.reviewerName() + " " + Display.dateTime(m.decidedAt()),
+                    Display.orDash(m.rejectionReason())});
+        }
+        historyModel.setRows(h);
     }
 }

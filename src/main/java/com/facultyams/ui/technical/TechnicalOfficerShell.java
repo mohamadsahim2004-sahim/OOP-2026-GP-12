@@ -8,6 +8,15 @@ import javax.swing.JFrame;
 
 public class TechnicalOfficerShell extends AppShell {
 
+    public static final String PAGE_DASHBOARD = "dashboard";
+    public static final String PAGE_ATTENDANCE = "mark";
+    public static final String PAGE_RECORDS = "records";
+    public static final String PAGE_MEDICAL_RECORDS = "medicalRecords";
+    public static final String PAGE_MEDICAL_SUBMIT = "submission";
+    public static final String PAGE_MEDICAL_APPROVAL = "approval";
+    public static final String PAGE_ATTENDANCE_REPORT = "attendanceReports";
+    public static final String PAGE_MEDICAL_REPORT = "medicalReports";
+
     public TechnicalOfficerShell(JFrame owner, User user) {
         super(owner, user, Role.TECHNICAL_OFFICER);
         init();
@@ -15,13 +24,13 @@ public class TechnicalOfficerShell extends AppShell {
 
     @Override
     protected void registerPages() {
-        addPage("dashboard", "Dashboard", "Dashboard", new TODashboardPanel(this));
-        addPage("mark", "Attendance Management", "Attendance Management", new ClassAttendancePanel());
-        addPage("records", "Attendance Records/Summary", "Attendance Records / Summary", new AttendancePanel());
-        addPage("medicalRecords", "Medical Records", "Medical Records", new MedicalRecordsPanel());
-        addPage("submission", "Medical Submission", "Medical Submission", new MedicalSubmissionPanel());
-        addPage("approval", "Medical Approval", "Medical Approval", new MedicalApprovalPanel());
-        addPage("attendanceReports", "Attendance Reports", "Attendance Reports", new AttendanceReportPanel());
-        addPage("medicalReports", "Medical Reports", "Medical Reports", new MedicalReportPanel());
+        addPage(PAGE_DASHBOARD, "Dashboard", "Dashboard", new TODashboardPanel(this::showPage));
+        addPage(PAGE_ATTENDANCE, "Attendance Management", "Attendance Management", new ClassAttendancePanel());
+        addPage(PAGE_RECORDS, "Attendance Records/Summary", "Attendance Records / Summary", new AttendancePanel());
+        addPage(PAGE_MEDICAL_RECORDS, "Medical Records", "Medical Records", new MedicalRecordsPanel());
+        addPage(PAGE_MEDICAL_SUBMIT, "Medical Submission", "Medical Submission", new MedicalSubmissionPanel());
+        addPage(PAGE_MEDICAL_APPROVAL, "Medical Approval", "Medical Approval", new MedicalApprovalPanel());
+        addPage(PAGE_ATTENDANCE_REPORT, "Attendance Reports", "Attendance Reports", new AttendanceReportPanel());
+        addPage(PAGE_MEDICAL_REPORT, "Medical Reports", "Medical Reports", new MedicalReportPanel());
     }
 }
