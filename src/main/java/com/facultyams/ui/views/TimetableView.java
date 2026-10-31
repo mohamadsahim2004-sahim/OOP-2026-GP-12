@@ -310,7 +310,7 @@ public class TimetableView extends JPanel {
         DayOfWeek[] days = {DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY,
                 DayOfWeek.THURSDAY, DayOfWeek.FRIDAY};
         for (int i = 0; i < 5; i++) dayButtons.get(i).setSelectedState(!allDays && selectedDay == days[i]);
-        ((PillTab) dayButtons.get(5)).setSelectedState(allDays);
+        dayButtons.get(5).setSelectedState(allDays);
     }
 
     private void moveWeek(int amount) {

@@ -35,7 +35,8 @@ import java.util.List;
 
 /**
  * Database-backed checks for the undergraduate module. Plain {@code main} so it runs without JUnit:
- * set FOTAMS_DB_URL / FOTAMS_DB_USER / FOTAMS_DB_PASSWORD, load database/migrations (incl. 005_*) and run.
+ * set FOTAMS_DB_URL / FOTAMS_DB_USER / FOTAMS_DB_PASSWORD, load schema.sql, sample_data.sql, database/migrations/001-008
+ * and then database/test/student_checks_fixture.sql (the enrollments, marks, materials and medical request the checks expect), and run.
  * It restores every row it changes.
  */
 public final class StudentModuleChecks {

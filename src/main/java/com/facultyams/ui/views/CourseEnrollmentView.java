@@ -29,7 +29,7 @@ public class CourseEnrollmentView extends JPanel {
     private final JLabel enrolledCount = countBadge();
     private final JLabel electivesCount = countBadge();
     private final StyledTextField searchField = new StyledTextField("Search code, course or lecturer");
-    private final StyledComboBox departmentCombo;
+    private final StyledComboBox<String> departmentCombo;
     private final Timer searchTimer;
     private final JPanel toastLayer = new JPanel(new GridBagLayout());
     private final ToastManager toastManager = new ToastManager(toastLayer);
@@ -53,7 +53,7 @@ public class CourseEnrollmentView extends JPanel {
             // the page itself shows the load error in refreshData()
         }
         departments.add(0, "All departments");
-        departmentCombo = new StyledComboBox(departments.toArray(String[]::new));
+        departmentCombo = new StyledComboBox<>(departments.toArray(String[]::new));
         searchTimer = new Timer(200, e -> refreshAvailable());
         searchTimer.setRepeats(false);
 

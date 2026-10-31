@@ -1,10 +1,5 @@
-<<<<<<< HEAD
-.idea/
-*.iml
+# Build output
 target/
-src/main/resources/db.properties
-=======
-﻿# Compiled output
 bin/
 *.class
 
@@ -15,7 +10,9 @@ bin/
 *.classpath
 *.project
 
+# Local database credentials (copy db.properties.example to db.properties)
+src/main/resources/db.properties
+
 # OS files
 .DS_Store
 Thumbs.db
->>>>>>> f94db0731ace9c66e88ec5ae2f93345dc331f2d0

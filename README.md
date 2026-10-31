@@ -127,5 +127,11 @@ java -cp bin com.facultyams.ui.LoginFrame
 
 ## 🗄️ Database
 
-- Database Schema: [`database/schema.sql`](file:///d:/Java%20Project/Login/OOP-2026-GP-12/database/schema.sql)
-- Sample Seed Data: [`database/sample_data.sql`](file:///d:/Java%20Project/Login/OOP-2026-GP-12/database/sample_data.sql)
+- Database Schema: [`database/schema.sql`](database/schema.sql)
+- Sample Seed Data: [`database/sample_data.sql`](database/sample_data.sql)
+- Migrations (run in order, 001-008): [`database/migrations/`](database/migrations/)
+- Test fixture for the student checks: [`database/test/student_checks_fixture.sql`](database/test/student_checks_fixture.sql)
+
+To run the database-backed checks (`com.facultyams.StudentModuleChecks`), load the schema, the sample data, the
+migrations and then the fixture into a dev database, set `FOTAMS_DB_URL`, `FOTAMS_DB_USER` and `FOTAMS_DB_PASSWORD`
+if needed, and run the class. Do not run the fixture on a database with real data.
