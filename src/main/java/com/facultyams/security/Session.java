@@ -5,7 +5,8 @@ import com.facultyams.model.User;
 
 /** Holds the currently authenticated user for this desktop application. */
 public final class Session {
-    private static User currentUser;
+    /** volatile: SwingWorker background threads read the session that the Swing thread wrote. */
+    private static volatile User currentUser;
 
     private Session() { }
 

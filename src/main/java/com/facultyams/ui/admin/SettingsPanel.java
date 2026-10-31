@@ -3,6 +3,7 @@ package com.facultyams.ui.admin;
 import com.facultyams.config.DatabaseConnection;
 import com.facultyams.config.DatabaseConnection.ConnectionInfo;
 import com.facultyams.security.Role;
+import com.facultyams.security.Session;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -23,7 +24,7 @@ import java.awt.Insets;
 /**
  * Read-only system settings: the database connection in use (password never shown)
  * with a connection test, and a summary of what each role may do. The database
- * itself is configured in application.properties / db.properties, not in the GUI.
+ * itself is configured in db.properties (or environment variables), not in the GUI.
  */
 public class SettingsPanel extends JPanel implements Refreshable {
 
@@ -102,8 +103,9 @@ public class SettingsPanel extends JPanel implements Refreshable {
         buttonRow.add(testButton);
         buttonRow.add(resultLabel);
 
-        JLabel note = new JLabel("<html>These values come from application.properties / db.properties "
-                + "(or the FOTAMS_DB_* environment variables). Edit those files to change the connection.</html>");
+        JLabel note = new JLabel("<html>These values come from src/main/resources/db.properties "
+                + "(or the FOTAMS_DB_URL / FOTAMS_DB_USER / FOTAMS_DB_PASSWORD environment variables). "
+                + "Edit that file and restart to change the connection. The password is never shown here.</html>");
         note.setForeground(AdminTheme.TEXT_MUTED);
         note.setFont(AdminTheme.FONT);
 
@@ -158,6 +160,7 @@ public class SettingsPanel extends JPanel implements Refreshable {
 
     @Override
     public void refresh() {
+        Session.requireRole(Role.ADMIN);   // connection details are administrator-only
         ConnectionInfo info = DatabaseConnection.getConnectionInfo();
         hostField.setText(info.host());
         portField.setText(info.port());
@@ -168,6 +171,7 @@ public class SettingsPanel extends JPanel implements Refreshable {
 
     /** Tests the connection off the Swing thread so the window never freezes. */
     private void testConnection() {
+        Session.requireRole(Role.ADMIN);
         testButton.setEnabled(false);
         resultLabel.setForeground(AdminTheme.TEXT_MUTED);
         resultLabel.setText("Testing...");

@@ -1,6 +1,6 @@
 -- =============================================================================
 -- FoT-AMS sample data (shared foundation: departments, users, courses)
--- Run AFTER schema.sql:  mysql -u root -p faculty_ams < database/sample_data.sql
+-- Run AFTER schema.sql:  mysql -u <admin_user> -p faculty_ams < database/sample_data.sql
 --
 -- Test logins (password is the same for every user of a role):
 --   ADMIN              admin                     / admin123

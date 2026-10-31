@@ -1,6 +1,9 @@
-# Copy this file to db.properties (same folder) and put YOUR local MySQL details below.
-# db.properties is listed in .gitignore, so your password is never committed.
-# Alternative: set the environment variables FOTAMS_DB_URL, FOTAMS_DB_USER, FOTAMS_DB_PASSWORD.
+# Copy this file to db.properties (same folder) and enter YOUR OWN local MySQL details.
+# db.properties is listed in .gitignore - never commit it and never put real credentials in this example file.
+# Use the dedicated MySQL user created for this project (README.md, "Create the application database user"),
+# NOT the MySQL root account.
+# Alternative: set the environment variables FOTAMS_DB_URL, FOTAMS_DB_USER, FOTAMS_DB_PASSWORD (they override this file).
+# useSSL=false is for a MySQL server on your own computer only; use SSL for any remote server.
 db.url=jdbc:mysql://localhost:3306/faculty_ams?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Colombo
-db.user=root
-db.password=YOUR_MYSQL_PASSWORD
+db.user=faculty_user
+db.password=CHANGE_ME

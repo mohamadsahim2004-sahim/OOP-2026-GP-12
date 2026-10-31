@@ -97,6 +97,7 @@ public class DepartmentManagementPanel extends AbstractManagementPanel<Departmen
     private void addDepartment() {
         if (DepartmentFormPanel.showDialog(this, departmentService, userService, null, null, headsAvailable)) {
             refresh();
+            success("Department created.");
         }
     }
 
@@ -108,6 +109,7 @@ public class DepartmentManagementPanel extends AbstractManagementPanel<Departmen
         if (DepartmentFormPanel.showDialog(this, departmentService, userService, department,
                 heads.get(department.getDepartmentId()), headsAvailable)) {
             refresh();
+            success("Department updated.");
         }
     }
 
@@ -124,6 +126,7 @@ public class DepartmentManagementPanel extends AbstractManagementPanel<Departmen
         try {
             departmentService.deleteDepartment(department.getDepartmentId());
             refresh();
+            success("Department deleted.");
         } catch (ValidationException | AuthorizationException | DatabaseException e) {
             UIUtil.showException(this, e);
         }

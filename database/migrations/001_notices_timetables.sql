@@ -4,7 +4,7 @@
 -- Safe to run on an existing faculty_ams database: it only creates the two
 -- tables if they are missing and never drops or alters existing data.
 --
---   mysql -u root -p faculty_ams < database/migrations/001_notices_timetables.sql
+--   mysql -u <admin_user> -p faculty_ams < database/migrations/001_notices_timetables.sql
 --
 -- Shared with the undergraduate module (Aamir): students only READ these tables.
 -- If Aamir already has his own notices / timetables tables, merge the column

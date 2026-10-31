@@ -56,6 +56,21 @@ public class UserDAO {
         return findMany(SELECT_USER + "WHERE u.role = ? ORDER BY u.full_name", role.name());
     }
 
+    /** Turns a failed INSERT/UPDATE into a message a person can act on (no raw SQL text on screen). */
+    private static DatabaseException writeFailure(String action, SQLException e) {
+        if (e instanceof SQLIntegrityConstraintViolationException || "23000".equals(e.getSQLState())) {
+            return new DatabaseException("Cannot " + action + " the user: the username, email or registration number "
+                    + "is already used by another account, or a selected department does not exist.", e);
+        }
+        return new DatabaseException("Cannot " + action + " the user because of a database error. "
+                + "Check that MySQL is running and that the schema is up to date.", e);
+    }
+
+    /** Makes %, _ and \ in a search box match themselves instead of acting as LIKE wildcards. */
+    private static String escapeLike(String text) {
+        return text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
+    }
+
     /**
      * Searches username, full name, email and registration number.
      *
@@ -67,7 +82,7 @@ public class UserDAO {
         List<Object> params = new ArrayList<>();
         if (keyword != null && !keyword.isBlank()) {
             sql.append("AND (u.username LIKE ? OR u.full_name LIKE ? OR u.email LIKE ? OR s.registration_no LIKE ?) ");
-            String like = "%" + keyword.trim() + "%";
+            String like = "%" + escapeLike(keyword.trim()) + "%";
             for (int i = 0; i < 4; i++) {
                 params.add(like);
             }
@@ -150,7 +165,7 @@ public class UserDAO {
                 throw e;
             }
         } catch (SQLException e) {
-            throw new DatabaseException("Failed to create user: " + e.getMessage(), e);
+            throw writeFailure("create", e);
         }
     }
 
@@ -183,7 +198,7 @@ public class UserDAO {
                 throw e;
             }
         } catch (SQLException e) {
-            throw new DatabaseException("Failed to update user: " + e.getMessage(), e);
+            throw writeFailure("update", e);
         }
     }
 

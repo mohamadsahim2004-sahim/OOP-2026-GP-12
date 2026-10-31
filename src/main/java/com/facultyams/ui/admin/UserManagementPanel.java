@@ -61,7 +61,7 @@ public class UserManagementPanel extends AbstractManagementPanel<User> {
         liveSearch(searchField, this::refresh);
         setToolbar(filterRow(200, new double[] {2, 1}, searchField, roleFilter), addButton("Add User", this::addUser));
 
-        int[] widths = {0, 130, 100, 155, 108, 140, 92};
+        int[] widths = {0, 130, 115, 155, 108, 120, 92};   // keep the total near 950 or the table scrolls sideways
         for (int i = 1; i < widths.length; i++) {
             table.getColumnModel().getColumn(i).setPreferredWidth(widths[i]);
         }

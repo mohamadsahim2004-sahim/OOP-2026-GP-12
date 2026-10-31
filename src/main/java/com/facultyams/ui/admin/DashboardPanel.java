@@ -2,6 +2,7 @@ package com.facultyams.ui.admin;
 
 import com.facultyams.exception.AuthorizationException;
 import com.facultyams.exception.DatabaseException;
+import com.facultyams.security.Role;
 import com.facultyams.service.AdminService;
 import com.facultyams.ui.admin.AdminIcons.Kind;
 
@@ -16,26 +17,33 @@ import javax.swing.SwingConstants;
 import javax.swing.SwingWorker;
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Graphics;
+import java.awt.Font;
+import java.awt.FontMetrics;
 import java.awt.Graphics2D;
 import java.awt.GridLayout;
 import java.awt.RenderingHints;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 
 /**
  * Admin home screen: four summary cards (users, departments, courses, notices) read live from the database
- * through {@link AdminService}, and one quick action for each management screen.
+ * through {@link AdminService}, one quick action for each management screen, and two insight cards:
+ * a "Users by Role" bar chart and a "Recent Activity" list (new users and posted notices).
  *
  * <p>The figures are loaded in the background so the window never freezes on a slow or unreachable
  * database. Each card is loaded independently: if one table cannot be read (say the notices migration was
  * not run) that card shows "-" and the reason is written under the cards with a Retry button, while the
- * other cards still show their real numbers.
+ * other cards still show their real numbers. The two insight cards are loaded independently as well and show
+ * their own message if they cannot be read.
  */
 public class DashboardPanel extends JPanel implements Refreshable {
 
@@ -73,18 +81,52 @@ public class DashboardPanel extends JPanel implements Refreshable {
     private record Snapshot(Figure users, Figure departments, Figure courses, Figure notices) {
     }
 
+    /** Loads one value for an insight card; throws what the service throws. */
+    @FunctionalInterface
+    private interface Load<T> {
+        T get() throws DatabaseException, AuthorizationException;
+    }
+
+    /** A loaded value for an insight card, or the reason it could not be loaded. */
+    private record Loaded<T>(T value, String error) {
+        static <T> Loaded<T> of(Load<T> load) {
+            try {
+                return new Loaded<>(load.get(), null);
+            } catch (DatabaseException e) {
+                System.err.println("Database error: " + e.getMessage());
+                if (e.getCause() != null) {
+                    e.getCause().printStackTrace();
+                }
+                return new Loaded<>(null, e.getMessage());
+            } catch (AuthorizationException e) {
+                return new Loaded<>(null, e.getMessage());
+            } catch (RuntimeException e) {
+                e.printStackTrace();
+                return new Loaded<>(null, "Unexpected error: " + e.getMessage());
+            }
+        }
+    }
+
+    private record Insights(Loaded<Map<Role, Integer>> roles, Loaded<List<AdminService.Activity>> activity) {
+    }
+
+    private static final DateTimeFormatter ACTIVITY_DATE = DateTimeFormatter.ofPattern("d MMM yyyy");
+
     private final transient AdminService adminService;
     private final StatCard usersCard = new StatCard("users", "Total Users", AdminTheme.CARD_BLUE, Kind.USERS);
     private final StatCard departmentsCard = new StatCard("departments", "Departments", AdminTheme.CARD_GREEN, Kind.BUILDING);
     private final StatCard coursesCard = new StatCard("courses", "Courses", AdminTheme.CARD_PURPLE, Kind.BOOK);
     private final StatCard noticesCard = new StatCard("notices", "Notices", AdminTheme.CARD_ORANGE, Kind.MEGAPHONE);
+    private final InsightCard roleCard = new InsightCard("dashboard.roles", "Users by Role");
+    private final InsightCard activityCard = new InsightCard("dashboard.activity", "Recent Activity");
     private final JTextArea errorText = AdminTheme.errorText();
     private final JButton retryButton = new JButton("Retry");
     private final JPanel errorRow = new JPanel(new BorderLayout(12, 0));
 
     /** Incremented by every refresh so a slow, older load can never overwrite a newer one. */
     private int generation;
-    private boolean loading;
+    /** Background loads still running for the current generation (the figures and the insight cards). */
+    private int pending;
 
     /** @param navigate called with an {@link AdminShell} page key when a quick action is clicked */
     public DashboardPanel(Consumer<String> navigate) {
@@ -145,6 +187,14 @@ public class DashboardPanel extends JPanel implements Refreshable {
         column.add(Box.createVerticalStrut(8));
         column.add(actions);
         add(column, BorderLayout.NORTH);
+
+        JPanel insights = new JPanel(new GridLayout(1, 2, 18, 0));
+        insights.setOpaque(false);
+        insights.setBorder(BorderFactory.createEmptyBorder(18, 0, 0, 0));
+        insights.setMinimumSize(new Dimension(100, 200));
+        insights.add(roleCard);
+        insights.add(activityCard);
+        add(insights, BorderLayout.CENTER);
     }
 
     /**
@@ -169,19 +219,22 @@ public class DashboardPanel extends JPanel implements Refreshable {
         return b;
     }
 
-    /** True while the figures are being read from the database. */
+    /** True while the figures, the role chart or the recent activity are being read from the database. */
     public boolean isLoading() {
-        return loading;
+        return pending > 0;
     }
 
     /** Re-reads all four figures from the database in the background; returns immediately. */
     @Override
     public void refresh() {
         final int myGeneration = ++generation;
-        loading = true;
+        pending = 2;   // the four figures + the insight cards
         for (StatCard card : allCards()) {
             card.setValue(LOADING, null);
         }
+        roleCard.showMessage("Loading...", false);
+        activityCard.showMessage("Loading...", false);
+        loadInsights(myGeneration);
         new SwingWorker<Snapshot, Void>() {
             @Override
             protected Snapshot doInBackground() {
@@ -197,7 +250,7 @@ public class DashboardPanel extends JPanel implements Refreshable {
                 if (myGeneration != generation) {
                     return; // a newer refresh is already running
                 }
-                loading = false;
+                pending--;
                 try {
                     show(get());
                 } catch (Exception e) {
@@ -207,6 +260,74 @@ public class DashboardPanel extends JPanel implements Refreshable {
                 }
             }
         }.execute();
+    }
+
+    /** Reads the role counts and recent activity in the background; a newer refresh makes this result obsolete. */
+    private void loadInsights(int myGeneration) {
+        new SwingWorker<Insights, Void>() {
+            @Override
+            protected Insights doInBackground() {
+                return new Insights(Loaded.of(adminService::countUsersByRole),
+                        Loaded.of(() -> adminService.getRecentActivity(5)));
+            }
+
+            @Override
+            protected void done() {
+                if (myGeneration != generation) {
+                    return;
+                }
+                pending--;
+                try {
+                    showInsights(get());
+                } catch (Exception e) {
+                    String reason = "Could not load this section: " + e.getMessage();
+                    roleCard.showMessage(reason, true);
+                    activityCard.showMessage(reason, true);
+                }
+            }
+        }.execute();
+    }
+
+    private void showInsights(Insights in) {
+        if (in.roles().error() != null) {
+            roleCard.showMessage(in.roles().error(), true);
+        } else {
+            roleCard.showContent(new RoleChart(in.roles().value()));
+        }
+        if (in.activity().error() != null) {
+            activityCard.showMessage(in.activity().error(), true);
+        } else if (in.activity().value() == null || in.activity().value().isEmpty()) {
+            activityCard.showMessage("No recent activity yet.", false);
+        } else {
+            JPanel rows = new JPanel();
+            rows.setOpaque(false);
+            rows.setName("dashboard.activity.rows");
+            rows.setLayout(new BoxLayout(rows, BoxLayout.Y_AXIS));
+            for (AdminService.Activity a : in.activity().value()) {
+                JPanel row = new JPanel(new BorderLayout(12, 0));
+                row.setOpaque(false);
+                row.setBorder(BorderFactory.createCompoundBorder(
+                        BorderFactory.createMatteBorder(0, 0, 1, 0, AdminTheme.BORDER),
+                        BorderFactory.createEmptyBorder(9, 0, 9, 0)));
+                JLabel text = new JLabel(a.text());
+                text.setFont(AdminTheme.FONT);
+                text.setForeground(AdminTheme.TEXT);
+                text.setToolTipText(a.text());
+                JLabel when = new JLabel(a.when().format(ACTIVITY_DATE));
+                when.setFont(AdminTheme.FONT);
+                when.setForeground(AdminTheme.TEXT_MUTED);
+                row.add(text, BorderLayout.CENTER);
+                row.add(when, BorderLayout.EAST);
+                row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+                rows.add(row);
+            }
+            JPanel top = new JPanel(new BorderLayout());
+            top.setOpaque(false);
+            top.add(rows, BorderLayout.NORTH);
+            activityCard.showContent(top);
+        }
+        revalidate();
+        repaint();
     }
 
     private List<StatCard> allCards() {
@@ -301,6 +422,137 @@ public class DashboardPanel extends JPanel implements Refreshable {
             g2.fillRoundRect(0, 0, getWidth(), getHeight(), 16, 16);
             g2.dispose();
             super.paintComponent(g);
+        }
+    }
+
+    /** White rounded card with a title and one swappable body (chart, list or message). */
+    private static final class InsightCard extends JPanel {
+
+        private static final long serialVersionUID = 1L;
+
+        private final JPanel body = new JPanel(new BorderLayout());
+
+        InsightCard(String name, String title) {
+            super(new BorderLayout(0, 10));
+            putClientProperty(AdminTheme.SKIP, Boolean.TRUE);
+            setName(name);
+            setOpaque(false);
+            setBorder(BorderFactory.createEmptyBorder(16, 18, 16, 18));
+            JLabel heading = new JLabel(title);
+            heading.setFont(AdminTheme.SECTION);
+            heading.setForeground(AdminTheme.TEXT);
+            body.setOpaque(false);
+            add(heading, BorderLayout.NORTH);
+            add(body, BorderLayout.CENTER);
+        }
+
+        void showContent(Component content) {
+            body.removeAll();
+            body.add(content, BorderLayout.CENTER);
+            body.revalidate();
+            body.repaint();
+        }
+
+        void showMessage(String message, boolean error) {
+            if (error) {
+                JTextArea text = AdminTheme.errorText();
+                text.setText(message);
+                showContent(text);
+            } else {
+                JLabel label = new JLabel(message, SwingConstants.CENTER);
+                label.setFont(AdminTheme.FONT);
+                label.setForeground(AdminTheme.TEXT_MUTED);
+                showContent(label);
+            }
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setColor(Color.WHITE);
+            g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 14, 14);
+            g2.setColor(AdminTheme.BORDER);
+            g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 14, 14);
+            g2.dispose();
+            super.paintComponent(g);
+        }
+    }
+
+    /** Vertical bar chart: one bar per role, value above the bar, role name (up to two lines) below. */
+    private static final class RoleChart extends JPanel {
+
+        private static final long serialVersionUID = 1L;
+        private static final Color[] COLORS = {AdminTheme.CARD_BLUE, AdminTheme.CARD_GREEN,
+                AdminTheme.CARD_PURPLE, AdminTheme.CARD_ORANGE};
+
+        private final transient Map<Role, Integer> counts;
+
+        RoleChart(Map<Role, Integer> counts) {
+            this.counts = counts == null ? Map.of() : counts;
+            setOpaque(false);
+            setName("dashboard.chart");
+            putClientProperty(AdminTheme.SKIP, Boolean.TRUE);
+            StringBuilder description = new StringBuilder("Users by role: ");
+            for (Role role : Role.values()) {
+                description.append(role.getDisplayName()).append(' ').append(valueOf(role)).append("; ");
+            }
+            getAccessibleContext().setAccessibleDescription(description.toString().trim());
+        }
+
+        private int valueOf(Role role) {
+            Integer value = counts.get(role);
+            return value == null ? 0 : value;
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+            Role[] roles = Role.values();
+            int w = getWidth();
+            int h = getHeight();
+            int labelArea = 38;
+            int topArea = 22;
+            int baseline = h - labelArea;
+            int plotHeight = Math.max(10, baseline - topArea);
+            int max = 1;
+            for (Role role : roles) {
+                max = Math.max(max, valueOf(role));
+            }
+            int slot = Math.max(1, w / roles.length);
+            int barWidth = Math.min(54, Math.max(18, slot / 2));
+            Font valueFont = AdminTheme.FONT_BOLD;
+            Font labelFont = AdminTheme.FONT;
+            for (int i = 0; i < roles.length; i++) {
+                int value = valueOf(roles[i]);
+                int barHeight = value == 0 ? 0 : Math.max(4, (int) Math.round(plotHeight * (double) value / max));
+                int x = i * slot + (slot - barWidth) / 2;
+                g2.setColor(COLORS[i % COLORS.length]);
+                if (barHeight > 0) {
+                    g2.fillRoundRect(x, baseline - barHeight, barWidth, barHeight + 6, 8, 8);
+                    g2.setColor(Color.WHITE);
+                    g2.fillRect(x - 1, baseline, barWidth + 2, 8);   // square off the bottom on the baseline
+                }
+                g2.setFont(valueFont);
+                g2.setColor(AdminTheme.TEXT);
+                FontMetrics vm = g2.getFontMetrics();
+                String number = String.valueOf(value);
+                g2.drawString(number, x + (barWidth - vm.stringWidth(number)) / 2, baseline - barHeight - 5);
+
+                g2.setFont(labelFont);
+                g2.setColor(AdminTheme.TEXT_MUTED);
+                FontMetrics lm = g2.getFontMetrics();
+                String[] lines = roles[i].getDisplayName().split(" ", 2);
+                for (int line = 0; line < lines.length; line++) {
+                    g2.drawString(lines[line], i * slot + (slot - lm.stringWidth(lines[line])) / 2,
+                            baseline + 16 + line * (lm.getHeight() - 1));
+                }
+            }
+            g2.setColor(AdminTheme.BORDER);
+            g2.drawLine(0, baseline, w, baseline);
+            g2.dispose();
         }
     }
 }

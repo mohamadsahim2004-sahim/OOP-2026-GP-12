@@ -14,14 +14,19 @@ import java.sql.SQLException;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Properties;
+import java.util.function.Function;
 
 /**
  * Creates JDBC connections to the MySQL database.
  *
- * Settings are read from the classpath in this order (later wins):
- *   1. application.properties  (committed team defaults)
- *   2. db.properties           (your local override - NOT committed, see .gitignore)
- *   3. environment variables   FOTAMS_DB_URL, FOTAMS_DB_USER, FOTAMS_DB_PASSWORD
+ * Settings come from (later wins):
+ *   1. db.properties on the classpath (src/main/resources/db.properties - YOUR local file, git-ignored;
+ *      copy db.properties.example). Keys: db.url, db.user (db.username is accepted too), db.password.
+ *   2. environment variables FOTAMS_DB_URL, FOTAMS_DB_USER, FOTAMS_DB_PASSWORD
+ *
+ * There is deliberately NO default user or password: the application never falls back to the MySQL
+ * "root" account. If no user is configured, {@link #getConnection()} fails with a message that says how
+ * to configure one.
  *
  * Connections are reused: {@link #getConnection()} hands out a lightweight wrapper whose close()
  * returns the real connection to a small idle pool (it is validated before it is handed out again,
@@ -35,12 +40,27 @@ import java.util.Properties;
  */
 public final class DatabaseConnection {
 
+    /** Local development URL; it contains no credentials. */
     private static final String DEFAULT_URL =
             "jdbc:mysql://localhost:3306/faculty_ams?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Colombo";
-    private static final String DEFAULT_USER = "root";
-    private static final String DEFAULT_PASSWORD = "";
 
-    private static final Properties SETTINGS = loadSettings();
+    private static final String NOT_CONFIGURED = "The database is not configured. Copy db.properties.example to "
+            + "db.properties and enter your MySQL user and password (or set FOTAMS_DB_USER and FOTAMS_DB_PASSWORD), "
+            + "then restart. See README.md, \"Database configuration\".";
+
+    /** Fail fast when MySQL is not running, instead of leaving the window waiting for the operating system. */
+    private static final String CONNECT_TIMEOUT_MS = "5000";
+    /** Never wait forever for an answer to a query. */
+    private static final String SOCKET_TIMEOUT_MS = "30000";
+
+    /** Connection settings after merging db.properties with the environment. */
+    record Settings(String url, String user, String password) {
+        boolean hasUser() {
+            return user != null && !user.isBlank();
+        }
+    }
+
+    private static final Settings SETTINGS = resolveSettings(loadFile(), System::getenv);
 
     /** How many idle connections are kept for reuse. */
     private static final int MAX_IDLE = 4;
@@ -50,15 +70,35 @@ public final class DatabaseConnection {
         // utility class
     }
 
-    private static Properties loadSettings() {
+    private static Properties loadFile() {
         Properties props = new Properties();
-        loadFromClasspath(props, "application.properties");
         loadFromClasspath(props, "db.properties");
-
-        overrideFromEnv(props, "db.url", "FOTAMS_DB_URL");
-        overrideFromEnv(props, "db.user", "FOTAMS_DB_USER");
-        overrideFromEnv(props, "db.password", "FOTAMS_DB_PASSWORD");
         return props;
+    }
+
+    /**
+     * Merges the db.properties values with the environment (the environment wins). Package-private so the
+     * rules can be tested without a database. There is no default user or password.
+     */
+    static Settings resolveSettings(Properties file, Function<String, String> env) {
+        String url = firstNonBlank(env.apply("FOTAMS_DB_URL"), file.getProperty("db.url"));
+        String user = firstNonBlank(env.apply("FOTAMS_DB_USER"), file.getProperty("db.user"),
+                file.getProperty("db.username"));
+        String password = env.apply("FOTAMS_DB_PASSWORD");
+        if (password == null || password.isBlank()) {
+            password = file.getProperty("db.password");
+        }
+        return new Settings(url == null ? DEFAULT_URL : url.trim(), user == null ? null : user.trim(),
+                password == null ? "" : password);
+    }
+
+    private static String firstNonBlank(String... values) {
+        for (String value : values) {
+            if (value != null && !value.isBlank()) {
+                return value;
+            }
+        }
+        return null;
     }
 
     private static void loadFromClasspath(Properties props, String fileName) {
@@ -68,13 +108,6 @@ public final class DatabaseConnection {
             }
         } catch (IOException e) {
             System.err.println("Warning: could not read " + fileName + ": " + e.getMessage());
-        }
-    }
-
-    private static void overrideFromEnv(Properties props, String key, String envName) {
-        String value = System.getenv(envName);
-        if (value != null && !value.isBlank()) {
-            props.setProperty(key, value);
         }
     }
 
@@ -94,16 +127,21 @@ public final class DatabaseConnection {
     }
 
     private static Connection openNew() throws DatabaseException {
-        String url = SETTINGS.getProperty("db.url", DEFAULT_URL);
-        String user = SETTINGS.getProperty("db.user", DEFAULT_USER);
-        String password = SETTINGS.getProperty("db.password", DEFAULT_PASSWORD);
+        if (!SETTINGS.hasUser()) {
+            throw new DatabaseException(NOT_CONFIGURED);
+        }
+        Properties info = new Properties();
+        info.setProperty("user", SETTINGS.user());
+        info.setProperty("password", SETTINGS.password());
+        info.setProperty("connectTimeout", CONNECT_TIMEOUT_MS);
+        info.setProperty("socketTimeout", SOCKET_TIMEOUT_MS);
         try {
-            return DriverManager.getConnection(url, user, password);
+            return DriverManager.getConnection(SETTINGS.url(), info);
         } catch (SQLException e) {
             if (e.getMessage() != null && e.getMessage().contains("No suitable driver")) {
                 throw new DatabaseException("The MySQL driver (mysql-connector-j) is not on the classpath, so the "
-                        + "app was started without its libraries. Close the app and start it with run-admin.bat "
-                        + "(or follow RUN_ADMIN.md, step 3).", e);
+                        + "app was started without its libraries. Close the app and start it with Maven or the "
+                        + "VS Code \"Run Faculty AMS\" launch configuration (see README.md, \"Run the application\").", e);
             }
             throw new DatabaseException("Cannot connect to the database. Check that MySQL is running and "
                     + "that db.url / db.user / db.password are correct. (" + e.getMessage() + ")", e);
@@ -229,8 +267,8 @@ public final class DatabaseConnection {
 
     /** Parses db.url ("jdbc:mysql://host:port/database?...") for display on the Settings screen. */
     public static ConnectionInfo getConnectionInfo() {
-        String url = SETTINGS.getProperty("db.url", DEFAULT_URL);
-        String user = SETTINGS.getProperty("db.user", DEFAULT_USER);
+        String url = SETTINGS.url();
+        String user = SETTINGS.hasUser() ? SETTINGS.user() : "(not set)";
         String rest = url.contains("://") ? url.substring(url.indexOf("://") + 3) : url;
         int queryStart = rest.indexOf('?');
         if (queryStart >= 0) {

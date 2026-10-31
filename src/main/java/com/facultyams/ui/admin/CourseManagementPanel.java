@@ -15,22 +15,25 @@ import javax.swing.JTextField;
 import java.util.List;
 
 /**
- * Admin "Course Management" screen: database-backed table (course code, name, department, credits, lecturer,
- * actions) with a department filter, search, Add Course, Edit and Delete. All rules (Admin-only access, course
+ * Admin "Course Management" screen: database-backed table (course code, name, department, level, semester,
+ * credits, lecturer, actions) with department and level filters, search, Add Course, Edit and Delete. All rules (Admin-only access, course
  * code, credits, department and lecturer validation, safe delete) are in {@link CourseService}; this class
  * shows data and reports errors.
  */
 public class CourseManagementPanel extends AbstractManagementPanel<Course> {
 
     private static final long serialVersionUID = 1L;
-    private static final String[] COLUMNS = {"Course Code", "Course Name", "Department", "Credits", "Lecturer", "Actions"};
-    private static final int ACTIONS_COLUMN = 5;
+    private static final String[] COLUMNS = {"Course Code", "Course Name", "Department", "Level", "Sem", "Credits",
+            "Lecturer", "Actions"};
+    private static final int ACTIONS_COLUMN = 7;
 
     private final transient CourseService courseService;
     private final transient DepartmentService departmentService;
     private final transient UserService userService;
 
     final JComboBox<Department> departmentFilter = new JComboBox<>();
+    /** null = all levels, otherwise the academic level 1-4. */
+    final JComboBox<Integer> levelFilter = new JComboBox<>(new Integer[] {null, 1, 2, 3, 4});
     final JTextField searchField = searchField("Search courses...");
     private boolean loadingFilter;
 
@@ -52,12 +55,21 @@ public class CourseManagementPanel extends AbstractManagementPanel<Course> {
                 refresh();
             }
         });
+        levelFilter.setRenderer(levelRenderer());
+        levelFilter.getAccessibleContext().setAccessibleName("Filter by level");
+        levelFilter.addActionListener(e -> {
+            if (!loadingFilter) {
+                refresh();
+            }
+        });
         liveSearch(searchField, this::refresh);
-        setToolbar(filterRow(200, new double[] {2, 1}, searchField, departmentFilter),
+        setToolbar(filterRow(150, new double[] {2, 1.2, 0.8}, searchField, departmentFilter, levelFilter),
                 addButton("Add Course", this::addCourse));
-        int[] widths = {115, 220, 190, 75, 150};
+        int[] widths = {122, 195, 155, 72, 62, 80, 130};
+        int[] minimums = {118, 90, 90, 68, 58, 76, 90};   // keep the short headers readable ("Level", "Sem", "Credits")
         for (int i = 0; i < widths.length; i++) {
             table.getColumnModel().getColumn(i).setPreferredWidth(widths[i]);
+            table.getColumnModel().getColumn(i).setMinWidth(minimums[i]);
         }
         RowActions.install(table, ACTIONS_COLUMN, this::editRow, this::deleteRow);
     }
@@ -85,13 +97,28 @@ public class CourseManagementPanel extends AbstractManagementPanel<Course> {
     protected List<Course> loadItems() throws DatabaseException, AuthorizationException {
         Department department = (Department) departmentFilter.getSelectedItem();
         return courseService.searchCourses(searchField.getText(),
-                department == null ? null : department.getDepartmentId(), null, null);
+                department == null ? null : department.getDepartmentId(), (Integer) levelFilter.getSelectedItem(), null);
     }
 
     @Override
     protected Object[] toRow(Course c) {
-        return new Object[] {c.getCourseCode(), c.getCourseName(), c.getDepartmentName(), c.getCredits(),
+        return new Object[] {c.getCourseCode(), c.getCourseName(), c.getDepartmentName(),
+                c.getAcademicLevel(), c.getSemester(), c.getCredits(),
                 c.getLecturerName() == null ? "-" : c.getLecturerName(), ""};
+    }
+
+    /** Shows "All Levels" for the empty choice and "Level N" otherwise. */
+    private static javax.swing.DefaultListCellRenderer levelRenderer() {
+        return new javax.swing.DefaultListCellRenderer() {
+            private static final long serialVersionUID = 1L;
+
+            @Override
+            public java.awt.Component getListCellRendererComponent(javax.swing.JList<?> list, Object value, int index,
+                                                                   boolean selected, boolean focus) {
+                return super.getListCellRendererComponent(list, value == null ? "All Levels" : "Level " + value,
+                        index, selected, focus);
+            }
+        };
     }
 
     // ------------------------------------------------------------------ actions
@@ -99,6 +126,7 @@ public class CourseManagementPanel extends AbstractManagementPanel<Course> {
     private void addCourse() {
         if (CourseFormPanel.showDialog(this, courseService, departmentService, userService, null)) {
             refresh();
+            success("Course created.");
         }
     }
 
@@ -106,6 +134,7 @@ public class CourseManagementPanel extends AbstractManagementPanel<Course> {
         Course course = itemAt(row);
         if (course != null && CourseFormPanel.showDialog(this, courseService, departmentService, userService, course)) {
             refresh();
+            success("Course updated.");
         }
     }
 
@@ -121,6 +150,7 @@ public class CourseManagementPanel extends AbstractManagementPanel<Course> {
         try {
             courseService.deleteCourse(course.getCourseId());
             refresh();
+            success("Course deleted.");
         } catch (ValidationException | AuthorizationException | DatabaseException e) {
             UIUtil.showException(this, e);
         }

@@ -25,6 +25,7 @@ import java.awt.Component;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -78,6 +79,23 @@ public abstract class AbstractManagementPanel<T> extends JPanel implements Refre
         };
         table = new JTable(tableModel) {
             private static final long serialVersionUID = 1L;
+
+            /** A cut-off cell ("Department of Inf...") shows its full text as a tooltip. */
+            @Override
+            public String getToolTipText(MouseEvent event) {
+                int row = rowAtPoint(event.getPoint());
+                int col = columnAtPoint(event.getPoint());
+                if (row < 0 || col < 0) {
+                    return super.getToolTipText(event);
+                }
+                Object value = getValueAt(row, col);
+                String text = value == null ? "" : value.toString();
+                if (text.isBlank()) {
+                    return null;
+                }
+                Component cell = prepareRenderer(getCellRenderer(row, col), row, col);
+                return cell.getPreferredSize().width > getCellRect(row, col, false).width ? text : null;
+            }
 
             /** Fill the card while there is nearly enough room; below that scroll sideways instead of crushing columns. */
             @Override

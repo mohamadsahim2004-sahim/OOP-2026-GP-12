@@ -648,6 +648,8 @@ public final class NoticeTimetableChecks {
         ProcessBuilder pb = new ProcessBuilder(java, "-Djava.awt.headless=true", "-cp",
                 System.getProperty("java.class.path"), NoticeTimetableChecks.class.getName(), "jdbc");
         pb.environment().put("FOTAMS_DB_URL", "jdbc:fakenotice:test");
+        pb.environment().put("FOTAMS_DB_USER", "checks");        // the app has no default user
+        pb.environment().put("FOTAMS_DB_PASSWORD", "checks");
         pb.inheritIO();
         // the child prints its own PASS/FAIL lines and a RESULT line; its exit code is what counts here
         return pb.start().waitFor();

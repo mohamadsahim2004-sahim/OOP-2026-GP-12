@@ -111,10 +111,12 @@ public class TimeTableManagementPanel extends AbstractManagementPanel<TimeTable>
         setToolbar(filterRow(110, new double[] {2, 1.5, 1, 1.4}, searchField, departmentFilter, yearFilter, semesterFilter), actions);
 
         addView(WEEK, grid.scroll());
-        int[] widths = {0, 100, 125, 110, 160, 150, 55, 110};
+        int[] widths = {0, 95, 125, 125, 155, 120, 58, 125};
         for (int i = 1; i < widths.length; i++) {
             table.getColumnModel().getColumn(i).setPreferredWidth(widths[i]);
         }
+        table.getColumnModel().getColumn(3).setMinWidth(118);   // "Course Code" header
+        table.getColumnModel().getColumn(6).setMinWidth(56);    // "Sem" header
         RowActions.install(table, ACTIONS_COLUMN, this::editRow, this::deleteRow);
         showView(LIST);
     }
