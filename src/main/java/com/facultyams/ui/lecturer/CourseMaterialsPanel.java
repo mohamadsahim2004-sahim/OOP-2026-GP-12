@@ -49,11 +49,13 @@ public class CourseMaterialsPanel extends JPanel implements Refreshable {
         JButton add = new JButton("Add Material");
         JButton edit = new JButton("Edit Selected");
         JButton refresh = new JButton("Refresh");
+        JButton delete = new JButton("Delete Selected");
         JPanel bar = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 4));
         bar.setOpaque(false);
         bar.add(add);
         bar.add(edit);
         bar.add(refresh);
+        bar.add(delete);
         add(bar, BorderLayout.NORTH);
         add(new JScrollPane(table), BorderLayout.CENTER);
         add(status, BorderLayout.SOUTH);
@@ -67,6 +69,33 @@ public class CourseMaterialsPanel extends JPanel implements Refreshable {
             }
         });
         refresh.addActionListener(e -> refresh());
+        delete.addActionListener(e -> {
+            int row = table.getSelectedRow();
+
+            if (row < 0) {
+                UIUtil.showInfo(this, "Select a material in the table first.");
+                return;
+            }
+
+            CourseMaterial selected = materials.get(table.convertRowIndexToModel(row));
+
+            int confirm = JOptionPane.showConfirmDialog(
+                    this,
+                    "Are you sure you want to delete this course material?",
+                    "Confirm Delete",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.WARNING_MESSAGE
+            );
+
+            if (confirm != JOptionPane.YES_OPTION) {
+                return;
+            }
+
+            LecturerUi.load(this, status, () -> {
+                service.deleteMaterial(selected.getMaterialID());
+                return Boolean.TRUE;
+            }, ok -> refresh());
+        });
     }
 
     @Override

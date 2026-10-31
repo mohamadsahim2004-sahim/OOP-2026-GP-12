@@ -23,6 +23,9 @@ public class CourseMaterialDAO {
             "UPDATE course_materials SET courseID = ?, description = ?, notes = ?, referenceText = ? " +
                     "WHERE materialID = ?";
 
+    static final String SQL_DELETE =
+            "DELETE FROM course_materials WHERE materialID = ?";
+
     public List<CourseMaterial> findByLecturer(int lecturerId) throws DatabaseException {
         return JdbcSupport.list(SQL_BY_LECTURER, rs -> new CourseMaterial(
                 rs.getInt(1), rs.getInt(2), rs.getString(3), rs.getString(4), rs.getString(5)), lecturerId);
@@ -42,5 +45,8 @@ public class CourseMaterialDAO {
     public boolean updateMaterial(CourseMaterial m) throws DatabaseException {
         return JdbcSupport.update(SQL_UPDATE, m.getCourseID(), m.getDescription(), m.getNotes(),
                 m.getReferenceText(), m.getMaterialID()) > 0;
+    }
+    public boolean deleteMaterial(int materialId) throws DatabaseException {
+        return JdbcSupport.update(SQL_DELETE, materialId) > 0;
     }
 }

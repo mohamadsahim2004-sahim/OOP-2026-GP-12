@@ -50,6 +50,23 @@ public class CourseMaterialService {
         access.requireOwnedCourse(material.getCourseID());      // ...and only move it to an own course
         dao.updateMaterial(material);
     }
+    public void deleteMaterial(int materialId)
+            throws DatabaseException, ValidationException {
+
+        if (materialId <= 0) {
+            throw new ValidationException("Choose a material to delete.");
+        }
+
+        int currentCourse = dao.findCourseId(materialId);
+
+        if (currentCourse < 0) {
+            throw new ValidationException("Material not found.");
+        }
+
+        access.requireOwnedCourse(currentCourse);
+
+        dao.deleteMaterial(materialId);
+    }
 
     private static void validate(CourseMaterial m) throws ValidationException {
         if (m == null) {
