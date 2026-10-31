@@ -1,3 +1,6 @@
+-- WARNING: DEV ONLY. Deletes ALL rows from medical, session_attendance and course_component.
+-- Never run on a shared database. Run order: 003, then 004, then 009.
+
 USE faculty_ams;
 
 -- 1. Clear  the Technical Officer tables 
