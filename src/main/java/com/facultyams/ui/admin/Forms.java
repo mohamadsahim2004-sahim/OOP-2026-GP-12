@@ -31,18 +31,22 @@ final class Forms {
         l.setFont(AdminTheme.FONT_BOLD.deriveFont(12f));
         l.setForeground(AdminTheme.TEXT);
         l.setLabelFor(field);
-        field.setPreferredSize(new java.awt.Dimension(span > 1 ? 450 : 220, field.getPreferredSize().height));
+        AdminTheme.styleInput(field);   // measure the final look, never the plain defaults
         field.getAccessibleContext().setAccessibleName(label.replace(" *", ""));
         GridBagConstraints c = new GridBagConstraints();
         c.gridx = column;
         c.gridy = row * 2;
         c.gridwidth = span;
         c.anchor = GridBagConstraints.LINE_START;
+        int wantedWidth = span > 1 ? 450 : 220;
         c.insets = new Insets(8, 6, 0, 6);
         form.add(l, c);
         c.gridy = row * 2 + 1;
         c.fill = GridBagConstraints.HORIZONTAL;
         c.weightx = 1.0;
+        // Only the width is requested (ipadx). The height is left to the layout, so it always follows the field's
+        // current font and border instead of a number frozen when the field was added.
+        c.ipadx = Math.max(0, wantedWidth - field.getPreferredSize().width);
         c.insets = new Insets(4, 6, 2, 6);
         form.add(field, c);
     }

@@ -250,6 +250,22 @@ public final class AdminTheme {
         });
     }
 
+    /**
+     * Styles one input right now with the same rules {@link #apply} uses later. Forms call this before they measure
+     * a field, so the size they reserve already includes the final font and border padding (measuring the plain
+     * default look and applying the theme afterwards left the fields too short and cut the typed text in half).
+     */
+    static void styleInput(JComponent input) {
+        if (input instanceof JComboBox<?> box) {
+            if (!(box.getUI() instanceof ComboUI)) {
+                combo(box);
+            }
+        } else if (input instanceof JTextComponent text && !(input instanceof JTextArea)
+                && text.getBorder() instanceof UIResource && !(text.getBorder() instanceof FieldBorder)) {
+            field(text);
+        }
+    }
+
     /** White rounded combo box with a chevron button. */
     public static void combo(JComboBox<?> box) {
         box.setUI(new ComboUI());
