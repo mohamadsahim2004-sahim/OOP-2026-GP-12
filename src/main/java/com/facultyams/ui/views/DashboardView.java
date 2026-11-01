@@ -49,28 +49,28 @@ public class DashboardView extends JPanel {
     private String loadError;
 
     // Design Tokens
-    private static final Color COLOR_TEXT_PRIMARY   = new Color(15, 23, 42);    // #0F172A
-    private static final Color COLOR_TEXT_SECONDARY = new Color(100, 116, 139);  // #64748B
-    private static final Color COLOR_TEXT_MUTED     = new Color(148, 163, 184); // #94A3B8
-    private static final Color COLOR_PRIMARY        = new Color(37, 99, 235);   // #2563EB
-    private static final Color COLOR_PRIMARY_LIGHT  = new Color(219, 234, 254); // #DBEAFE
-    private static final Color COLOR_SUCCESS        = new Color(22, 163, 74);   // #16A34A
-    private static final Color COLOR_SUCCESS_LIGHT  = new Color(220, 252, 231); // #DCFCE7
-    private static final Color COLOR_DANGER         = new Color(220, 38, 38);   // #DC2626
-    private static final Color COLOR_DANGER_LIGHT   = new Color(254, 226, 226); // #FEE2E2
-    private static final Color COLOR_WARNING        = new Color(245, 158, 11);  // #F59E0B
-    private static final Color COLOR_WARNING_LIGHT  = new Color(254, 243, 199); // #FEF3C7
-    private static final Color COLOR_BORDER         = new Color(229, 231, 235); // #E5E7EB
-    private static final Color COLOR_HOVER_BG       = new Color(248, 250, 252); // #F8FAFC
+    private static final Color COLOR_TEXT_PRIMARY = Theme.TEXT_MAIN;
+    private static final Color COLOR_TEXT_SECONDARY = Theme.TEXT_MUTED;
+    private static final Color COLOR_TEXT_MUTED = Theme.TEXT_SUBTLE;
+    private static final Color COLOR_PRIMARY = Theme.PRIMARY;
+    private static final Color COLOR_PRIMARY_LIGHT = Theme.PRIMARY_LIGHT;
+    private static final Color COLOR_SUCCESS = Theme.SUCCESS;
+    private static final Color COLOR_SUCCESS_LIGHT = Theme.SUCCESS_BG;
+    private static final Color COLOR_DANGER = Theme.DANGER;
+    private static final Color COLOR_DANGER_LIGHT = Theme.DANGER_BG;
+    private static final Color COLOR_WARNING = Theme.WARNING;
+    private static final Color COLOR_WARNING_LIGHT = Theme.WARNING_BG;
+    private static final Color COLOR_BORDER = Theme.CARD_BORDER;
+    private static final Color COLOR_HOVER_BG = Theme.ENROLLMENT_ROW_HOVER;
 
     // Fonts
-    private static final Font FONT_GREETING = new Font("Segoe UI", Font.BOLD, 22);
-    private static final Font FONT_SECTION  = new Font("Segoe UI", Font.BOLD, 15);
-    private static final Font FONT_METRIC   = new Font("Segoe UI", Font.BOLD, 28);
-    private static final Font FONT_BODY     = new Font("Segoe UI", Font.PLAIN, 13);
-    private static final Font FONT_BODY_BOLD= new Font("Segoe UI", Font.BOLD, 13);
-    private static final Font FONT_CAPTION  = new Font("Segoe UI", Font.PLAIN, 11);
-    private static final Font FONT_CAP_BOLD = new Font("Segoe UI", Font.BOLD, 11);
+    private static final Font FONT_GREETING = Theme.FONT_TITLE;
+    private static final Font FONT_SECTION = Theme.FONT_SECTION;
+    private static final Font FONT_METRIC = Theme.FONT_METRIC;
+    private static final Font FONT_BODY = Theme.FONT_BODY;
+    private static final Font FONT_BODY_BOLD = Theme.FONT_BODY_BOLD;
+    private static final Font FONT_CAPTION = Theme.FONT_SMALL;
+    private static final Font FONT_CAP_BOLD = Theme.FONT_TINY;
 
     public DashboardView(Consumer<String> navigationHandler, NavigationListener deadlineNavigation) {
         this.navigationHandler = navigationHandler;
@@ -133,19 +133,19 @@ public class DashboardView extends JPanel {
         JPanel mainContent = new JPanel();
         mainContent.setOpaque(false);
         mainContent.setLayout(new BoxLayout(mainContent, BoxLayout.Y_AXIS));
-        mainContent.setBorder(BorderFactory.createEmptyBorder(20, 24, 24, 24));
+        mainContent.setBorder(BorderFactory.createEmptyBorder(8, 0, 8, 0));
 
         // 1. Welcome Greeting Header (clean, no illustration)
         mainContent.add(createWelcomeHeader());
-        mainContent.add(Box.createVerticalStrut(20));
+        mainContent.add(Box.createVerticalStrut(24));
 
         // 2. Row 1: 4 KPI Metric Cards
         mainContent.add(createKpiCardsRow());
-        mainContent.add(Box.createVerticalStrut(20));
+        mainContent.add(Box.createVerticalStrut(24));
 
         // 3. Row 2: Recent Results (65%) + Notices (35%)
         mainContent.add(createResultsAndNoticesRow());
-        mainContent.add(Box.createVerticalStrut(20));
+        mainContent.add(Box.createVerticalStrut(24));
 
         // 4. Row 3: Performance Donut (35%) + Upcoming Deadlines (65%)
         mainContent.add(createPerformanceAndUpcomingRow());
@@ -300,7 +300,7 @@ public class DashboardView extends JPanel {
             card.add(centeredMessage("No results have been published for you yet."), BorderLayout.CENTER);
             return card;
         }
-        String[] columns = {"COURSE", "GRADE", "OVERALL", "CREDITS"};
+        String[] columns = {"Course", "Grade", "Overall", "Credits"};
         int count = Math.min(recentResults.size(), 5);
         Object[][] data = new Object[count][4];
 
@@ -332,9 +332,9 @@ public class DashboardView extends JPanel {
         // Uppercase slate header
         JTableHeader th = table.getTableHeader();
         th.setPreferredSize(new Dimension(0, 32));
-        th.setFont(FONT_CAP_BOLD);
+        th.setFont(FONT_CAPTION);
         th.setForeground(COLOR_TEXT_SECONDARY);
-        th.setBackground(new Color(248, 250, 252));
+        th.setBackground(Color.WHITE);
         th.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, COLOR_BORDER));
         th.setReorderingAllowed(false);
 
@@ -371,7 +371,9 @@ public class DashboardView extends JPanel {
             public Component getTableCellRendererComponent(JTable tbl, Object value,
                                                            boolean isSelected, boolean hasFocus, int r, int col) {
                 Component c = super.getTableCellRendererComponent(tbl, value, isSelected, false, r, col);
-                setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 8));
+                setBorder(BorderFactory.createCompoundBorder(
+                        BorderFactory.createMatteBorder(0, 0, 1, 0, COLOR_BORDER),
+                        BorderFactory.createEmptyBorder(0, 8, 0, 8)));
                 setBackground(r == hoveredRow[0] ? COLOR_HOVER_BG : Color.WHITE);
                 return c;
             }
@@ -618,7 +620,7 @@ public class DashboardView extends JPanel {
                 int cy = (h - size) / 2;
 
                 double outerRadius = size / 2.0;
-                double innerRadius = size * 0.35;
+                double innerRadius = outerRadius - 10;
                 double centerX = cx + outerRadius;
                 double centerY = cy + outerRadius;
 
@@ -638,9 +640,9 @@ public class DashboardView extends JPanel {
                 double arcGood = good * 360.0 / total;
                 double arcAverage = 360.0 - (arcExcellent + arcGood);
 
-                drawSegment(g2, centerX, centerY, outerRadius, innerRadius, startAngle, -arcExcellent, COLOR_SUCCESS);
-                drawSegment(g2, centerX, centerY, outerRadius, innerRadius, startAngle - arcExcellent, -arcGood, COLOR_PRIMARY);
-                drawSegment(g2, centerX, centerY, outerRadius, innerRadius, startAngle - arcExcellent - arcGood, -arcAverage, COLOR_WARNING);
+                drawSegment(g2, centerX, centerY, outerRadius, innerRadius, startAngle, -arcExcellent, Theme.CHART_EXCELLENT);
+                drawSegment(g2, centerX, centerY, outerRadius, innerRadius, startAngle - arcExcellent, -arcGood, Theme.CHART_GOOD);
+                drawSegment(g2, centerX, centerY, outerRadius, innerRadius, startAngle - arcExcellent - arcGood, -arcAverage, Theme.CHART_AVERAGE);
 
                 // Center text: 84% + Overall
                 g2.setColor(COLOR_TEXT_PRIMARY);
@@ -663,9 +665,9 @@ public class DashboardView extends JPanel {
                 int lxStart = cx + size + 20;
                 int lyStart = cy + 24;
 
-                drawLegendItem(g2, lxStart, lyStart, COLOR_SUCCESS, "A range", String.valueOf(excellent));
-                drawLegendItem(g2, lxStart, lyStart + 30, COLOR_PRIMARY, "B range", String.valueOf(good));
-                drawLegendItem(g2, lxStart, lyStart + 60, COLOR_WARNING, "Other", String.valueOf(other));
+                drawLegendItem(g2, lxStart, lyStart, Theme.CHART_EXCELLENT, "A range", String.valueOf(excellent));
+                drawLegendItem(g2, lxStart, lyStart + 30, Theme.CHART_GOOD, "B range", String.valueOf(good));
+                drawLegendItem(g2, lxStart, lyStart + 60, Theme.CHART_AVERAGE, "Other", String.valueOf(other));
 
                 g2.dispose();
             }
@@ -681,14 +683,14 @@ public class DashboardView extends JPanel {
 
             private void drawLegendItem(Graphics2D g2, int x, int y, Color color, String name, String value) {
                 g2.setColor(color);
-                g2.fillRoundRect(x, y + 2, 8, 14, 4, 4);
+                g2.fillOval(x, y + 6, 6, 6);
 
                 g2.setColor(COLOR_TEXT_PRIMARY);
                 g2.setFont(FONT_BODY);
-                g2.drawString(name, x + 16, y + 14);
+                g2.drawString(name, x + 14, y + 14);
 
                 g2.setFont(FONT_BODY_BOLD);
-                g2.drawString(value, x + 84, y + 14);
+                g2.drawString(value, x + 76, y + 14);
             }
         };
     }
@@ -717,11 +719,37 @@ public class DashboardView extends JPanel {
         list.setLayout(new BoxLayout(list, BoxLayout.Y_AXIS));
         DateTimeFormatter time = DateTimeFormatter.ofPattern("HH:mm");
         for (ClassSession cs : todaySessions) {
-            JLabel line = new JLabel(cs.getStart().format(time) + " – " + cs.getEnd().format(time) + "   "
-                    + cs.getCourse().getCode() + " · " + cs.getDisplayName() + "   (" + cs.getVenue().getName() + ")");
-            line.setFont(FONT_BODY);
-            line.setForeground(COLOR_TEXT_PRIMARY);
-            line.setBorder(BorderFactory.createEmptyBorder(6, 0, 6, 0));
+            JPanel line = new JPanel(new GridBagLayout());
+            line.setOpaque(false);
+            line.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createMatteBorder(0, 0, 1, 0, COLOR_BORDER),
+                    BorderFactory.createEmptyBorder(10, 0, 10, 0)));
+            GridBagConstraints c = new GridBagConstraints();
+            c.gridy = 0;
+            c.anchor = GridBagConstraints.WEST;
+            c.fill = GridBagConstraints.HORIZONTAL;
+            JLabel timeLabel = new JLabel(cs.getStart().format(time) + " – " + cs.getEnd().format(time));
+            timeLabel.setFont(FONT_CAPTION);
+            timeLabel.setForeground(COLOR_TEXT_SECONDARY);
+            c.gridx = 0;
+            c.weightx = 0;
+            c.insets = new Insets(0, 0, 0, 16);
+            line.add(timeLabel, c);
+
+            JLabel courseLabel = new JLabel(cs.getCourse().getCode() + " · " + cs.getDisplayName());
+            courseLabel.setFont(FONT_BODY_BOLD);
+            courseLabel.setForeground(COLOR_TEXT_PRIMARY);
+            c.gridx = 1;
+            c.weightx = 1;
+            line.add(courseLabel, c);
+
+            JLabel venueLabel = new JLabel(cs.getVenue() == null ? "—" : cs.getVenue().getName());
+            venueLabel.setFont(FONT_CAPTION);
+            venueLabel.setForeground(COLOR_TEXT_SECONDARY);
+            c.gridx = 2;
+            c.weightx = 0;
+            c.insets = new Insets(0, 16, 0, 0);
+            line.add(venueLabel, c);
             list.add(line);
         }
         card.add(list, BorderLayout.CENTER);
@@ -741,7 +769,7 @@ public class DashboardView extends JPanel {
             }
             @Override
             public void mouseEntered(MouseEvent e) {
-                link.setForeground(new Color(29, 78, 216));
+                link.setForeground(Theme.PRIMARY_HOVER);
             }
             @Override
             public void mouseExited(MouseEvent e) {
