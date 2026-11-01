@@ -20,3 +20,6 @@ data/
 
 backups/
 backup_*.sql
+
+target/
+backup_faculty_ams_*.sql

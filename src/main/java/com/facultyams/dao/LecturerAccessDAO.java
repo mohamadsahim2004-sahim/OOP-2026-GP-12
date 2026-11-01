@@ -160,6 +160,18 @@ public class LecturerAccessDAO {
                 rs.getInt(4), rs.getInt(5), rs.getInt(6)), courseId);
     }
 
+    /** Number of components of the given type ("THEORY" / "PRACTICAL") the course has: 0 or 1. */
+    public int countAttendanceComponents(int courseId, String type) throws DatabaseException {
+        return JdbcSupport.count(SQL_COMPONENT_COUNT + " AND type = ?", courseId, type);
+    }
+
+    /** Same counts as {@link #attendanceByStudent(int)} but for one component type only. */
+    public List<AttendanceAgg> attendanceByStudent(int courseId, String type) throws DatabaseException {
+        return JdbcSupport.list(SQL_ATTENDANCE_AGG.replace(" GROUP BY", " AND cc.type = ? GROUP BY"),
+                rs -> new AttendanceAgg(rs.getInt(1), rs.getString(2), rs.getString(3),
+                        rs.getInt(4), rs.getInt(5), rs.getInt(6)), courseId, type);
+    }
+
     public List<AttendanceRecord> attendanceRecords(int courseId, int studentId) throws DatabaseException {
         return JdbcSupport.list(SQL_ATTENDANCE_RECORDS, rs -> new AttendanceRecord(
                 rs.getString(1), rs.getInt(2), rs.getDate(3).toLocalDate(),

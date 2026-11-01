@@ -1,5 +1,6 @@
 package com.facultyams.ui.lecturer;
 
+import com.facultyams.dao.CourseMaterialDAO.FileInfo;
 import com.facultyams.model.Course;
 import com.facultyams.model.CourseMaterial;
 import com.facultyams.service.CourseMaterialService;
@@ -9,6 +10,7 @@ import com.facultyams.util.UIUtil;
 
 import javax.swing.JButton;
 import javax.swing.JComboBox;
+import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -19,12 +21,17 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
 import java.awt.GridLayout;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/** Add, edit and list the course materials of the lecturer's own courses. */
+/**
+ * Add, edit and list the course materials of the lecturer's own courses. A material can carry a web link and/or
+ * an uploaded file (PDF, Word, PowerPoint...): "Choose file" stores it in the database, and the students of the
+ * course download it from their Course Materials screen.
+ */
 public class CourseMaterialsPanel extends JPanel implements Refreshable {
 
     private static final long serialVersionUID = 1L;
@@ -32,11 +39,12 @@ public class CourseMaterialsPanel extends JPanel implements Refreshable {
     private final transient CourseMaterialService service;
     private final transient LecturerAccessService access;
     private final DefaultTableModel model = LecturerUi.readOnlyModel(
-            "Material ID", "Course", "Description", "Notes", "References");
+            "Material ID", "Course", "Description", "Notes", "References", "Uploaded file");
     private final JTable table = LecturerUi.styledTable(model);
     private final JLabel status = new JLabel(" ");
     private final List<CourseMaterial> materials = new ArrayList<>();
     private final List<Course> courses = new ArrayList<>();
+    private final Map<Integer, FileInfo> files = new HashMap<>();
 
     public CourseMaterialsPanel() {
         this(new LecturerAccessService(), new CourseMaterialService());
@@ -100,7 +108,7 @@ public class CourseMaterialsPanel extends JPanel implements Refreshable {
 
     @Override
     public void refresh() {
-        LecturerUi.load(this, status, () -> new Object[]{access.getAssignedCourses(), service.getMyMaterials()},
+        LecturerUi.load(this, status, () -> new Object[]{access.getAssignedCourses(), service.getMyMaterials(), service.getMyFiles()},
                 data -> {
                     courses.clear();
                     materials.clear();
@@ -108,8 +116,12 @@ public class CourseMaterialsPanel extends JPanel implements Refreshable {
                     List<Course> cs = (List<Course>) data[0];
                     @SuppressWarnings("unchecked")
                     List<CourseMaterial> ms = (List<CourseMaterial>) data[1];
+                    @SuppressWarnings("unchecked")
+                    Map<Integer, FileInfo> fs = (Map<Integer, FileInfo>) data[2];
                     courses.addAll(cs);
                     materials.addAll(ms);
+                    files.clear();
+                    files.putAll(fs);
                     Map<Integer, Course> byId = new HashMap<>();
                     for (Course c : cs) {
                         byId.put(c.getCourseId(), c);
@@ -118,11 +130,20 @@ public class CourseMaterialsPanel extends JPanel implements Refreshable {
                     for (CourseMaterial m : ms) {
                         Course c = byId.get(m.getCourseID());
                         model.addRow(new Object[]{m.getMaterialID(), c == null ? m.getCourseID() : c.getCourseCode(),
-                                m.getDescription(), m.getNotes(), m.getReferenceText()});
+                                m.getDescription(), m.getNotes(), m.getReferenceText(), fileText(files.get(m.getMaterialID()))});
                     }
                     status.setText(ms.isEmpty() ? "No course materials yet. Click \"Add Material\"."
                             : ms.size() + " material(s).");
                 });
+    }
+
+    private static String fileText(FileInfo f) {
+        if (f == null) {
+            return "-";
+        }
+        return f.fileName() + " (" + (f.sizeBytes() < 1024 * 1024
+                ? Math.max(1, f.sizeBytes() / 1024) + " KB"
+                : String.format("%.1f MB", f.sizeBytes() / 1048576.0)) + ")";
     }
 
     private void showForm(CourseMaterial existing) {
@@ -142,6 +163,18 @@ public class CourseMaterialsPanel extends JPanel implements Refreshable {
                 }
             }
         }
+        File[] chosen = new File[1];
+        FileInfo current = existing == null ? null : files.get(existing.getMaterialID());
+        JButton chooseFile = new JButton(current == null ? "Choose file (PDF, Word, PowerPoint...)"
+                : "Current: " + current.fileName() + " - click to replace");
+        chooseFile.addActionListener(e -> {
+            JFileChooser chooser = new JFileChooser();
+            chooser.setDialogTitle("Choose the lecture material file");
+            if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+                chosen[0] = chooser.getSelectedFile();
+                chooseFile.setText("File: " + chosen[0].getName());
+            }
+        });
         JPanel form = new JPanel(new GridLayout(0, 2, 8, 8));
         form.add(new JLabel("Course:"));
         form.add(course);
@@ -149,8 +182,10 @@ public class CourseMaterialsPanel extends JPanel implements Refreshable {
         form.add(description);
         form.add(new JLabel("Notes:"));
         form.add(notes);
-        form.add(new JLabel("References:"));
+        form.add(new JLabel("Web link (not used if you upload a file):"));
         form.add(references);
+        form.add(new JLabel("Upload a file (max 10 MB):"));
+        form.add(chooseFile);
         if (JOptionPane.showConfirmDialog(this, form, existing == null ? "Add Course Material" : "Edit Course Material",
                 JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) != JOptionPane.OK_OPTION) {
             return;
@@ -160,9 +195,9 @@ public class CourseMaterialsPanel extends JPanel implements Refreshable {
                 notes.getText().trim(), references.getText().trim());
         LecturerUi.load(this, status, () -> {
             if (existing == null) {
-                service.addMaterial(material);
+                service.addMaterial(material, chosen[0]);
             } else {
-                service.updateMaterial(material);
+                service.updateMaterial(material, chosen[0]);
             }
             return Boolean.TRUE;
         }, ok -> refresh());

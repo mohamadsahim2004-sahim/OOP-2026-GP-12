@@ -31,6 +31,19 @@ public class StudentMaterialDAO {
         return StudentDaoSupport.query(select() + "ORDER BY c.course_code, cm.materialID", MAPPER, studentId);
     }
 
+    /** A file the lecturer uploaded with a material. */
+    public record StoredFile(String fileName, byte[] data) { }
+
+    /** The uploaded file of a material, only when the student is enrolled in its course (otherwise null). */
+    public StoredFile findFile(int studentId, int materialId) throws DatabaseException {
+        return StudentDaoSupport.queryOne(
+                "SELECT f.file_name, f.file_data FROM course_material_files f "
+                        + "JOIN course_materials cm ON cm.materialID = f.materialID "
+                        + "JOIN enrollments e ON e.course_id = cm.courseID AND e.student_id = ? AND e.status = 'ENROLLED' "
+                        + "WHERE f.materialID = ?",
+                rs -> new StoredFile(rs.getString(1), rs.getBytes(2)), studentId, materialId);
+    }
+
     /** One material, only when the student is enrolled in its course. */
     public StudentMaterial findOne(int studentId, int materialId) throws DatabaseException {
         return StudentDaoSupport.queryOne(select() + "WHERE cm.materialID = ?", MAPPER, studentId, materialId);

@@ -22,7 +22,10 @@ public class EligibilityPanel extends CoursePanel {
 
     private final transient ResultService service;
     private final DefaultTableModel model = LecturerUi.readOnlyModel(
-            "Reg. No", "Name", "CA %", "Attendance %", "Eligibility", "Reason");
+            "Reg. No", "Name", "Batch", "CA %", "Attendance %", "Eligibility", "Reason");
+    private final javax.swing.JTextField searchField = new javax.swing.JTextField(14);
+    private final javax.swing.JComboBox<String> batchCombo = new javax.swing.JComboBox<>(new String[]{"All batches"});
+    private final javax.swing.JTable table = LecturerUi.styledTable(model);
     private final JLabel rule = new JLabel(" ");
 
     public EligibilityPanel() {
@@ -34,6 +37,11 @@ public class EligibilityPanel extends CoursePanel {
         this.service = service;
         JButton refreshButton = new JButton("Refresh");
         refreshButton.addActionListener(e -> refresh());
+        toolbar.add(new JLabel("Batch:"));
+        toolbar.add(batchCombo);
+        toolbar.add(new JLabel("Student (reg. no. or name):"));
+        toolbar.add(searchField);
+        LecturerUi.installFilter(table, searchField, batchCombo, 2);
         toolbar.add(refreshButton);
         rule.setText("Rule: CA at least " + AcademicRules.fmt(AcademicRules.CA_MIN_PERCENT)
                 + "% and attendance at least " + AcademicRules.fmt(AcademicRules.ATTENDANCE_MIN_PERCENT) + "%.");
@@ -41,19 +49,21 @@ public class EligibilityPanel extends CoursePanel {
         JPanel center = new JPanel(new BorderLayout(0, 6));
         center.setOpaque(false);
         center.add(rule, BorderLayout.NORTH);
-        center.add(new JScrollPane(LecturerUi.styledTable(model)), BorderLayout.CENTER);
+        center.add(new JScrollPane(table), BorderLayout.CENTER);
         add(center, BorderLayout.CENTER);
     }
 
     @Override
     protected void clearContent() {
         model.setRowCount(0);
+        LecturerUi.fillBatches(batchCombo, java.util.List.of());
     }
 
     @Override
     protected void loadCourse(Course course) {
         LecturerUi.load(this, status, () -> service.getEligibility(course.getCourseId()), sheet -> {
             model.setRowCount(0);
+            java.util.Set<String> batches = new java.util.TreeSet<>();
             int eligible = 0;
             int notEligible = 0;
             int pending = 0;
@@ -64,11 +74,13 @@ public class EligibilityPanel extends CoursePanel {
                     case NOT_ELIGIBLE -> notEligible++;
                     default -> pending++;
                 }
-                model.addRow(new Object[]{r.student().registrationNo(), r.student().fullName(),
+                batches.add(r.student().batch());
+                model.addRow(new Object[]{r.student().registrationNo(), r.student().fullName(), r.student().batch(),
                         LecturerUi.num(e.caPercent()),
                         e.attendance().recorded() ? LecturerUi.num(e.attendance().percent()) : "Not recorded",
                         e.status().label(), e.reason()});
             }
+            LecturerUi.fillBatches(batchCombo, batches);
             String schemeNote = sheet.scheme().complete() ? "" : "  Evaluation scheme incomplete: " + sheet.scheme().problem();
             status.setText(sheet.rows().isEmpty()
                     ? "No students are enrolled in this course yet."

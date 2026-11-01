@@ -1336,6 +1336,13 @@ public class CourseMaterialsView extends JPanel {
         Path destination = chooser.getSelectedFile().toPath();
         new SwingWorker<Void, Void>() {
             @Override protected Void doInBackground() throws IOException {
+                // 1) a file the lecturer uploaded through the application (stored in the database)
+                com.facultyams.dao.StudentMaterialDAO.StoredFile stored = dataService.getMaterialFile(material.getId());
+                if (stored != null) {
+                    Files.write(destination, stored.data());
+                    return null;
+                }
+                // 2) otherwise a file placed by hand in data/materials/<courseCode>/ (older behaviour)
                 if (!Files.isRegularFile(source)) {
                     throw new IOException("The material file was not found in course storage.");
                 }

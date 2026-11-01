@@ -103,6 +103,54 @@ public class ResultService {
         return new EligibilitySheet(course, AcademicRules.checkScheme(components), rows);
     }
 
+    // ------------------------------------------------------------------ CA marks summary
+
+    /** One student's mark per CA component (component id to mark; absent = not entered yet) and the CA %. */
+    public record CaRow(StudentRow student, Map<Integer, Double> marks, Double caPercent, boolean caEligible) {
+    }
+
+    public record CaSummary(Course course, List<EvaluationComponent> parts, List<CaRow> rows) {
+    }
+
+    /**
+     * CA marks of every student of the course, one column per CA / assignment / practical component, with
+     * the CA % and whether it reaches the {@link AcademicRules#CA_MIN_PERCENT} minimum.
+     */
+    public CaSummary getCaSummary(int courseId) throws DatabaseException {
+        Course course = access.requireOwnedCourse(courseId);
+        List<EvaluationComponent> parts = AcademicRules.caComponents(componentDAO.findByCourse(courseId));
+        Map<Integer, Map<Integer, Double>> marks = componentDAO.findMarksByCourse(courseId);
+        List<CaRow> rows = new ArrayList<>();
+        for (StudentRow s : access.getStudents(courseId)) {
+            Map<Integer, Double> own = marks.getOrDefault(s.studentId(), Map.of());
+            Double ca = AcademicRules.percentOf(parts, own);
+            rows.add(new CaRow(s, own, ca, ca != null && ca >= AcademicRules.CA_MIN_PERCENT));
+        }
+        return new CaSummary(course, parts, rows);
+    }
+
+    // ------------------------------------------------------------------ SGPA / CGPA for the whole batch
+
+    public record BatchGpaRow(StudentRow student, GPAService.GpaSummary gpa) {
+    }
+
+    /** SGPA / CGPA of every student of the lecturer's courses (each student once), ordered by registration no. */
+    public List<BatchGpaRow> getBatchGpa() throws DatabaseException {
+        Map<Integer, StudentRow> unique = new java.util.LinkedHashMap<>();
+        for (Course c : access.getAssignedCourses()) {
+            for (StudentRow s : access.getStudents(c.getCourseId())) {
+                unique.putIfAbsent(s.studentId(), s);
+            }
+        }
+        List<StudentRow> students = new ArrayList<>(unique.values());
+        students.sort((a, b) -> a.registrationNo().compareTo(b.registrationNo()));
+        List<BatchGpaRow> rows = new ArrayList<>();
+        for (StudentRow s : students) {
+            rows.add(new BatchGpaRow(s, gpaService.calculate(s.studentId())));
+        }
+        return rows;
+    }
+
     // ------------------------------------------------------------------ final results
 
     public ResultSheet getCourseResults(int courseId) throws DatabaseException {

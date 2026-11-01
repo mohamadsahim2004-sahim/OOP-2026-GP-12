@@ -16,7 +16,7 @@ import java.util.TreeMap;
  * Results of the LOGGED-IN student, read from the {@code marks} table.
  * <p>
  * Grades, grade points and overall marks are the values the lecturer module stored (MarksService:
- * overall = 40% CA + 60% final, grade table in {@link GradingScheme}). SGPA / CGPA use the project formula
+ * overall = the weighted components of the course evaluation scheme, grade table in {@link GradingScheme}). SGPA / CGPA use the project formula
  * sum(gradePoints x credits) / sum(credits) over courses that have marks; the latest marks row per course counts.
  * A course counts as passed when its grade points are above zero and the student was CA-eligible (CA >= 40).
  */

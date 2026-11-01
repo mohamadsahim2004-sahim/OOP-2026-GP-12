@@ -1,6 +1,7 @@
 package com.facultyams.service;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 
 import com.facultyams.dao.AttendanceDAO;
@@ -164,23 +165,86 @@ public class AttendanceService {
         return attendanceDAO.findHistory(filter, HISTORY_LIMIT);
     }
 
-    /**
-     * Per student and component summary. The percentage is measured against {@link #TOTAL_SESSIONS} sessions
-     * normally, or against the sessions recorded in the range when a date range is chosen.
-     */
+    /** Which components a summary covers (PDF: theory only, practical only, or combined). */
+    public enum ComponentView {
+        ALL_ROWS("Theory and practical (separate rows)"), THEORY("Theory only"), PRACTICAL("Practical only"),
+        COMBINED("Combined (theory + practical)");
+
+        private final String label;
+
+        ComponentView(String label) {
+            this.label = label;
+        }
+
+        @Override
+        public String toString() {
+            return label;
+        }
+    }
+
+    /** Type shown on a combined summary row. */
+    public static final String COMBINED_TYPE = "combined";
+
+    /** Summary with theory and practical as separate rows (what the reports use). */
     public List<StudentSummaryRow> getSummary(AttendanceFilter filter) throws ValidationException, DatabaseException {
+        return getSummary(filter, ComponentView.ALL_ROWS);
+    }
+
+    /**
+     * Per-student attendance summary for the chosen component view.
+     * THEORY / PRACTICAL keep only that component. COMBINED adds the components of a course together and
+     * measures them against 15 sessions per component (or the sessions recorded when a date range is set).
+     */
+    public List<StudentSummaryRow> getSummary(AttendanceFilter filter, ComponentView view)
+            throws ValidationException, DatabaseException {
         requireOfficer();
         checkRange(filter);
+        ComponentView v = view == null ? ComponentView.ALL_ROWS : view;
+        List<SummaryCounts> counts = attendanceDAO.findSummaryCounts(filter);
         List<StudentSummaryRow> rows = new ArrayList<>();
-        for (SummaryCounts c : attendanceDAO.findSummaryCounts(filter)) {
+        if (v == ComponentView.COMBINED) {
+            Map<String, Integer> componentsOf = lookupDAO.componentCountsByCourseCode();
+            Map<String, int[]> sums = new LinkedHashMap<>();
+            Map<String, SummaryCounts> first = new LinkedHashMap<>();
+            for (SummaryCounts c : counts) {
+                String key = c.userId() + "|" + c.courseCode();
+                first.putIfAbsent(key, c);
+                int[] a = sums.computeIfAbsent(key, k -> new int[5]);
+                a[0] += c.present();
+                a[1] += c.late();
+                a[2] += c.absent();
+                a[3] += c.approvedMedical();
+                a[4] += c.recorded();
+            }
+            for (Map.Entry<String, int[]> e : sums.entrySet()) {
+                SummaryCounts c = first.get(e.getKey());
+                int[] a = e.getValue();
+                int components = Math.max(1, componentsOf.getOrDefault(c.courseCode(), 1));
+                int basis = filter.hasDateRange() ? a[4] : TOTAL_SESSIONS * components;
+                rows.add(buildRow(c, 0, COMBINED_TYPE, a[0], a[1], a[2], a[3], a[4], basis));
+            }
+            return rows;
+        }
+        for (SummaryCounts c : counts) {
+            if (v == ComponentView.THEORY && !"theory".equalsIgnoreCase(c.type())) {
+                continue;
+            }
+            if (v == ComponentView.PRACTICAL && !"practical".equalsIgnoreCase(c.type())) {
+                continue;
+            }
             int basis = filter.hasDateRange() ? c.recorded() : TOTAL_SESSIONS;
-            double pct = basis <= 0 ? 0 : Math.min(100.0,
-                    calculatePercentage(c.present() + c.late(), c.approvedMedical(), basis));
-            rows.add(new StudentSummaryRow(c.userId(), c.fullName(), c.registrationNo(), c.batch(), c.componentId(),
-                    c.courseCode(), c.courseName(), c.type(), c.present(), c.late(), c.absent(),
-                    c.approvedMedical(), c.recorded(), basis, pct, isEligible(pct)));
+            rows.add(buildRow(c, c.componentId(), c.type(), c.present(), c.late(), c.absent(),
+                    c.approvedMedical(), c.recorded(), basis));
         }
         return rows;
+    }
+
+    private StudentSummaryRow buildRow(SummaryCounts c, int componentId, String type, int present, int late,
+                                       int absent, int approvedMedical, int recorded, int basis) {
+        double pct = basis <= 0 ? 0 : Math.min(100.0, calculatePercentage(present + late, approvedMedical, basis));
+        return new StudentSummaryRow(c.userId(), c.fullName(), c.registrationNo(), c.batch(), componentId,
+                c.courseCode(), c.courseName(), type, present, late, absent, approvedMedical, recorded, basis,
+                pct, isEligible(pct));
     }
 
     private static void checkRange(AttendanceFilter f) throws ValidationException {
@@ -199,4 +263,4 @@ public class AttendanceService {
             throw new ValidationException("That attendance record no longer exists. Please search again.");
         }
     }
-}
+}

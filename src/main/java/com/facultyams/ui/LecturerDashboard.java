@@ -8,6 +8,8 @@ import com.facultyams.security.Session;
 import com.facultyams.service.LecturerService;
 import com.facultyams.service.NoticeService;
 import com.facultyams.ui.admin.Refreshable;
+import com.facultyams.ui.lecturer.BatchGpaPanel;
+import com.facultyams.ui.lecturer.CaSummaryPanel;
 import com.facultyams.ui.lecturer.CourseMaterialsPanel;
 import com.facultyams.ui.lecturer.DashboardHomePanel;
 import com.facultyams.ui.lecturer.EligibilityPanel;
@@ -139,7 +141,7 @@ public class LecturerDashboard extends JFrame {
 
 
     private void createSidebar() {
-        sidebar.setLayout(new BoxLayout(sidebar, BoxLayout.Y_AXIS));
+        sidebar.setLayout(new BorderLayout());
         sidebar.setBackground(new Color(18, 57, 94));
         sidebar.setBorder(new EmptyBorder(35, 12, 15, 12));
         sidebar.setPreferredSize(new Dimension(275, 0));
@@ -148,8 +150,12 @@ public class LecturerDashboard extends JFrame {
         menuTitle.setFont(new Font("Arial", Font.BOLD, 14));
         menuTitle.setForeground(Color.WHITE);
         menuTitle.setBorder(new EmptyBorder(10, 10, 20, 0));
-        menuTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
-        sidebar.add(menuTitle);
+        sidebar.add(menuTitle, BorderLayout.NORTH);
+
+        // The menu now has many pages, so it scrolls; the Logout button stays visible at the bottom.
+        JPanel menu = new JPanel();
+        menu.setLayout(new BoxLayout(menu, BoxLayout.Y_AXIS));
+        menu.setOpaque(false);
 
         for (String item : pages.keySet()) {
             JButton button = createMenuButton(item);
@@ -157,15 +163,25 @@ public class LecturerDashboard extends JFrame {
 
             button.addActionListener(e -> showSection(item));
 
-            sidebar.add(button);
-            sidebar.add(Box.createVerticalStrut(8));
+            menu.add(button);
+            menu.add(Box.createVerticalStrut(8));
         }
+
+        JScrollPane menuScroll = new JScrollPane(menu,
+                JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        menuScroll.setBorder(null);
+        menuScroll.setOpaque(false);
+        menuScroll.getViewport().setOpaque(false);
+        menuScroll.getVerticalScrollBar().setUnitIncrement(18);
+        sidebar.add(menuScroll, BorderLayout.CENTER);
 
         JButton logout = createMenuButton("Logout");
         logout.addActionListener(e -> DashboardRouter.logout(this));
-
-        sidebar.add(Box.createVerticalStrut(20));
-        sidebar.add(logout); sidebar.add(logout);
+        JPanel bottom = new JPanel(new BorderLayout());
+        bottom.setOpaque(false);
+        bottom.setBorder(new EmptyBorder(12, 0, 0, 0));
+        bottom.add(logout, BorderLayout.CENTER);
+        sidebar.add(bottom, BorderLayout.SOUTH);
 
         add(sidebar, BorderLayout.WEST);
     }
@@ -200,8 +216,10 @@ public class LecturerDashboard extends JFrame {
         addPage("Evaluation Components", "Evaluation Components", new EvaluationComponentsPanel());
         addPage("Marks Entry", "Marks Entry", new MarksEntryPanel());
         addPage("Exam Eligibility", "Exam Eligibility (CA and attendance)", new EligibilityPanel());
+        addPage("CA Marks Summary", "CA Marks Summary (whole batch and individual)", new CaSummaryPanel());
         addPage("Final Results and Grades", "Final Results and Grades", new ResultsPanel());
         addPage("Student Results and GPA", "Student Academic Results, SGPA and CGPA", new StudentResultsPanel());
+        addPage("Batch SGPA and CGPA", "SGPA and CGPA of the whole batch", new BatchGpaPanel());
 
         JTabbedPane tabs = new JTabbedPane();
         LecturerAttendancePanel attendance = new LecturerAttendancePanel();

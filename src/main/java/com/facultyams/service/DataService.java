@@ -114,6 +114,22 @@ public final class DataService {
         }
     }
 
+    /**
+     * The file a lecturer uploaded with this material, only if the student is enrolled in its course;
+     * null when the material has no uploaded file (or file storage is not set up yet).
+     */
+    public StudentMaterialDAO.StoredFile getMaterialFile(int materialId) {
+        StudentAccess.requireOwn(String.valueOf(studentId));
+        try {
+            return materialDAO.findFile(studentId, materialId);
+        } catch (DatabaseException e) {
+            if (e.getCause() instanceof java.sql.SQLException sql && "42S02".equals(sql.getSQLState())) {
+                return null;                       // migration 011 has not been run: fall back to course storage
+            }
+            throw new StudentServiceException("The file could not be loaded. Please try again.", e);
+        }
+    }
+
     public int getRecentCourseContentNotificationCount() {
         StudentAccess.requireOwn(String.valueOf(studentId));
         try {

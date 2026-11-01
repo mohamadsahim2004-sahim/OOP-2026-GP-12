@@ -7,6 +7,8 @@ import com.facultyams.service.LecturerAccessService;
 import com.facultyams.service.LecturerService;
 
 import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JLabel;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTable;
@@ -27,6 +29,9 @@ public class LecturerAttendancePanel extends CoursePanel {
             "Component", "Session", "Date", "Status", "Medical");
     private final JTable summaryTable = LecturerUi.styledTable(summary);
     private final List<Integer> studentIds = new ArrayList<>();
+    /** Theory only / practical only / both combined (PDF: attendance for each component and combined). */
+    private final JComboBox<String> typeCombo = new JComboBox<>(new String[]{
+            "Combined (theory + practical)", "Theory only", "Practical only"});
 
     public LecturerAttendancePanel() {
         this(new LecturerAccessService(), new LecturerService());
@@ -37,6 +42,13 @@ public class LecturerAttendancePanel extends CoursePanel {
         this.service = service;
         JButton refreshButton = new JButton("Refresh");
         refreshButton.addActionListener(e -> refresh());
+        toolbar.add(new JLabel("Show:"));
+        toolbar.add(typeCombo);
+        typeCombo.addActionListener(e -> {
+            if (selectedCourse() != null) {
+                loadCourse(selectedCourse());
+            }
+        });
         toolbar.add(refreshButton);
 
         JSplitPane split = new JSplitPane(JSplitPane.VERTICAL_SPLIT,
@@ -62,7 +74,8 @@ public class LecturerAttendancePanel extends CoursePanel {
 
     @Override
     protected void loadCourse(Course course) {
-        LecturerUi.load(this, status, () -> service.getAttendance(course.getCourseId()), view -> {
+        String type = selectedType();
+        LecturerUi.load(this, status, () -> service.getAttendance(course.getCourseId(), type), view -> {
             summary.setRowCount(0);
             records.setRowCount(0);
             studentIds.clear();
@@ -77,10 +90,19 @@ public class LecturerAttendancePanel extends CoursePanel {
             status.setText(view.rows().isEmpty()
                     ? "No students are enrolled in this course yet."
                     : view.sessionsExpected() == 0
-                    ? "No attendance sessions have been set up for this course yet."
+                    ? "No " + typeCombo.getSelectedItem().toString().toLowerCase() + " attendance sessions exist for this course."
                     : view.rows().size() + " student(s); " + view.sessionsExpected()
                     + " sessions expected. Select a student to see the session records.");
         });
+    }
+
+    /** "THEORY", "PRACTICAL" or null for combined. */
+    private String selectedType() {
+        return switch (typeCombo.getSelectedIndex()) {
+            case 1 -> "THEORY";
+            case 2 -> "PRACTICAL";
+            default -> null;
+        };
     }
 
     private void loadRecords(int studentId) {
