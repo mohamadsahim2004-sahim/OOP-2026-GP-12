@@ -152,41 +152,48 @@ public final class StudentProfileView extends JPanel {
     }
 
     private JPanel createProfileColumns() {
+        JPanel columns = new JPanel(new GridBagLayout());
+        columns.setOpaque(false);
+        columns.setAlignmentX(Component.LEFT_ALIGNMENT);
+        GridBagConstraints c = new GridBagConstraints();
+        c.gridy = 0;
+        c.fill = GridBagConstraints.BOTH;
+        c.weighty = 1;
+        c.gridx = 0;
+        c.weightx = 0;
+        c.insets = new Insets(0, 0, 0, 24);
         JPanel summary = createSummaryCard();
+        summary.setPreferredSize(new Dimension(340, summary.getPreferredSize().height));
+        summary.setMinimumSize(new Dimension(300, 1));
+        columns.add(summary, c);
+        c.gridx = 1;
+        c.weightx = 1;
+        c.insets = new Insets(0, 0, 0, 0);
         JPanel details = createDetailsCard();
-        JPanel stack = new JPanel();
-        stack.setOpaque(false);
-        stack.setLayout(new BoxLayout(stack, BoxLayout.Y_AXIS));
-        stack.setMinimumSize(new Dimension(0, 1));
-        stack.setMaximumSize(new Dimension(720, Integer.MAX_VALUE));
-        summary.setAlignmentX(Component.LEFT_ALIGNMENT);
-        details.setAlignmentX(Component.LEFT_ALIGNMENT);
-        stack.add(summary);
-        stack.add(Box.createVerticalStrut(Theme.PROFILE_CARD_GAP));
-        stack.add(details);
-        stack.setPreferredSize(new Dimension(720, stack.getPreferredSize().height));
-
-        JPanel centered = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
-        centered.setOpaque(false);
-        centered.setAlignmentX(Component.LEFT_ALIGNMENT);
-        centered.add(stack);
-        centered.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
-        return centered;
+        details.setPreferredSize(new Dimension(560, details.getPreferredSize().height));
+        details.setMinimumSize(new Dimension(420, 1));
+        columns.add(details, c);
+        columns.setPreferredSize(new Dimension(900, Math.max(summary.getPreferredSize().height,
+                details.getPreferredSize().height)));
+        columns.setMinimumSize(new Dimension(820, 1));
+        columns.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
+        return columns;
     }
 
     private JPanel createSummaryCard() {
         StudentProfile student = profile;
         CardPanel card = new CardPanel(12);
-        card.setLayout(new BorderLayout(16, 16));
+        card.setLayout(new GridBagLayout());
         card.setBorder(BorderFactory.createEmptyBorder(Theme.PROFILE_CARD_PADDING, Theme.PROFILE_CARD_PADDING,
                 Theme.PROFILE_CARD_PADDING, Theme.PROFILE_CARD_PADDING));
 
-        avatar = new AvatarLabel(student.getProfileImageUrl(), initials(student.getFullName()), 72);
+        avatar = new AvatarLabel(student.getProfileImageUrl(), initials(student.getFullName()), 112);
         avatarHolder = new JPanel(new GridBagLayout());
         avatarHolder.setOpaque(false);
-        avatarHolder.setPreferredSize(new Dimension(72, 72));
-        avatarHolder.setMinimumSize(new Dimension(72, 72));
-        avatarHolder.setMaximumSize(new Dimension(72, 72));
+        avatarHolder.setPreferredSize(new Dimension(132, 132));
+        avatarHolder.setMinimumSize(new Dimension(132, 132));
+        avatarHolder.setMaximumSize(new Dimension(132, 132));
+        avatarHolder.setAlignmentX(Component.CENTER_ALIGNMENT);
         GridBagConstraints avatarConstraints = new GridBagConstraints();
         avatarConstraints.gridx = 0;
         avatarConstraints.gridy = 0;
@@ -203,7 +210,7 @@ public final class StudentProfileView extends JPanel {
             }
         };
         photoButton.setToolTipText("Change profile photo");
-        photoButton.setPreferredSize(new Dimension(26, 26));
+        photoButton.setPreferredSize(new Dimension(34, 34));
         photoButton.setBorder(BorderFactory.createEmptyBorder());
         photoButton.setContentAreaFilled(false);
         photoButton.setFocusPainted(false);
@@ -219,17 +226,18 @@ public final class StudentProfileView extends JPanel {
             menu.show(photoButton, 0, photoButton.getHeight());
         });
         avatarConstraints.anchor = GridBagConstraints.SOUTHEAST;
-        avatarConstraints.insets = new Insets(0, 0, 0, 0);
+        avatarConstraints.insets = new Insets(0, 0, 6, 4);
         avatarHolder.add(photoButton, avatarConstraints);
 
         JLabel name = new JLabel(student.getFullName());
         name.setFont(Theme.PROFILE_STUDENT_NAME);
         name.setForeground(Theme.TEXT_MAIN);
-        JPanel idRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+        name.setHorizontalAlignment(SwingConstants.CENTER);
+        JPanel idRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 4, 0));
         idRow.setOpaque(false);
         JLabel id = new JLabel(student.getRegNo());
         id.setFont(Theme.FONT_BODY_BOLD);
-        id.setForeground(Theme.TEXT_MUTED);
+        id.setForeground(Theme.PRIMARY);
         JButton copy = iconButton(ProfileIcon.Shape.COPY, "Copy student ID");
         copy.addActionListener(e -> {
             Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(student.getRegNo()), null);
@@ -237,36 +245,19 @@ public final class StudentProfileView extends JPanel {
         });
         idRow.add(id);
         idRow.add(copy);
-        idRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+        idRow.setPreferredSize(new Dimension(120, idRow.getPreferredSize().height));
         JLabel program = new JLabel(student.getDegreeProgram());
         program.setFont(Theme.FONT_BODY);
         program.setForeground(Theme.TEXT_MUTED);
-        program.setAlignmentX(Component.LEFT_ALIGNMENT);
+        program.setHorizontalAlignment(SwingConstants.CENTER);
         StudentStatus status = student.getStatus() == null ? StudentStatus.ACTIVE : student.getStatus();
         JLabel active = new JLabel(status.name().charAt(0) + status.name().substring(1).toLowerCase()
                 + (status == StudentStatus.ACTIVE ? " Student" : ""));
         active.setOpaque(true);
         active.setBackground(status == StudentStatus.ACTIVE ? Theme.ACCENT_GREEN_BG : Theme.ACCENT_GRAY_BG);
         active.setForeground(status == StudentStatus.ACTIVE ? Theme.PROFILE_SUCCESS : Theme.TEXT_MUTED);
-        active.setFont(Theme.FONT_TINY);
+        active.setFont(Theme.FONT_SMALL.deriveFont(Font.BOLD));
         active.setBorder(BorderFactory.createEmptyBorder(4, 10, 4, 10));
-
-        JPanel identity = new JPanel();
-        identity.setOpaque(false);
-        identity.setLayout(new BoxLayout(identity, BoxLayout.Y_AXIS));
-        name.setAlignmentX(Component.LEFT_ALIGNMENT);
-        identity.add(name);
-        identity.add(Box.createVerticalStrut(4));
-        identity.add(idRow);
-        identity.add(Box.createVerticalStrut(2));
-        identity.add(program);
-        identity.add(Box.createVerticalStrut(8));
-        active.setAlignmentX(Component.LEFT_ALIGNMENT);
-        identity.add(active);
-        JPanel identityHeader = new JPanel(new BorderLayout(16, 0));
-        identityHeader.setOpaque(false);
-        identityHeader.add(avatarHolder, BorderLayout.WEST);
-        identityHeader.add(identity, BorderLayout.CENTER);
 
         JPanel summaryRows = new JPanel(new GridBagLayout());
         summaryRows.setOpaque(false);
@@ -293,19 +284,34 @@ public final class StudentProfileView extends JPanel {
         completenessPanel.add(completeness, BorderLayout.NORTH);
         completenessPanel.add(completenessBar, BorderLayout.SOUTH);
 
-        card.add(identityHeader, BorderLayout.NORTH);
-        JPanel summaryBody = new JPanel();
-        summaryBody.setOpaque(false);
-        summaryBody.setLayout(new BoxLayout(summaryBody, BoxLayout.Y_AXIS));
-        summaryBody.add(createDivider());
-        summaryBody.add(Box.createVerticalStrut(8));
-        summaryRows.setAlignmentX(Component.LEFT_ALIGNMENT);
-        summaryBody.add(summaryRows);
-        completenessPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        summaryBody.add(completenessPanel);
-        card.add(summaryBody, BorderLayout.CENTER);
+        int row = 0;
+        addSummaryContent(card, avatarHolder, row++, GridBagConstraints.CENTER, 0, 0);
+        addSummaryContent(card, name, row++, GridBagConstraints.CENTER, 6, 0);
+        addSummaryContent(card, idRow, row++, GridBagConstraints.CENTER, 4, 0);
+        addSummaryContent(card, program, row++, GridBagConstraints.CENTER, 4, 0);
+        addSummaryContent(card, active, row++, GridBagConstraints.CENTER, 8, 0);
+        addSummaryContent(card, createDivider(), row++, GridBagConstraints.CENTER, 12, 0);
+        addSummaryContent(card, summaryRows, row++, GridBagConstraints.WEST, 0, 0);
+        addSummaryContent(card, completenessPanel, row++, GridBagConstraints.WEST, 12, 0);
+        GridBagConstraints spacer = new GridBagConstraints();
+        spacer.gridx = 0;
+        spacer.gridy = row;
+        spacer.weighty = 1;
+        card.add(Box.createGlue(), spacer);
         updateCompleteness(student);
         return card;
+    }
+
+    private void addSummaryContent(CardPanel card, JComponent component, int row, int anchor,
+                                   int topInset, int bottomInset) {
+        GridBagConstraints c = new GridBagConstraints();
+        c.gridx = 0;
+        c.gridy = row;
+        c.weightx = 1;
+        c.fill = GridBagConstraints.HORIZONTAL;
+        c.anchor = anchor;
+        c.insets = new Insets(topInset, 0, bottomInset, 0);
+        card.add(component, c);
     }
 
     private void addSummaryRow(JPanel rows, JComponent component, int row, boolean divider) {

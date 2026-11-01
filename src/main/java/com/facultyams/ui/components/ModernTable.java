@@ -13,10 +13,11 @@ public class ModernTable extends JTable {
     }
 
     private void initStyle() {
-        setRowHeight(44);
+        setRowHeight(40);
         setShowGrid(false);
-        setIntercellSpacing(new Dimension(0, 0));
-        setSelectionBackground(Theme.PRIMARY_LIGHT);
+        setShowHorizontalLines(true);
+        setGridColor(new Color(241, 245, 249));
+        setSelectionBackground(new Color(239, 246, 255));
         setSelectionForeground(Theme.TEXT_MAIN);
         setFont(Theme.FONT_BODY);
         setForeground(Theme.TEXT_MAIN);
@@ -25,10 +26,10 @@ public class ModernTable extends JTable {
 
         // Header style
         JTableHeader header = getTableHeader();
-        header.setPreferredSize(new Dimension(0, 40));
-        header.setFont(Theme.FONT_SMALL);
+        header.setPreferredSize(new Dimension(0, 36));
+        header.setFont(new Font("Segoe UI", Font.BOLD, 12));
         header.setForeground(Theme.TEXT_MUTED);
-        header.setBackground(Color.WHITE);
+        header.setBackground(new Color(248, 250, 252));
         header.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, Theme.CARD_BORDER));
 
         ((DefaultTableCellRenderer) header.getDefaultRenderer()).setHorizontalAlignment(JLabel.LEFT);
@@ -39,11 +40,9 @@ public class ModernTable extends JTable {
             public Component getTableCellRendererComponent(JTable table, Object value,
                                                            boolean isSelected, boolean hasFocus, int row, int column) {
                 Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-                setBorder(BorderFactory.createCompoundBorder(
-                        BorderFactory.createMatteBorder(0, 0, 1, 0, Theme.CARD_BORDER),
-                        BorderFactory.createEmptyBorder(0, 12, 0, 12)));
+                setBorder(BorderFactory.createEmptyBorder(0, 12, 0, 12));
                 if (!isSelected) {
-                    setBackground(Color.WHITE);
+                    setBackground(row % 2 == 0 ? Color.WHITE : new Color(250, 252, 255));
                 }
                 return c;
             }

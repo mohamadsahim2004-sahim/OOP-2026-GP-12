@@ -57,7 +57,7 @@ public class TopBarPanel extends JPanel {
 
         // Left: Page Title
         titleLabel = new JLabel(initialTitle);
-        titleLabel.setFont(Theme.FONT_TITLE);
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 22));
         titleLabel.setForeground(COLOR_TEXT_PRIMARY);
         add(titleLabel, BorderLayout.WEST);
 
@@ -129,12 +129,14 @@ public class TopBarPanel extends JPanel {
                 Theme.setAntiAliasing(g2);
                 g2.setColor(COLOR_BG_FIELD);
                 g2.fillRoundRect(0, 0, getWidth(), getHeight(), 18, 18);
+                g2.setColor(COLOR_BORDER);
+                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 18, 18);
                 g2.dispose();
                 super.paintComponent(g);
             }
         };
         pill.setOpaque(false);
-        pill.setPreferredSize(new Dimension(280, 36));
+        pill.setPreferredSize(new Dimension(300, 36));
         pill.setBorder(BorderFactory.createEmptyBorder(0, 10, 0, 10));
 
         JTextField tf = new JTextField() {
@@ -152,7 +154,7 @@ public class TopBarPanel extends JPanel {
             }
         };
         searchField = tf;
-        tf.setFont(Theme.FONT_BODY);
+        tf.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         tf.setForeground(COLOR_TEXT_MUTED);
         tf.setBorder(BorderFactory.createEmptyBorder());
         tf.setOpaque(false);
@@ -223,11 +225,11 @@ public class TopBarPanel extends JPanel {
         textP.setLayout(new BoxLayout(textP, BoxLayout.Y_AXIS));
 
         profileName = new JLabel(s.getFullName());
-        profileName.setFont(Theme.FONT_BODY_BOLD);
+        profileName.setFont(new Font("Segoe UI", Font.BOLD, 13));
         profileName.setForeground(COLOR_TEXT_PRIMARY);
 
         profileDegree = new JLabel(s.getRegNo());
-        profileDegree.setFont(Theme.FONT_TINY);
+        profileDegree.setFont(new Font("Segoe UI", Font.PLAIN, 11));
         profileDegree.setForeground(COLOR_TEXT_SECONDARY);
 
         textP.add(profileName);

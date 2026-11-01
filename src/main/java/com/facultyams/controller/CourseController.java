@@ -3,7 +3,6 @@ package com.facultyams.controller;
 import java.util.List;
 import javax.swing.JComponent;
 import javax.swing.SwingWorker;
-import java.util.logging.Logger;
 
 import com.facultyams.model.Assignment;
 import com.facultyams.model.CourseSummary;
@@ -17,7 +16,6 @@ import com.facultyams.ui.views.CoursePageView;
  * Controller orchestrating course navigation, async data loading, and view state transitions.
  */
 public class CourseController {
-    private static final Logger LOGGER = Logger.getLogger(CourseController.class.getName());
     private final StudentCourseService courseService;
     private final SubmissionService submissionService;
     private final Navigator navigator;
@@ -83,44 +81,18 @@ public class CourseController {
     }
 
     public void openCourse(CourseSummary course) {
-        if (pageView == null) return;
-        if (course == null) {
-            currentCourse = null;
-            pageView.showUnavailable();
-            navigator.pushView("CoursePage");
-            return;
-        }
         this.currentCourse = course;
-        pageView.loadCourse(course);
+        if (pageView != null) {
+            pageView.loadCourse(course);
+        }
         navigator.pushView("CoursePage");
     }
 
     public boolean openCourseByCode(String courseCode) {
-        if (pageView == null) return false;
-        if (courseCode == null || courseCode.isBlank()) {
-            currentCourse = null;
-            pageView.showUnavailable();
-            navigator.pushView("CoursePage");
-            return false;
-        }
-        CourseSummary course;
-        try {
-            course = courseService.findCourses(studentId).stream()
-                    .filter(item -> item != null && item.code() != null
-                            && item.code().equalsIgnoreCase(courseCode))
-                    .findFirst().orElse(null);
-        } catch (RuntimeException ex) {
-            currentCourse = null;
-            pageView.showLoadFailure(ex);
-            navigator.pushView("CoursePage");
-            return false;
-        }
-        if (course == null) {
-            currentCourse = null;
-            pageView.showUnavailable();
-            navigator.pushView("CoursePage");
-            return false;
-        }
+        CourseSummary course = courseService.findCourses(studentId).stream()
+                .filter(item -> item.code().equalsIgnoreCase(courseCode))
+                .findFirst().orElse(null);
+        if (course == null) return false;
         openCourse(course);
         return true;
     }

@@ -304,17 +304,12 @@ public class StudentResultsView extends JPanel {
             label.setFont(Theme.FONT_SMALL.deriveFont(Font.BOLD));
             label.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
             if (grade) {
-                boolean ungraded = !Character.isLetter(text.isEmpty() ? '-' : text.charAt(0));
-                Color fg = ungraded ? Theme.ACCENT_GRAY
+                Color fg = !Character.isLetter(text.isEmpty() ? '-' : text.charAt(0)) ? Theme.ACCENT_GRAY
                         : text.startsWith("A") ? Theme.ACCENT_GREEN
                         : text.startsWith("B") ? Theme.PRIMARY
                         : text.startsWith("C") ? Theme.ACCENT_AMBER : Theme.ACCENT_ROSE;
-                Color bg = ungraded ? Theme.ACCENT_GRAY_BG
-                        : text.startsWith("A") ? Theme.ACCENT_GREEN_BG
-                        : text.startsWith("B") ? Theme.PRIMARY_LIGHT
-                        : text.startsWith("C") ? Theme.ACCENT_AMBER_BG : Theme.ACCENT_ROSE_BG;
                 label.setForeground(fg);
-                label.setBackground(selected ? Theme.PRIMARY_LIGHT : bg);
+                label.setBackground(selected ? Theme.PRIMARY_LIGHT : new Color(fg.getRed(), fg.getGreen(), fg.getBlue(), 24));
             } else {
                 Color fg = switch (text) {
                     case "Pass" -> Theme.ACCENT_GREEN;
@@ -323,15 +318,8 @@ public class StudentResultsView extends JPanel {
                     case "Absent" -> Theme.ACCENT_AMBER;
                     default -> Theme.ACCENT_GRAY;
                 };
-                Color bg = switch (text) {
-                    case "Pass" -> Theme.ACCENT_GREEN_BG;
-                    case "Fail" -> Theme.ACCENT_ROSE_BG;
-                    case "Provisional" -> Theme.PRIMARY_LIGHT;
-                    case "Absent" -> Theme.ACCENT_AMBER_BG;
-                    default -> Theme.ACCENT_GRAY_BG;
-                };
                 label.setForeground(fg);
-                label.setBackground(selected ? Theme.PRIMARY_LIGHT : bg);
+                label.setBackground(selected ? Theme.PRIMARY_LIGHT : new Color(fg.getRed(), fg.getGreen(), fg.getBlue(), 24));
             }
             return label;
         }
@@ -344,9 +332,9 @@ public class StudentResultsView extends JPanel {
                                                                 boolean focus, int row, int column) {
             super.getTableCellRendererComponent(table, value, false, false, row, column);
             setHorizontalAlignment(ALIGNMENT[column]);
-            setFont(Theme.FONT_TINY.deriveFont(Font.PLAIN));
+            setFont(Theme.FONT_SMALL.deriveFont(Font.BOLD));
             setForeground(Theme.TEXT_MUTED);
-            setBackground(Color.WHITE);
+            setBackground(new Color(248, 250, 252));
             setBorder(BorderFactory.createCompoundBorder(
                     BorderFactory.createMatteBorder(0, 0, 1, 0, Theme.TIMETABLE_CARD_BORDER),
                     BorderFactory.createEmptyBorder(0, 16, 0, 16)));
@@ -378,7 +366,7 @@ public class StudentResultsView extends JPanel {
         name.setFont(Theme.FONT_SMALL);
         name.setForeground(Theme.TEXT_MUTED);
         JLabel metric = new JLabel(value);
-        metric.setFont(Theme.FONT_METRIC);
+        metric.setFont(new Font("Segoe UI", Font.BOLD, 22));
         metric.setForeground(Theme.TEXT_MAIN);
         JLabel sub = new JLabel(hint);
         sub.setFont(Theme.FONT_SMALL);
@@ -642,17 +630,18 @@ public class StudentResultsView extends JPanel {
         table.setFont(Theme.FONT_BODY);
         table.setForeground(Theme.TEXT_MAIN);
         table.setBackground(Color.WHITE);
-        table.setRowHeight(44);
+        table.setRowHeight(48);
         table.setShowGrid(false);
-        table.setIntercellSpacing(new Dimension(0, 0));
+        table.setShowHorizontalLines(true);
+        table.setGridColor(new Color(238, 242, 247));
         table.setSelectionBackground(Theme.PRIMARY_LIGHT);
         table.setSelectionForeground(Theme.TEXT_MAIN);
         table.setFillsViewportHeight(true);
         table.setAutoResizeMode(JTable.AUTO_RESIZE_SUBSEQUENT_COLUMNS);
         table.getTableHeader().setPreferredSize(new Dimension(0, 40));
-        table.getTableHeader().setFont(Theme.FONT_TINY.deriveFont(Font.PLAIN));
+        table.getTableHeader().setFont(Theme.FONT_SMALL.deriveFont(Font.BOLD));
         table.getTableHeader().setForeground(Theme.TEXT_MUTED);
-        table.getTableHeader().setBackground(Color.WHITE);
+        table.getTableHeader().setBackground(new Color(248, 250, 252));
         table.getTableHeader().setReorderingAllowed(false);
         int[] widths = {110, 230, 70, 105, 120, 75, 100, 100};
         for (int i = 0; i < widths.length; i++) {
@@ -695,7 +684,7 @@ public class StudentResultsView extends JPanel {
     private JComponent createCourseDetail(CourseResult course) {
         JPanel detail = new JPanel(new BorderLayout(12, 0));
         detail.setOpaque(true);
-        detail.setBackground(Theme.ENROLLMENT_ROW_HOVER);
+        detail.setBackground(new Color(248, 250, 252));
         detail.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(1, 0, 0, 0, Theme.TIMETABLE_CARD_BORDER),
                 BorderFactory.createEmptyBorder(12, 18, 12, 18)));
@@ -950,7 +939,7 @@ public class StudentResultsView extends JPanel {
             setFont(Theme.FONT_BODY);
             setForeground(Theme.TEXT_MAIN);
             setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createMatteBorder(0, 0, 1, 0, Theme.CARD_BORDER),
+                    BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(238, 242, 247)),
                     BorderFactory.createEmptyBorder(0, 16, 0, 16)));
             setBackground(selected ? Theme.PRIMARY_LIGHT : Color.WHITE);
             return this;
@@ -993,13 +982,13 @@ public class StudentResultsView extends JPanel {
             Graphics2D g = (Graphics2D) graphics.create();
             Theme.setAntiAliasing(g);
             int left = 48, right = getWidth() - 20, top = 20, bottom = getHeight() - 40;
-            g.setColor(Theme.CARD_BORDER);
+            g.setColor(new Color(226, 232, 240));
             for (int i = 0; i <= 4; i++) {
                 int y = bottom - (bottom - top) * i / 4;
                 g.drawLine(left, y, right, y);
                 g.setColor(Theme.TEXT_MUTED);
                 g.drawString(String.format(Locale.ROOT, "%.1f", (double) i), 8, y + 4);
-                g.setColor(Theme.CARD_BORDER);
+                g.setColor(new Color(226, 232, 240));
             }
             g.setColor(Theme.PRIMARY);
             g.setStroke(new BasicStroke(2.2f));

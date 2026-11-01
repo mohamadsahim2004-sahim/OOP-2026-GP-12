@@ -20,10 +20,10 @@ public class EnrollmentDAO {
 
     private static final String OFFERING =
             "SELECT c.course_id, c.course_code, c.course_name, c.credits, c.academic_level, c.semester, "
-                    + "c.course_type, d.department_name, lu.full_name AS lecturer, lu.email AS lecturer_email, "
+                    + "c.course_type, d.department_name, lu.full_name AS lecturer, "
                     + "(e.status = 'ENROLLED') AS enrolled, "
                     + "(SELECT GROUP_CONCAT(CONCAT(UPPER(LEFT(t.day_of_week, 1)), LOWER(SUBSTRING(t.day_of_week, 2, 2)), ' ', "
-                    + "TIME_FORMAT(t.start_time, '%H:%i'), '-', TIME_FORMAT(t.end_time, '%H:%i'), ' · ', t.venue) "
+                    + "TIME_FORMAT(t.start_time, '%H:%i'), '-', TIME_FORMAT(t.end_time, '%H:%i')) "
                     + "ORDER BY FIELD(t.day_of_week,'MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY'), t.start_time "
                     + "SEPARATOR ', ') FROM timetables t WHERE t.course_id = c.course_id) AS schedule "
                     + "FROM courses c JOIN users me ON me.user_id = ? AND me.department_id = c.department_id "
@@ -41,7 +41,6 @@ public class EnrollmentDAO {
             o.setSemester("Level " + rs.getInt("academic_level") + " Semester " + rs.getInt("semester"));
             String lecturer = rs.getString("lecturer");
             o.setLecturerName(lecturer == null ? "Not assigned" : lecturer);
-            o.setLecturerEmail(rs.getString("lecturer_email"));
             o.setCourseType(typeLabel(rs.getString("course_type")));
             o.setEnrolled(rs.getBoolean("enrolled"));
             String schedule = rs.getString("schedule");

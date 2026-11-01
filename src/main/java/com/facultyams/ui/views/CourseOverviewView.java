@@ -39,7 +39,8 @@ public class CourseOverviewView extends JPanel {
         setLayout(new BorderLayout());
         setOpaque(true);
         setBackground(Theme.COURSE_PAGE_BG);
-        setBorder(BorderFactory.createEmptyBorder());
+        setBorder(BorderFactory.createEmptyBorder(Theme.PAGE_PADDING, Theme.PAGE_PADDING,
+                Theme.PAGE_PADDING, Theme.PAGE_PADDING));
         buildHeader();
         buildCourseList();
         toolbar.addFilterListener(this::applyFilters);
@@ -82,12 +83,12 @@ public class CourseOverviewView extends JPanel {
         addHeaderItem(header, titleRow, 0);
         addHeaderGap(header, 1, Theme.SECTION_GAP);
 
-        Ui.Card toolbarCard = new Ui.Card(Theme.RADIUS_CARD, Color.WHITE, Theme.CARD_BORDER);
+        Ui.Card toolbarCard = new Ui.Card(16, Color.WHITE, Theme.CARD_BORDER);
         toolbarCard.setLayout(new BorderLayout());
         toolbarCard.add(toolbar, BorderLayout.CENTER);
         addHeaderItem(header, toolbarCard, 2);
         addHeaderGap(header, 3, Theme.CARD_GAP / 2);
-        resultCount.setFont(Theme.FONT_BODY);
+        resultCount.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         resultCount.setForeground(Theme.COURSE_TEXT_MUTED);
         resultCount.setAlignmentX(Component.LEFT_ALIGNMENT);
         resultCount.setHorizontalAlignment(SwingConstants.LEFT);

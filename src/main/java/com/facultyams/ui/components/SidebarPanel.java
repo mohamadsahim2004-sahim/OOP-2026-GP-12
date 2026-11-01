@@ -18,17 +18,17 @@ public class SidebarPanel extends JPanel {
     private final List<NavItem> navItems = new ArrayList<>();
     private String activeView = "Dashboard";
 
-    private static final Color COLOR_PRIMARY = Theme.SIDEBAR_ACTIVE_BG;
-    private static final Color COLOR_PRIMARY_LIGHT = Theme.SIDEBAR_ACTIVE_BG;
-    private static final Color COLOR_TEXT_PRIMARY = Theme.SIDEBAR_BRAND;
-    private static final Color COLOR_TEXT_MUTED = Theme.SIDEBAR_TEXT;
-    private static final Color COLOR_BORDER = Theme.SIDEBAR_BORDER;
+    private static final Color COLOR_PRIMARY = Theme.PRIMARY;
+    private static final Color COLOR_PRIMARY_LIGHT = Theme.PRIMARY_LIGHT;
+    private static final Color COLOR_TEXT_PRIMARY = Theme.TEXT_MAIN;
+    private static final Color COLOR_TEXT_MUTED = Theme.TEXT_MUTED;
+    private static final Color COLOR_BORDER = Theme.CONTROL_BORDER;
     private static final Color COLOR_HOVER_BG = Theme.SIDEBAR_HOVER_BG;
 
     public SidebarPanel(Consumer<String> navigationCallback) {
         this.navigationCallback = navigationCallback;
         setPreferredSize(new Dimension(220, 0));
-        setBackground(Theme.SIDEBAR_BG);
+        setBackground(Color.WHITE);
         setLayout(new BorderLayout());
         setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, COLOR_BORDER));
 
@@ -46,19 +46,15 @@ public class SidebarPanel extends JPanel {
         JPanel header = new JPanel();
         header.setOpaque(false);
         header.setLayout(new BoxLayout(header, BoxLayout.Y_AXIS));
-        header.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 1, 0, COLOR_BORDER),
-                BorderFactory.createEmptyBorder(20, 20, 18, 20)));
+        header.setBorder(BorderFactory.createEmptyBorder(22, 24, 16, 24));
 
-        JLabel titleLbl = new JLabel("SRMS", IconHelper.getIcon("graduation-cap", 22, COLOR_TEXT_PRIMARY), JLabel.LEFT);
-        titleLbl.setIconTextGap(10);
-        titleLbl.setFont(Theme.FONT_TITLE.deriveFont(18f));
-        titleLbl.setForeground(COLOR_TEXT_PRIMARY);
+        JLabel titleLbl = new JLabel("SRMS");
+        titleLbl.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        titleLbl.setForeground(COLOR_PRIMARY);
 
-        JLabel subLbl = new JLabel("Undergraduate portal");
-        subLbl.setFont(Theme.FONT_SMALL);
+        JLabel subLbl = new JLabel("Undergraduate Portal");
+        subLbl.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         subLbl.setForeground(COLOR_TEXT_MUTED);
-        subLbl.setBorder(BorderFactory.createEmptyBorder(4, 32, 0, 0));
 
         header.add(titleLbl);
         header.add(Box.createVerticalStrut(2));
@@ -96,20 +92,17 @@ public class SidebarPanel extends JPanel {
     private JPanel createLogoutSection() {
         JPanel bottom = new JPanel(new BorderLayout());
         bottom.setOpaque(false);
-        bottom.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(1, 0, 0, 0, COLOR_BORDER),
-                BorderFactory.createEmptyBorder(16, 20, 20, 20)));
+        bottom.setBorder(BorderFactory.createEmptyBorder(16, 24, 24, 24));
 
-        JLabel logoutLbl = new JLabel("Logout", IconHelper.getIcon("logout", 17, COLOR_TEXT_MUTED), JLabel.LEFT);
-        logoutLbl.setIconTextGap(12);
-        logoutLbl.setFont(Theme.FONT_BODY);
+        JLabel logoutLbl = new JLabel("Logout");
+        logoutLbl.setFont(new Font("Segoe UI", Font.BOLD, 13));
         logoutLbl.setForeground(COLOR_TEXT_MUTED);
         logoutLbl.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
         logoutLbl.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent e) {
-                logoutLbl.setForeground(COLOR_TEXT_PRIMARY);
+                logoutLbl.setForeground(new Color(239, 68, 68));
             }
             @Override
             public void mouseExited(MouseEvent e) {
@@ -164,7 +157,7 @@ public class SidebarPanel extends JPanel {
 
             iconLbl = new JLabel();
             textLbl = new JLabel(title);
-            textLbl.setFont(Theme.FONT_BODY);
+            textLbl.setFont(new Font("Segoe UI", Font.BOLD, 13));
 
             add(iconLbl, BorderLayout.WEST);
             add(textLbl, BorderLayout.CENTER);
@@ -213,9 +206,9 @@ public class SidebarPanel extends JPanel {
         private void updateVisuals() {
             Color color;
             if (isActive) {
-                color = Theme.SIDEBAR_ACTIVE_TEXT;
+                color = COLOR_PRIMARY;
             } else if (isHovered) {
-                color = Color.WHITE;
+                color = COLOR_TEXT_PRIMARY;
             } else {
                 color = COLOR_TEXT_MUTED;
             }
@@ -232,11 +225,16 @@ public class SidebarPanel extends JPanel {
             int h = getHeight();
 
             if (isActive) {
+                // Background tint
                 g2.setColor(COLOR_PRIMARY_LIGHT);
-                g2.fillRoundRect(12, 2, w - 24, h - 4, 6, 6);
+                g2.fillRoundRect(8, 2, w - 16, h - 4, 8, 8);
+
+                // 3px blue vertical accent bar on left
+                g2.setColor(COLOR_PRIMARY);
+                g2.fillRoundRect(2, 6, 3, h - 12, 3, 3);
             } else if (isHovered) {
                 g2.setColor(COLOR_HOVER_BG);
-                g2.fillRoundRect(12, 2, w - 24, h - 4, 6, 6);
+                g2.fillRoundRect(8, 2, w - 16, h - 4, 8, 8);
             }
 
             g2.dispose();

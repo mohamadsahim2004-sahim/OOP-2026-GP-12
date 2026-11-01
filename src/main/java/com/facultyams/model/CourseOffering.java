@@ -8,7 +8,6 @@ public class CourseOffering {
     private String department;
     private String semester;
     private String lecturerName;
-    private String lecturerEmail;
     private String courseType; // "Core", "Elective"
     private boolean isEnrolled;
     private String scheduleTime;
@@ -75,14 +74,6 @@ public class CourseOffering {
 
     public void setLecturerName(String lecturerName) {
         this.lecturerName = lecturerName;
-    }
-
-    public String getLecturerEmail() {
-        return lecturerEmail;
-    }
-
-    public void setLecturerEmail(String lecturerEmail) {
-        this.lecturerEmail = lecturerEmail;
     }
 
     public String getCourseType() {

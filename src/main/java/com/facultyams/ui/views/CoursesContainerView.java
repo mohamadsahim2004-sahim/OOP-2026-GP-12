@@ -51,8 +51,7 @@ public class CoursesContainerView extends JPanel {
                 submissionService,
                 studentId,
                 courseController::goBack,
-                courseController::openAssignment,
-                courseController::openManageEnrollment
+                courseController::openAssignment
         );
 
         // Screen C: Assignment View
@@ -91,7 +90,6 @@ public class CoursesContainerView extends JPanel {
 
     public void setOnOpenMaterials(Runnable action) {
         overviewView.setOnOpenMaterials(action);
-        pageView.setOnOpenMaterials(action);
     }
 
     public void resetToOverview() {

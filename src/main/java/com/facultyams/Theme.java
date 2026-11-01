@@ -1,73 +1,82 @@
 package com.facultyams;
 
-import java.awt.Color;
-import java.awt.Font;
-import java.awt.Graphics2D;
+import java.awt.*;
 import javax.swing.border.Border;
+import javax.swing.BorderFactory;
 
-/** Compatibility names for older student views; the student UI theme is defined in one place. */
+/**
+ * Clean, minimal theme tokens for the SRMS Moodle learning platform.
+ * Palette: primary #2563EB, 1px #E5E7EB borders, 12px radius, white cards.
+ */
 public final class Theme {
     private Theme() {}
 
-    public static final int PAGE_PADDING = com.facultyams.ui.theme.Theme.PAGE_PADDING;
-    public static final int SECTION_GAP = com.facultyams.ui.theme.Theme.CARD_GAP;
-    public static final int CARD_GAP = com.facultyams.ui.theme.Theme.CARD_GAP;
-    public static final int CARD_PADDING = com.facultyams.ui.theme.Theme.CARD_PADDING;
-    public static final int CONTROL_GAP = com.facultyams.ui.theme.Theme.SPACE_3;
-    public static final int SPACE_1 = com.facultyams.ui.theme.Theme.SPACE_1;
-    public static final int SPACE_2 = com.facultyams.ui.theme.Theme.SPACE_2;
-    public static final int SPACE_3 = com.facultyams.ui.theme.Theme.SPACE_3;
-    public static final int CONTROL_HEIGHT = com.facultyams.ui.theme.Theme.CONTROL_HEIGHT;
-    public static final int RADIUS_CARD = com.facultyams.ui.theme.Theme.CARD_RADIUS;
-    public static final int RADIUS_CONTROL = com.facultyams.ui.theme.Theme.BUTTON_RADIUS;
+    public static final int PAGE_PADDING = 24;
+    public static final int SECTION_GAP = 16;
+    public static final int CARD_GAP = 16;
+    public static final int CARD_PADDING = 20;
+    public static final int CONTROL_GAP = 12;
+    public static final int CONTROL_HEIGHT = 40;
+    public static final int RADIUS_CARD = 16;
+    public static final int RADIUS_CONTROL = 8;
     public static final int DEADLINE_ROW_HEIGHT = 64;
-    public static final int DEADLINE_CARD_PADDING = com.facultyams.ui.theme.Theme.CARD_PADDING;
+    public static final int DEADLINE_CARD_PADDING = 24;
 
-    public static final Color COURSE_PAGE_BG = com.facultyams.ui.theme.Theme.BG_MAIN;
-    public static final Color COURSE_TEXT_MAIN = com.facultyams.ui.theme.Theme.TEXT_MAIN;
-    public static final Color COURSE_TEXT_MUTED = com.facultyams.ui.theme.Theme.TEXT_MUTED;
-    public static final Color PRIMARY = com.facultyams.ui.theme.Theme.PRIMARY;
-    public static final Color PRIMARY_DARK = com.facultyams.ui.theme.Theme.PRIMARY_HOVER;
-    public static final Color PRIMARY_LIGHT = com.facultyams.ui.theme.Theme.PRIMARY_LIGHT;
-    public static final Color PRIMARY_BORDER = com.facultyams.ui.theme.Theme.PRIMARY_BORDER;
-    public static final Color BG_MAIN = com.facultyams.ui.theme.Theme.BG_MAIN;
-    public static final Color CARD_BG = com.facultyams.ui.theme.Theme.CARD_BG;
-    public static final Color CARD_BORDER = com.facultyams.ui.theme.Theme.CARD_BORDER;
-    public static final Color DIVIDER = com.facultyams.ui.theme.Theme.CARD_BORDER_SUBTLE;
-    public static final Color HOVER_BG = com.facultyams.ui.theme.Theme.ENROLLMENT_ROW_HOVER;
-    public static final Color ENROLLMENT_ROW_HOVER = com.facultyams.ui.theme.Theme.ENROLLMENT_ROW_HOVER;
-    public static final Color TOPBAR_FIELD_BG = com.facultyams.ui.theme.Theme.TOPBAR_FIELD_BG;
-    public static final Color ACCENT_GRAY_BG = com.facultyams.ui.theme.Theme.ACCENT_GRAY_BG;
-    public static final Color ACCENT_GREEN_BG = com.facultyams.ui.theme.Theme.ACCENT_GREEN_BG;
-    public static final Color TEXT_MAIN = com.facultyams.ui.theme.Theme.TEXT_MAIN;
-    public static final Color TEXT_MUTED = com.facultyams.ui.theme.Theme.TEXT_MUTED;
-    public static final Color TEXT_SUBTLE = com.facultyams.ui.theme.Theme.TEXT_SUBTLE;
-    public static final Color SUCCESS = com.facultyams.ui.theme.Theme.SUCCESS;
-    public static final Color SUCCESS_BG = com.facultyams.ui.theme.Theme.SUCCESS_BG;
-    public static final Color WARNING = com.facultyams.ui.theme.Theme.WARNING;
-    public static final Color WARNING_BG = com.facultyams.ui.theme.Theme.WARNING_BG;
-    public static final Color DANGER = com.facultyams.ui.theme.Theme.DANGER;
-    public static final Color DANGER_BG = com.facultyams.ui.theme.Theme.DANGER_BG;
-    public static final Color INFO = com.facultyams.ui.theme.Theme.INFO;
-    public static final Color INFO_BG = com.facultyams.ui.theme.Theme.INFO_BG;
-    public static final Color ANNOUNCEMENT_PURPLE = com.facultyams.ui.theme.Theme.PRIMARY;
-    public static final Color RESOURCE_TEAL = com.facultyams.ui.theme.Theme.PRIMARY;
-    public static final Color ASSIGNMENT_PINK = com.facultyams.ui.theme.Theme.PRIMARY;
-    public static final Font FONT_TITLE = com.facultyams.ui.theme.Theme.FONT_TITLE;
-    public static final Font FONT_SECTION = com.facultyams.ui.theme.Theme.FONT_SECTION;
-    public static final Font FONT_SUBTITLE = com.facultyams.ui.theme.Theme.FONT_SUBTITLE;
-    public static final Font FONT_BODY_BOLD = com.facultyams.ui.theme.Theme.FONT_BODY_BOLD;
-    public static final Font FONT_BODY = com.facultyams.ui.theme.Theme.FONT_BODY;
-    public static final Font COURSE_BODY = com.facultyams.ui.theme.Theme.ENROLLMENT_BODY;
-    public static final Font COURSE_BODY_BOLD = com.facultyams.ui.theme.Theme.ENROLLMENT_BODY_BOLD;
-    public static final Font FONT_SMALL = com.facultyams.ui.theme.Theme.FONT_SMALL;
-    public static final Font FONT_TINY = com.facultyams.ui.theme.Theme.FONT_TINY;
+    public static final Color COURSE_PAGE_BG = new Color(245, 247, 251);
+    public static final Color COURSE_TEXT_MAIN = new Color(17, 24, 39);
+    public static final Color COURSE_TEXT_MUTED = new Color(107, 114, 128);
+
+    // Primary Colors
+    public static final Color PRIMARY = new Color(37, 99, 235);        // #2563EB
+    public static final Color PRIMARY_DARK = new Color(29, 78, 216);   // #1D4ED8
+    public static final Color PRIMARY_LIGHT = new Color(239, 246, 255);// #EFF6FF Tint
+    public static final Color PRIMARY_BORDER = new Color(191, 219, 254);// #BFDBFE
+
+    // Neutral Surfaces & Borders
+    public static final Color BG_MAIN = new Color(248, 250, 252);     // #F8FAFC
+    public static final Color CARD_BG = Color.WHITE;
+    public static final Color CARD_BORDER = new Color(229, 231, 235);  // #E5E7EB
+    public static final Color DIVIDER = new Color(243, 244, 246);      // #F3F4F6
+    public static final Color HOVER_BG = new Color(249, 250, 251);     // #F9FAFB
+
+    // Typography Colors
+    public static final Color TEXT_MAIN = new Color(15, 23, 42);       // #0F172A
+    public static final Color TEXT_MUTED = new Color(100, 116, 139);   // #64748B
+    public static final Color TEXT_SUBTLE = new Color(148, 163, 184);  // #94A3B8
+
+    // Status Colors
+    public static final Color SUCCESS = new Color(22, 163, 74);        // #16A34A
+    public static final Color SUCCESS_BG = new Color(240, 253, 244);   // #F0FDF4
+    public static final Color WARNING = new Color(245, 158, 11);       // #F59E0B
+    public static final Color WARNING_BG = new Color(254, 243, 199);   // #FEF3C7
+    public static final Color DANGER = new Color(220, 38, 38);         // #DC2626
+    public static final Color DANGER_BG = new Color(254, 242, 242);    // #FEF2F2
+    public static final Color INFO = new Color(37, 99, 235);
+    public static final Color INFO_BG = new Color(239, 246, 255);
+
+    // Activity Colors
+    public static final Color ANNOUNCEMENT_PURPLE = new Color(147, 51, 234);
+    public static final Color RESOURCE_TEAL = new Color(13, 148, 136);
+    public static final Color ASSIGNMENT_PINK = new Color(219, 39, 119);
+
+    // Fonts
+    public static final Font FONT_TITLE = new Font("Segoe UI", Font.BOLD, 22);
+    public static final Font FONT_SECTION = new Font("Segoe UI", Font.BOLD, 18);
+    public static final Font FONT_SUBTITLE = new Font("Segoe UI", Font.BOLD, 15);
+    public static final Font FONT_BODY_BOLD = new Font("Segoe UI", Font.BOLD, 13);
+    public static final Font FONT_BODY = new Font("Segoe UI", Font.PLAIN, 13);
+    public static final Font COURSE_BODY = new Font("Segoe UI", Font.PLAIN, 14);
+    public static final Font COURSE_BODY_BOLD = new Font("Segoe UI", Font.BOLD, 14);
+    public static final Font FONT_SMALL = new Font("Segoe UI", Font.PLAIN, 12);
+    public static final Font FONT_TINY = new Font("Segoe UI", Font.BOLD, 11);
 
     public static void setAntiAliasing(Graphics2D g2) {
-        com.facultyams.ui.theme.Theme.setAntiAliasing(g2);
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+        g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
     }
 
     public static Border createPadding(int top, int left, int bottom, int right) {
-        return com.facultyams.ui.theme.Theme.createEmptyPadding(top, left, bottom, right);
+        return BorderFactory.createEmptyBorder(top, left, bottom, right);
     }
 }

@@ -191,7 +191,7 @@ public class AssignmentView extends JPanel {
     private JPanel createTableRow(String label, JComponent valueComp, boolean altBg) {
         JPanel row = new JPanel(new BorderLayout(16, 0));
         row.setOpaque(true);
-        row.setBackground(Color.WHITE);
+        row.setBackground(altBg ? new Color(249, 250, 251) : Color.WHITE);
         row.setPreferredSize(new Dimension(500, 44));
         row.setBorder(BorderFactory.createEmptyBorder(10, 14, 10, 14));
 
@@ -223,11 +223,12 @@ public class AssignmentView extends JPanel {
     private void styleDangerButton(JButton btn) {
         btn.setFont(Theme.FONT_BODY_BOLD);
         btn.setForeground(Theme.DANGER);
-        btn.setBackground(Color.WHITE);
+        btn.setBackground(Theme.DANGER_BG);
         btn.setFocusPainted(false);
-        btn.setBorder(BorderFactory.createEmptyBorder(8, 16, 8, 16));
-        btn.setBorderPainted(false);
-        btn.setContentAreaFilled(false);
+        btn.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(254, 202, 202), 1),
+                BorderFactory.createEmptyBorder(8, 16, 8, 16)
+        ));
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
     }
 

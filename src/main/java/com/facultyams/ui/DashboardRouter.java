@@ -6,7 +6,6 @@ import com.facultyams.ui.admin.AdminDashboardFrame;
 import com.facultyams.util.UIUtil;
 import com.facultyams.ui.technical.TechnicalOfficerDashboardFrame;
 import com.facultyams.model.Student;
-import com.facultyams.ui.theme.Theme;
 import javax.swing.JFrame;
 
 /**
@@ -19,8 +18,6 @@ import javax.swing.JFrame;
  * already calls DashboardRouter.logout(...).
  */
 public final class DashboardRouter {
-
-    private static Theme.StudentLookAndFeel studentLookAndFeel;
 
     private DashboardRouter() {
     }
@@ -40,10 +37,9 @@ public final class DashboardRouter {
                 case ADMIN -> new AdminDashboardFrame();
                 case LECTURER -> new LecturerDashboard(user);
                 case TECHNICAL_OFFICER -> new TechnicalOfficerDashboardFrame(user);                
-                case STUDENT -> openStudentDashboard((Student) user);
+                case STUDENT -> new UndergraduateDashboardFrame((Student) user);
             };
         } catch (IllegalStateException e) {
-            restoreStudentLookAndFeel();
             Session.end();
             UIUtil.showError(null, e.getMessage());
             new LoginFrame().setVisible(true);
@@ -58,25 +54,6 @@ public final class DashboardRouter {
         if (currentFrame != null) {
             currentFrame.dispose();
         }
-        restoreStudentLookAndFeel();
         new LoginFrame().setVisible(true);
-    }
-
-    private static JFrame openStudentDashboard(Student student) {
-        studentLookAndFeel = Theme.installStudentLookAndFeel();
-        try {
-            return new UndergraduateDashboardFrame(student);
-        } catch (RuntimeException e) {
-            restoreStudentLookAndFeel();
-            throw e;
-        }
-    }
-
-    private static void restoreStudentLookAndFeel() {
-        if (studentLookAndFeel != null) {
-            Theme.StudentLookAndFeel activeTheme = studentLookAndFeel;
-            studentLookAndFeel = null;
-            activeTheme.restore();
-        }
     }
 }
