@@ -36,5 +36,6 @@ public class TechnicalOfficerShell extends AppShell {
         addPage(PAGE_ATTENDANCE_REPORT, "Attendance Reports", "Attendance Reports", new AttendanceReportPanel());
         addPage(PAGE_MEDICAL_REPORT, "Medical Reports", "Medical Reports", new MedicalReportPanel());
         addPage(PAGE_NOTICES, "Notices", "Notices", new NoticesPanel());
+        addPage(PAGE_TIMETABLES, "Timetables", "Timetables", new TimetablesPanel());
     }
 }
