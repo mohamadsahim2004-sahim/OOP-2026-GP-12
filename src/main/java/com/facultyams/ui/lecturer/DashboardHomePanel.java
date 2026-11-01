@@ -105,6 +105,15 @@ public class DashboardHomePanel extends JPanel implements Refreshable {
 
         add(top, BorderLayout.NORTH);
         JTable courseTable = LecturerUi.styledTable(model);
+        // Course column
+        courseTable.getColumnModel().getColumn(1).setPreferredWidth(220);
+        courseTable.getColumnModel().getColumn(1).setMinWidth(220);
+
+// Level / Semester column
+        courseTable.getColumnModel().getColumn(3).setPreferredWidth(180);
+        courseTable.getColumnModel().getColumn(3).setMinWidth(180);
+        courseTable.getColumnModel().getColumn(3).setPreferredWidth(180);
+        courseTable.getColumnModel().getColumn(3).setMinWidth(180);
 
         courseTable.setRowHeight(38);
         courseTable.setFont(new Font("Arial", Font.PLAIN, 13));
