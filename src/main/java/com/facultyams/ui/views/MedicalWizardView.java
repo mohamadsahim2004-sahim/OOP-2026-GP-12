@@ -6,6 +6,9 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.*;
 
 import com.facultyams.Theme;
@@ -25,6 +28,7 @@ import com.facultyams.ui.components.Toast;
  * Step 3: Medical Details & Certificate Upload
  */
 public class MedicalWizardView extends JPanel {
+    private static final Logger LOGGER = Logger.getLogger(MedicalWizardView.class.getName());
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("EEE, d MMM yyyy", Locale.ENGLISH);
 
     private final StudentAttendanceService attendanceService;
@@ -50,6 +54,10 @@ public class MedicalWizardView extends JPanel {
     private final JLabel daysCountLbl = new JLabel("-");
     private final JLabel absentCountLbl = new JLabel("-");
     private SwingWorker<List<SessionAttendance>, Void> currentLoaderWorker;
+    private long rangeLoadGeneration;
+    private boolean dateSessionsLoading;
+    private boolean dateSessionsLoadFailed;
+    private boolean sessionSelectionInitialized;
 
     // Step 2 Data & Components
     private final List<SessionAttendance> loadedSessions = new ArrayList<>();
@@ -153,7 +161,14 @@ public class MedicalWizardView extends JPanel {
                         }
                     }
                     calendar.setAbsentDates(abs);
-                } catch (Exception ignored) {}
+                } catch (InterruptedException ex) {
+                    Thread.currentThread().interrupt();
+                    LOGGER.log(Level.WARNING, "Initial absent-date lookup was interrupted", ex);
+                } catch (ExecutionException ex) {
+                    Throwable cause = ex.getCause() == null ? ex : ex.getCause();
+                    LOGGER.log(Level.SEVERE, "Could not load absent dates for the medical calendar", cause);
+                    absentCountLbl.setText("Absent dates could not be loaded");
+                }
             }
         }.execute();
     }
@@ -239,8 +254,19 @@ public class MedicalWizardView extends JPanel {
         LocalDate start = calendar.getRangeStart();
         LocalDate end = calendar.getRangeEnd();
 
+        if (currentLoaderWorker != null && !currentLoaderWorker.isDone()) {
+            currentLoaderWorker.cancel(true);
+        }
+        long generation = ++rangeLoadGeneration;
+        loadedSessions.clear();
+        selectedSessionIds.clear();
+        sessionSelectionInitialized = false;
+        dateSessionsLoading = false;
+        dateSessionsLoadFailed = false;
+
         if (start == null || end == null) {
-            rangeSummaryLbl.setText("Please select a start and end date.");
+            rangeSummaryLbl.setText(start == null
+                    ? "Please select a start and end date." : "Select an end date on the calendar.");
             daysCountLbl.setText("-");
             absentCountLbl.setText("-");
             validateCurrentStep();
@@ -252,11 +278,9 @@ public class MedicalWizardView extends JPanel {
         daysCountLbl.setText(days + (days == 1 ? " day" : " days"));
 
         // Asynchronously load absent sessions
-        if (currentLoaderWorker != null && !currentLoaderWorker.isDone()) {
-            currentLoaderWorker.cancel(true);
-        }
-
         absentCountLbl.setText("Searching sessions...");
+        dateSessionsLoading = true;
+        validateCurrentStep();
         currentLoaderWorker = new SwingWorker<List<SessionAttendance>, Void>() {
             @Override
             protected List<SessionAttendance> doInBackground() {
@@ -265,7 +289,7 @@ public class MedicalWizardView extends JPanel {
 
             @Override
             protected void done() {
-                if (isCancelled()) return;
+                if (generation != rangeLoadGeneration || isCancelled()) return;
                 try {
                     List<SessionAttendance> list = get();
                     loadedSessions.clear();
@@ -273,10 +297,23 @@ public class MedicalWizardView extends JPanel {
 
                     long absentCount = list.stream().filter(s -> s.status() == SessionStatus.ABSENT).count();
                     absentCountLbl.setText(absentCount + " absent sessions");
-
+                    dateSessionsLoading = false;
+                    dateSessionsLoadFailed = false;
                     validateCurrentStep();
-                } catch (Exception ex) {
-                    absentCountLbl.setText("Error loading sessions");
+                } catch (InterruptedException ex) {
+                    Thread.currentThread().interrupt();
+                    dateSessionsLoading = false;
+                    dateSessionsLoadFailed = true;
+                    absentCountLbl.setText("Session lookup interrupted");
+                    LOGGER.log(Level.WARNING, "Medical session lookup interrupted", ex);
+                    validateCurrentStep();
+                } catch (ExecutionException ex) {
+                    dateSessionsLoading = false;
+                    dateSessionsLoadFailed = true;
+                    absentCountLbl.setText("Could not load sessions");
+                    Throwable cause = ex.getCause() == null ? ex : ex.getCause();
+                    LOGGER.log(Level.SEVERE, "Could not load sessions for selected medical dates", cause);
+                    validateCurrentStep();
                 }
             }
         };
@@ -348,7 +385,6 @@ public class MedicalWizardView extends JPanel {
     private void buildStep2UI() {
         courseChipsPanel.removeAll();
         sessionsListPanel.removeAll();
-        selectedSessionIds.clear();
 
         // 1. Course chips with absent counts
         Map<String, Long> courseAbsentCounts = new LinkedHashMap<>();
@@ -397,6 +433,11 @@ public class MedicalWizardView extends JPanel {
             dayCheck.setFont(Theme.FONT_BODY_BOLD);
             dayCheck.setForeground(Theme.TEXT_MAIN);
             dayCheck.setOpaque(false);
+            List<SessionAttendance> absentOnDay = daySessions.stream()
+                    .filter(sa -> sa.status() == SessionStatus.ABSENT).toList();
+            dayCheck.setEnabled(!absentOnDay.isEmpty());
+            dayCheck.setSelected(!absentOnDay.isEmpty() && absentOnDay.stream()
+                    .allMatch(sa -> selectedSessionIds.contains(sa.session().id())));
             dayCheck.addActionListener(e -> toggleDaySessions(daySessions, dayCheck.isSelected()));
 
             dayHeader.add(dayCheck);
@@ -409,8 +450,6 @@ public class MedicalWizardView extends JPanel {
             sessionsListPanel.add(Box.createVerticalStrut(8));
         }
 
-        // Select absent sessions by default
-        selectAllAbsent(true);
         updateSelectionSummary();
 
         courseChipsPanel.revalidate();
@@ -424,7 +463,7 @@ public class MedicalWizardView extends JPanel {
         row.setOpaque(true);
         row.setBackground(Color.WHITE);
         row.setPreferredSize(new Dimension(700, 48));
-        row.setMaximumSize(new Dimension(Short.MAX_VALUE, 48));
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 48));
         row.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(0, 0, 1, 0, Theme.DIVIDER),
                 BorderFactory.createEmptyBorder(6, 16, 6, 16)
@@ -728,7 +767,9 @@ public class MedicalWizardView extends JPanel {
     private void validateCurrentStep() {
         boolean valid = false;
         if (currentStep == 1) {
-            valid = (calendar.getRangeStart() != null && calendar.getRangeEnd() != null && !loadedSessions.isEmpty());
+            valid = (calendar.getRangeStart() != null && calendar.getRangeEnd() != null
+                    && !dateSessionsLoading && !dateSessionsLoadFailed
+                    && loadedSessions.stream().anyMatch(s -> s.status() == SessionStatus.ABSENT));
         } else if (currentStep == 2) {
             valid = (!selectedSessionIds.isEmpty());
         } else if (currentStep == 3) {
@@ -745,6 +786,10 @@ public class MedicalWizardView extends JPanel {
 
     private void nextStep() {
         if (currentStep == 1) {
+            if (!sessionSelectionInitialized) {
+                selectAllAbsent(true);
+                sessionSelectionInitialized = true;
+            }
             buildStep2UI();
             currentStep = 2;
             wizardLayout.show(stepsContainer, "Step2");

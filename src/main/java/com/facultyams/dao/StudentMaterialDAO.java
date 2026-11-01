@@ -1,8 +1,13 @@
 package com.facultyams.dao;
 
+import com.facultyams.config.DatabaseConnection;
 import com.facultyams.exception.DatabaseException;
 import com.facultyams.model.student.StudentMaterial;
 
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.List;
 
@@ -11,7 +16,7 @@ public class StudentMaterialDAO {
 
     private static final String SELECT =
             "SELECT cm.materialID, c.course_id, c.course_code, c.course_name, lu.full_name AS lecturer, "
-                    + "cm.description, cm.notes, cm.referenceText, cm.week_no, cm.uploaded_at "
+                    + "cm.description, cm.notes, cm.referenceText, %s AS week_no, %s AS uploaded_at "
                     + "FROM course_materials cm JOIN courses c ON c.course_id = cm.courseID "
                     + "JOIN enrollments e ON e.course_id = c.course_id AND e.student_id = ? AND e.status = 'ENROLLED' "
                     + "LEFT JOIN users lu ON lu.user_id = c.lecturer_id ";
@@ -23,7 +28,7 @@ public class StudentMaterialDAO {
             rs.getTimestamp("uploaded_at") == null ? null : rs.getTimestamp("uploaded_at").toLocalDateTime());
 
     public List<StudentMaterial> findForEnrolledCourses(int studentId) throws DatabaseException {
-        return StudentDaoSupport.query(SELECT + "ORDER BY c.course_code, cm.materialID", MAPPER, studentId);
+        return StudentDaoSupport.query(select() + "ORDER BY c.course_code, cm.materialID", MAPPER, studentId);
     }
 
     /** A file the lecturer uploaded with a material. */
@@ -41,7 +46,27 @@ public class StudentMaterialDAO {
 
     /** One material, only when the student is enrolled in its course. */
     public StudentMaterial findOne(int studentId, int materialId) throws DatabaseException {
-        return StudentDaoSupport.queryOne(SELECT + "WHERE cm.materialID = ?", MAPPER, studentId, materialId);
+        return StudentDaoSupport.queryOne(select() + "WHERE cm.materialID = ?", MAPPER, studentId, materialId);
+    }
+
+    private static String select() throws DatabaseException {
+        return SELECT.formatted(hasColumn("week_no") ? "cm.week_no" : "NULL",
+                hasColumn("uploaded_at") ? "cm.uploaded_at" : "NULL");
+    }
+
+    private static boolean hasColumn(String columnName) throws DatabaseException {
+        try (Connection connection = DatabaseConnection.getConnection()) {
+            DatabaseMetaData metadata = connection.getMetaData();
+            try (ResultSet columns = metadata.getColumns(connection.getCatalog(), null,
+                    "course_materials", null)) {
+                while (columns.next()) {
+                    if (columnName.equalsIgnoreCase(columns.getString("COLUMN_NAME"))) return true;
+                }
+                return false;
+            }
+        } catch (SQLException ex) {
+            throw new DatabaseException("Course material schema could not be inspected.", ex);
+        }
     }
 
     private static Integer weekNumber(java.sql.ResultSet rs) throws java.sql.SQLException {

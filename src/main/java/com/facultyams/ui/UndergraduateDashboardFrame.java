@@ -11,6 +11,8 @@ import com.facultyams.ui.views.*;
 import com.facultyams.controller.NavigationListener;
 import com.facultyams.ui.components.Toast;
 import java.awt.*;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import javax.swing.*;
 
 public class UndergraduateDashboardFrame extends JFrame implements NavigationListener {
@@ -31,6 +33,7 @@ public class UndergraduateDashboardFrame extends JFrame implements NavigationLis
     private TimetableView timetableView;
     private NoticesView noticesView;
     private String currentView = "Dashboard";
+    private final Deque<String> viewHistory = new ArrayDeque<>();
 
     /**
      * Opens the portal for the logged-in student. The student comes from the authenticated session;
@@ -63,7 +66,8 @@ public class UndergraduateDashboardFrame extends JFrame implements NavigationLis
         rightArea.setOpaque(false);
 
         // Top Bar
-        topBarPanel = new TopBarPanel("Dashboard", this::toggleSidebar, this::handleSearch, this::navigateTo);
+        topBarPanel = new TopBarPanel("Dashboard", this::toggleSidebar, this::handleSearch,
+                this::navigateTo, this::navigateBack);
         rightArea.add(topBarPanel, BorderLayout.NORTH);
 
         // Center Views
@@ -78,7 +82,17 @@ public class UndergraduateDashboardFrame extends JFrame implements NavigationLis
         cardsPanel.setOpaque(false);
         cardsPanel.setBorder(Theme.createEmptyPadding(24, 32, 24, 32));
 
-        dashboardView = new DashboardView(this::navigateTo, this);
+        dashboardView = new DashboardView(this::navigateTo);
+        dashboardView.setAssignmentNavigation((courseCode, assignmentId) -> {
+                    courseMaterialsView.openAssignment(courseCode, assignmentId);
+                    navigateTo("Course Materials");
+                }, (courseCode, assignmentId) -> {
+                    courseMaterialsView.openSubmissionDetails(courseCode, assignmentId);
+                    navigateTo("Course Materials");
+                }, () -> {
+                    courseMaterialsView.showSubmissions();
+                    navigateTo("Course Materials");
+                });
         profileView = new StudentProfileView();
         courseEnrollmentView = new CourseEnrollmentView();
         coursesContainerView = new com.facultyams.ui.views.CoursesContainerView(courseEnrollmentView);
@@ -122,10 +136,14 @@ public class UndergraduateDashboardFrame extends JFrame implements NavigationLis
     }
 
     public void navigateTo(String viewName) {
+        showView(viewName, true);
+    }
+
+    private boolean showView(String viewName, boolean recordHistory) {
         String normalized = normalizeViewName(viewName);
         if ("Profile".equals(currentView) && !"Profile".equals(normalized)
                 && profileView != null && !profileView.confirmNavigation()) {
-            return;
+            return false;
         }
         if ("Course Enrollment".equals(normalized) && coursesContainerView != null) {
             coursesContainerView.resetToOverview();
@@ -139,9 +157,13 @@ public class UndergraduateDashboardFrame extends JFrame implements NavigationLis
         }
         // Medical records live in the Attendance area (Medical requests tab).
         String card = medical ? "Attendance" : normalized;
+        if (recordHistory && !currentView.equals(card)) {
+            viewHistory.push(currentView);
+        }
         topBarPanel.setTitle(normalized);
         topBarPanel.setSearchInputActive(!"Profile".equals(normalized));
         currentView = card;
+        topBarPanel.setBackEnabled(!viewHistory.isEmpty());
         sidebarPanel.setActiveView(card);
         if ("Timetable".equals(normalized)) {
             topBarPanel.setNotificationAction(timetableView::openReminderPanel);
@@ -150,6 +172,16 @@ public class UndergraduateDashboardFrame extends JFrame implements NavigationLis
         }
         cardLayout.show(cardsPanel, card);
         refreshView(card);
+        return true;
+    }
+
+    private void navigateBack() {
+        if (viewHistory.isEmpty()) return;
+        String previousView = viewHistory.peek();
+        if (showView(previousView, false)) {
+            viewHistory.pop();
+            topBarPanel.setBackEnabled(!viewHistory.isEmpty());
+        }
     }
 
     /** Reloads the data of the screen that was just opened, so it never shows stale rows. */

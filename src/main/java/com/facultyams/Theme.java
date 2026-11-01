@@ -10,6 +10,10 @@ public final class Theme {
     private Theme() {}
 
     public static final int PAGE_PADDING = com.facultyams.ui.theme.Theme.PAGE_PADDING;
+    public static final int COURSE_CARD_GAP = 24;
+    public static final int COURSE_ROW_GAP = 12;
+    public static final int COURSE_ICON_GAP = 12;
+    public static final int COURSE_ROW_PADDING = 16;
     public static final int SECTION_GAP = com.facultyams.ui.theme.Theme.CARD_GAP;
     public static final int CARD_GAP = com.facultyams.ui.theme.Theme.CARD_GAP;
     public static final int CARD_PADDING = com.facultyams.ui.theme.Theme.CARD_PADDING;

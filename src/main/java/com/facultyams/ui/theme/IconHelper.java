@@ -42,6 +42,12 @@ public class IconHelper {
             g2.setStroke(new BasicStroke(1.8f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
 
             switch (name.toLowerCase()) {
+                case "arrow-left":
+                    g2.drawLine(19, 12, 5, 12);
+                    g2.drawLine(5, 12, 11, 6);
+                    g2.drawLine(5, 12, 11, 18);
+                    break;
+
                 case "graduation-cap":
                     // Mortarboard cap & tassel
                     Path2D cap = new Path2D.Float();

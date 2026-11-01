@@ -120,6 +120,13 @@ public class Theme {
     public static final Color BADGE_BLUE_TEXT = PRIMARY;
     public static final Color BADGE_AMBER_BG = WARNING_BG;
     public static final Color BADGE_AMBER_TEXT = WARNING;
+    public static final Color FILE_PDF = new Color(13, 148, 136);
+    public static final Color FILE_DOC = new Color(37, 99, 235);
+    public static final Color FILE_PRESENTATION = new Color(234, 88, 12);
+    public static final Color FILE_ARCHIVE = new Color(107, 114, 128);
+    public static final Color FILE_GENERIC = new Color(107, 114, 128);
+    public static final Color FILE_SUBMISSION = new Color(219, 39, 119);
+    public static final Font FONT_WEEK_TITLE = new Font("Segoe UI", Font.BOLD, 18);
     public static final Font ENROLLMENT_PAGE_TITLE = new Font("Segoe UI", Font.BOLD, 22);
     public static final Font ENROLLMENT_SECTION_TITLE = new Font("Segoe UI", Font.BOLD, 15);
     public static final Font ENROLLMENT_BODY = new Font("Segoe UI", Font.PLAIN, 13);
