@@ -6,6 +6,7 @@ import com.facultyams.model.student.StudentAssignment;
 import com.facultyams.model.student.StudentSubmissionDetails;
 
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -22,14 +23,15 @@ public class StudentAssignmentDAO {
 
     private static final String ASSIGNMENT_SELECT =
             "SELECT a.assignment_id, a.course_id, c.course_code, c.course_name, a.title, a.description, "
-                    + "a.due_at, a.cutoff_at, a.allow_late, a.max_marks, a.allowed_types, a.max_file_mb, a.max_files, "
+                    + "a.due_at, a.cutoff_at, a.created_at, "
+                    + "%s AS week_no, a.allow_late, a.max_marks, a.allowed_types, a.max_file_mb, a.max_files, "
                     + "s.status, s.submitted_at, s.marks, s.feedback, s.comment "
                     + "FROM assignments a JOIN courses c ON c.course_id = a.course_id "
                     + "JOIN enrollments e ON e.course_id = c.course_id AND e.student_id = ? AND e.status = 'ENROLLED' "
                     + "LEFT JOIN submissions s ON s.assignment_id = a.assignment_id AND s.student_id = e.student_id ";
 
     public List<StudentAssignment> findForStudent(int studentId, String courseCode) throws DatabaseException {
-        String sql = ASSIGNMENT_SELECT + (courseCode == null
+        String sql = assignmentSelect() + (courseCode == null
                 ? "ORDER BY a.due_at, a.assignment_id"
                 : "WHERE c.course_code = ? ORDER BY a.due_at, a.assignment_id");
         return courseCode == null
@@ -38,8 +40,26 @@ public class StudentAssignmentDAO {
     }
 
     public StudentAssignment findForStudent(int studentId, long assignmentId) throws DatabaseException {
-        return StudentDaoSupport.queryOne(ASSIGNMENT_SELECT
+        return StudentDaoSupport.queryOne(assignmentSelect()
                 + "WHERE a.assignment_id = ?", StudentAssignmentDAO::mapAssignment, studentId, assignmentId);
+    }
+
+    private static String assignmentSelect() throws DatabaseException {
+        return ASSIGNMENT_SELECT.formatted(hasWeekNumber() ? "a.week_no" : "WEEK(a.created_at, 3)");
+    }
+
+    private static boolean hasWeekNumber() throws DatabaseException {
+        try (Connection connection = DatabaseConnection.getConnection()) {
+            DatabaseMetaData metadata = connection.getMetaData();
+            try (ResultSet columns = metadata.getColumns(connection.getCatalog(), null, "assignments", null)) {
+                while (columns.next()) {
+                    if ("week_no".equalsIgnoreCase(columns.getString("COLUMN_NAME"))) return true;
+                }
+                return false;
+            }
+        } catch (SQLException ex) {
+            throw new DatabaseException("Assignment schema could not be inspected.", ex);
+        }
     }
 
     public StudentSubmissionDetails findSubmission(int studentId, long assignmentId) throws DatabaseException {
@@ -125,7 +145,9 @@ public class StudentAssignmentDAO {
                 nullableDouble(rs, "max_marks"), allowedTypes, rs.getInt("max_file_mb"),
                 rs.getInt("max_files"), rs.getString("status"),
                 localDateTime(rs.getTimestamp("submitted_at")), nullableDouble(rs, "marks"),
-                rs.getString("feedback"), rs.getString("comment"));
+                rs.getString("feedback"), rs.getString("comment"),
+                rs.getObject("week_no") instanceof Number week ? week.intValue() : null,
+                localDateTime(rs.getTimestamp("created_at")));
     }
 
     private static Double nullableDouble(ResultSet rs, String column) throws SQLException {
