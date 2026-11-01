@@ -50,19 +50,12 @@ public class SidebarPanel extends JPanel {
                 BorderFactory.createMatteBorder(0, 0, 1, 0, COLOR_BORDER),
                 BorderFactory.createEmptyBorder(20, 20, 18, 20)));
 
-        JLabel titleLbl = new JLabel("SRMS", IconHelper.getIcon("graduation-cap", 22, COLOR_TEXT_PRIMARY), JLabel.LEFT);
-        titleLbl.setIconTextGap(10);
-        titleLbl.setFont(Theme.FONT_TITLE.deriveFont(18f));
-        titleLbl.setForeground(COLOR_TEXT_PRIMARY);
-
-        JLabel subLbl = new JLabel("Undergraduate portal");
-        subLbl.setFont(Theme.FONT_SMALL);
-        subLbl.setForeground(COLOR_TEXT_MUTED);
-        subLbl.setBorder(BorderFactory.createEmptyBorder(4, 32, 0, 0));
-
-        header.add(titleLbl);
-        header.add(Box.createVerticalStrut(2));
-        header.add(subLbl);
+        JLabel portalLbl = new JLabel("Undergraduate portal",
+                IconHelper.getIcon("graduation-cap", 22, COLOR_TEXT_PRIMARY), JLabel.LEFT);
+        portalLbl.setIconTextGap(10);
+        portalLbl.setFont(Theme.FONT_TITLE.deriveFont(15f));
+        portalLbl.setForeground(COLOR_TEXT_PRIMARY);
+        header.add(portalLbl);
 
         return header;
     }
