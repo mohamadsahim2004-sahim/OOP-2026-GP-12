@@ -1,40 +1,17 @@
 package com.facultyams;
 
-import com.facultyams.config.DatabaseConnection;
-
-import java.sql.Connection;
-import java.sql.Statement;
-
+/**
+ * Obsolete. This class used to run CREATE TABLE IF NOT EXISTS users with a layout (password, phone,
+ * profilePicture, departmentID) that no DAO in the application uses; on an empty database it would have
+ * created a users table the application cannot work with, and every later script would then have kept it.
+ *
+ * The users table - and every other table - is created ONLY by database/schema.sql and the migrations in
+ * database/migrations (see README.md). This class no longer touches the database.
+ */
 public class CreateUsersTable {
 
     public static void main(String[] args) {
-
-        String sql = """
-                CREATE TABLE IF NOT EXISTS users (
-                    user_id INT PRIMARY KEY,
-                    username VARCHAR(50) NOT NULL UNIQUE,
-                    password VARCHAR(255) NOT NULL,
-                    role VARCHAR(30) NOT NULL,
-                    full_name VARCHAR(100),
-                    email VARCHAR(100),
-                    phone VARCHAR(20),
-                    profilePicture VARCHAR(255),
-                    departmentID INT
-                )
-                """;
-
-        try (Connection connection = DatabaseConnection.getConnection();
-             Statement statement = connection.createStatement()) {
-
-            statement.executeUpdate(sql);
-
-            System.out.println("Users table created successfully.");
-
-        } catch (Exception e) {
-            System.out.println("Failed to create users table.");
-            e.printStackTrace();
-        }
+        System.out.println("CreateUsersTable is obsolete and does nothing.");
+        System.out.println("Create the database objects with database/schema.sql and database/migrations/*.sql (README.md).");
     }
 }
-
-//user table created according to the srs

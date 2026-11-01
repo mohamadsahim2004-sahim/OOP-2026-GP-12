@@ -42,7 +42,8 @@ public final class LecturerDbCheck {
             new Need("component_marks", "student_id, eval_component_id, marks_obtained, entered_by", FIX_MIGRATION),
             new Need("marks", "marksid, student_id, course_id, obtainMarks, finalMarks, grade, isEligible, overall_mark, grade_points, published, published_at",
                     FIX_MIGRATION + " If `marks` belongs to ANOTHER module (columns such as course_code / score), "
-                            + "005 renames it to marks_other_module so the Lecturer table can be created."),
+                            + "005_lecturer_module.sql stops without changing it (nothing is renamed or dropped); follow README.md, "
+                            + "Recovery - incompatible marks / course_materials table."),
             new Need("course_materials", "materialID, courseID, description, notes, referenceText", FIX_MIGRATION));
 
     private static int fails;

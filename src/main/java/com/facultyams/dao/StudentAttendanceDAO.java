@@ -24,7 +24,7 @@ public class StudentAttendanceDAO {
         String sql = "SELECT c.course_id, c.course_code, c.course_name, "
                 + "COUNT(DISTINCT CASE WHEN sa.attendance_id IS NOT NULL THEN cc.component_id END) AS comps, "
                 + "COUNT(sa.attendance_id) AS recorded, "
-                + "COALESCE(SUM(sa.status = 'present'), 0) AS present, "
+                + "COALESCE(SUM(sa.status IN ('present', 'late')), 0) AS present, "
                 + "COALESCE(SUM(sa.status = 'absent' AND EXISTS (SELECT 1 FROM medical md "
                 + "WHERE md.attendance_id = sa.attendance_id AND md.approval_status = 'approved')), 0) AS approved "
                 + "FROM enrollments e JOIN courses c ON c.course_id = e.course_id "

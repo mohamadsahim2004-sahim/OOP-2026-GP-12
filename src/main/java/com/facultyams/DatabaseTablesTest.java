@@ -30,7 +30,7 @@ public class DatabaseTablesTest {
                         + resultSet.getString("email"));
 
                 System.out.println("Phone: "
-                        + resultSet.getString("phone"));
+                        + resultSet.getString("contact_number"));
 
                 System.out.println("Role: "
                         + resultSet.getString("role"));

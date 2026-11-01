@@ -78,7 +78,8 @@ public class DbStudentAttendanceService implements StudentAttendanceService {
 
     private static SessionAttendance toSession(SessionRow r) {
         SessionStatus status;
-        if ("present".equalsIgnoreCase(r.status())) {
+        if ("present".equalsIgnoreCase(r.status()) || "late".equalsIgnoreCase(r.status())) {
+            // late counts as attended, exactly as in the Technical Officer and Lecturer modules
             status = SessionStatus.PRESENT;
         } else if (r.medical() == 2) {
             status = SessionStatus.MEDICAL_APPROVED;
