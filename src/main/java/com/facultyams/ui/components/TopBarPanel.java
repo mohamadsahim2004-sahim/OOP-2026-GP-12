@@ -18,6 +18,7 @@ import javax.swing.*;
  */
 public class TopBarPanel extends JPanel {
     private final JLabel titleLabel;
+    private JButton backButton;
     private final Consumer<String> navigationCallback;
     private final Consumer<String> searchCallback;
     private Runnable notificationAction;
@@ -39,6 +40,12 @@ public class TopBarPanel extends JPanel {
 
     public TopBarPanel(String initialTitle, Runnable hamburgerToggle,
                        Consumer<String> searchCallback, Consumer<String> navigationCallback) {
+        this(initialTitle, hamburgerToggle, searchCallback, navigationCallback, null);
+    }
+
+    public TopBarPanel(String initialTitle, Runnable hamburgerToggle,
+                       Consumer<String> searchCallback, Consumer<String> navigationCallback,
+                       Runnable backAction) {
         this.navigationCallback = navigationCallback;
         this.searchCallback = searchCallback;
         this.profileChangeListener = student -> SwingUtilities.invokeLater(() -> updateProfileChip(student));
@@ -55,11 +62,28 @@ public class TopBarPanel extends JPanel {
                 BorderFactory.createEmptyBorder(12, 24, 12, 24)
         ));
 
-        // Left: Page Title
+        // Left: Back navigation and page title
+        JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 0));
+        left.setOpaque(false);
+        backButton = new JButton(IconHelper.getIcon("arrow-left", 18, COLOR_TEXT_SECONDARY));
+        backButton.setToolTipText("Back to previous page");
+        backButton.getAccessibleContext().setAccessibleName("Back to previous page");
+        backButton.setPreferredSize(new Dimension(36, 36));
+        backButton.setFocusPainted(false);
+        backButton.setBorderPainted(false);
+        backButton.setContentAreaFilled(false);
+        backButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        backButton.setEnabled(false);
+        backButton.addActionListener(e -> {
+            if (backAction != null) backAction.run();
+        });
+
         titleLabel = new JLabel(initialTitle);
         titleLabel.setFont(Theme.FONT_TITLE);
         titleLabel.setForeground(COLOR_TEXT_PRIMARY);
-        add(titleLabel, BorderLayout.WEST);
+        left.add(backButton);
+        left.add(titleLabel);
+        add(left, BorderLayout.WEST);
 
         // Right Section: Search + Bell + Avatar
         JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 16, 0));
@@ -79,6 +103,10 @@ public class TopBarPanel extends JPanel {
 
     public void setTitle(String title) {
         titleLabel.setText(title);
+    }
+
+    public void setBackEnabled(boolean enabled) {
+        if (backButton != null) backButton.setEnabled(enabled);
     }
 
     public void setNotificationAction(Runnable action) {
