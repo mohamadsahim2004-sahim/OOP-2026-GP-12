@@ -4,6 +4,7 @@ import com.facultyams.model.User;
 import com.facultyams.security.Session;
 import com.facultyams.ui.admin.AdminDashboardFrame;
 import com.facultyams.util.UIUtil;
+import com.facultyams.ui.technical.TechnicalOfficerDashboardFrame;
 
 import javax.swing.JFrame;
 
@@ -35,8 +36,7 @@ public final class DashboardRouter {
             frame = switch (user.getRole()) {
                 case ADMIN -> new AdminDashboardFrame();
                 case LECTURER -> new PlaceholderDashboardFrame(user, "Lecturer module (Member 2)");
-                case TECHNICAL_OFFICER -> new PlaceholderDashboardFrame(user, "Technical Officer module (Member 3)");
-                case STUDENT -> new PlaceholderDashboardFrame(user, "Undergraduate module (Member 4)");
+                case TECHNICAL_OFFICER -> new TechnicalOfficerDashboardFrame(user);                case STUDENT -> new PlaceholderDashboardFrame(user, "Undergraduate module (Member 4)");
             };
         } catch (IllegalStateException e) {
             Session.end();
