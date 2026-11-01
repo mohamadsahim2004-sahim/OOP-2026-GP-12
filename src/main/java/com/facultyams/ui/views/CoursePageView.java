@@ -4,6 +4,7 @@ import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
@@ -15,8 +16,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.time.LocalDateTime;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.BorderFactory;
@@ -37,6 +40,10 @@ import com.facultyams.model.Activity;
 import com.facultyams.model.Assignment;
 import com.facultyams.model.CourseSummary;
 import com.facultyams.model.Section;
+import com.facultyams.model.student.StudentAssignment;
+import com.facultyams.model.student.StudentMaterial;
+import com.facultyams.service.DataService;
+import com.facultyams.service.StudentAssignmentService;
 import com.facultyams.service.StudentCourseService;
 import com.facultyams.service.SubmissionService;
 import com.facultyams.ui.components.ActivityRow;
@@ -55,6 +62,10 @@ public class CoursePageView extends JPanel {
     private final Consumer<Assignment> onAssignmentSelected;
     private final Runnable onManageEnrollment;
     private Runnable onOpenMaterials;
+    private Consumer<String> onViewAllMaterials;
+    private BiConsumer<String, Long> onOpenAssignment;
+    private BiConsumer<String, Integer> onOpenMaterial;
+    private final DataService studentDataService = DataService.getInstance();
 
     private final JPanel contentPanel = new JPanel(new GridBagLayout());
     private final List<CollapsibleSection> activeSections = new ArrayList<>();
@@ -62,6 +73,10 @@ public class CoursePageView extends JPanel {
     private final JLabel codeLbl = new JLabel();
 
     private CourseSummary currentCourse;
+    private List<LoadedSection> courseSections = List.of();
+    private List<StudentMaterial> courseMaterials = List.of();
+    private List<StudentAssignment> courseAssignments = List.of();
+    private String materialCategory = "All";
     private JPanel sectionsContainer;
     private long loadGeneration;
 
@@ -162,7 +177,7 @@ public class CoursePageView extends JPanel {
                 "Components, weights, and assessment dates are not available for this course."));
         leftColumn.add(assessmentCard);
         leftColumn.add(Box.createVerticalStrut(Theme.CARD_GAP));
-        leftColumn.add(createMaterialsCard());
+        leftColumn.add(createMaterialsCard(course));
 
         rightColumn.add(createEnrollmentCard());
         rightColumn.add(Box.createVerticalStrut(Theme.CARD_GAP));
@@ -174,14 +189,17 @@ public class CoursePageView extends JPanel {
         contentPanel.repaint();
         showContentMessage("Loading course content...", "Please wait while course sections are loaded.");
 
-        new SwingWorker<List<LoadedSection>, Void>() {
+        new SwingWorker<CourseContent, Void>() {
             @Override
-            protected List<LoadedSection> doInBackground() {
+            protected CourseContent doInBackground() {
                 List<LoadedSection> loaded = new ArrayList<>();
                 for (Section section : courseService.sections(course.id())) {
                     loaded.add(new LoadedSection(section, courseService.activities(section.id())));
                 }
-                return loaded;
+                List<StudentMaterial> materials = studentDataService.getMaterialsForCourse(course.code());
+                List<StudentAssignment> assignments =
+                        new StudentAssignmentService().getAssignmentsForStudent(course.code());
+                return new CourseContent(loaded, materials, assignments);
             }
 
             @Override
@@ -226,6 +244,18 @@ public class CoursePageView extends JPanel {
         onOpenMaterials = action;
     }
 
+    public void setOnViewAllMaterials(Consumer<String> action) {
+        onViewAllMaterials = action;
+    }
+
+    public void setOnOpenAssignment(BiConsumer<String, Long> action) {
+        onOpenAssignment = action;
+    }
+
+    public void setOnOpenMaterial(BiConsumer<String, Integer> action) {
+        onOpenMaterial = action;
+    }
+
     private void showEmptyPage(String title, String detail) {
         loadGeneration++;
         currentCourse = null;
@@ -260,24 +290,25 @@ public class CoursePageView extends JPanel {
         contentPanel.repaint();
     }
 
-    private Ui.Card createMaterialsCard() {
+    private Ui.Card createMaterialsCard(CourseSummary course) {
         Ui.Card card = createCard("Course materials");
-        card.add(createMessage("View available files and references on the Course Materials page.",
-                "That page lists files and references for your enrolled courses."));
-        if (onOpenMaterials != null) {
-            JButton openButton = new JButton("Open course materials");
-            openButton.setFont(Theme.FONT_BODY_BOLD);
-            openButton.setForeground(Theme.PRIMARY);
-            openButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-            openButton.setHorizontalAlignment(SwingConstants.LEFT);
-            openButton.setBorder(Theme.createPadding(Theme.SPACE_2, 0, 0, 0));
-            openButton.setContentAreaFilled(false);
-            openButton.setFocusPainted(true);
-            openButton.setAlignmentX(Component.LEFT_ALIGNMENT);
-            openButton.addActionListener(e -> onOpenMaterials.run());
-            card.add(Box.createVerticalStrut(Theme.SPACE_2));
-            card.add(openButton);
-        }
+        card.add(createMessage("Course resources are grouped by week above.",
+                "Open the materials page to see every file and reference."));
+        JButton openButton = new JButton("View all materials");
+        openButton.setFont(Theme.FONT_BODY_BOLD);
+        openButton.setForeground(Theme.PRIMARY);
+        openButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        openButton.setHorizontalAlignment(SwingConstants.LEFT);
+        openButton.setBorder(Theme.createPadding(Theme.SPACE_2, 0, 0, 0));
+        openButton.setContentAreaFilled(false);
+        openButton.setFocusPainted(true);
+        openButton.setAlignmentX(Component.LEFT_ALIGNMENT);
+        openButton.addActionListener(e -> {
+            if (onViewAllMaterials != null) onViewAllMaterials.accept(course.code());
+            else if (onOpenMaterials != null) onOpenMaterials.run();
+        });
+        card.add(Box.createVerticalStrut(Theme.SPACE_2));
+        card.add(openButton);
         return card;
     }
 
@@ -409,7 +440,7 @@ public class CoursePageView extends JPanel {
         contentPanel.add(column, c);
     }
 
-    private void buildSectionsUI(CourseSummary course, List<LoadedSection> sections) {
+    private void buildSectionsUI(CourseSummary course, CourseContent data) {
         if (sectionsContainer == null || currentCourse == null
                 || !currentCourse.id().equals(course.id())) {
             return;
@@ -417,29 +448,216 @@ public class CoursePageView extends JPanel {
 
         sectionsContainer.removeAll();
         activeSections.clear();
-        if (sections.isEmpty()) {
-            sectionsContainer.add(createMessage("Course content is not available yet.",
-                    "Weekly topics and activities have not been added for this course."));
+        courseMaterials = data.materials();
+        courseAssignments = data.assignments();
+        courseSections = data.sections();
+        courseMaterials = data.materials();
+        courseAssignments = data.assignments();
+        populateCourseContent();
+        sectionsContainer.revalidate();
+        sectionsContainer.repaint();
+    }
+
+    private void populateCourseContent() {
+        addMaterialContent(courseMaterials);
+        if (courseSections.isEmpty() && courseMaterials.isEmpty()) {
+            sectionsContainer.add(createMessage("No materials uploaded yet",
+                    "Course topics and resources will appear here when available."));
+        }
+        Set<String> collapsedIds = currentCourse == null ? Set.of()
+                : COLLAPSED_STATE_CACHE.computeIfAbsent(currentCourse.id(), key -> new HashSet<>());
+        for (int i = 0; i < courseSections.size(); i++) {
+            LoadedSection loaded = courseSections.get(i);
+            CollapsibleSection sectionComp = new CollapsibleSection(
+                    loaded.section().id(), loaded.section().title(), i == 0, this::toggleAllSections);
+            for (Activity activity : loaded.activities()) {
+                sectionComp.addActivityRow(new ActivityRow(
+                        activity, studentId, submissionService, onAssignmentSelected));
+            }
+            if (collapsedIds.contains(loaded.section().id())) sectionComp.setExpanded(false, false);
+            sectionComp.setAlignmentX(Component.LEFT_ALIGNMENT);
+            activeSections.add(sectionComp);
+            sectionsContainer.add(sectionComp);
+            sectionsContainer.add(Box.createVerticalStrut(Theme.CARD_GAP));
+        }
+        addAssignmentContent(courseAssignments);
+    }
+
+    private void addMaterialContent(List<StudentMaterial> materials) {
+        List<StudentMaterial> visible = materials.stream()
+                .filter(material -> matchesMaterialCategory(material, materialCategory)).toList();
+        JPanel chips = new JPanel(new FlowLayout(FlowLayout.LEFT, Theme.SPACE_2, 0));
+        chips.setOpaque(false);
+        for (String category : List.of("All", "Slides", "Tutorials", "Lab sheets", "Past papers", "Links")) {
+            JButton chip = new JButton(category);
+            chip.setFont(Theme.FONT_SMALL);
+            chip.setForeground(category.equals(materialCategory) ? Theme.PRIMARY : Theme.TEXT_MUTED);
+            chip.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(category.equals(materialCategory)
+                            ? Theme.PRIMARY : Theme.CARD_BORDER),
+                    Theme.createPadding(Theme.SPACE_1, Theme.SPACE_2, Theme.SPACE_1, Theme.SPACE_2)));
+            chip.setContentAreaFilled(false);
+            chip.setFocusPainted(false);
+            chip.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            chip.addActionListener(e -> {
+                materialCategory = category;
+                rebuildCourseContent();
+            });
+            chips.add(chip);
+        }
+        sectionsContainer.add(chips);
+        if (visible.isEmpty()) {
+            sectionsContainer.add(createMessage(materials.isEmpty() ? "No materials uploaded yet" : "No materials found",
+                    materials.isEmpty() ? "Course materials will appear here when they are published."
+                            : "There are no materials in this category."));
+            return;
+        }
+
+        Map<Integer, List<StudentMaterial>> weeks = new java.util.TreeMap<>();
+        List<StudentMaterial> other = new ArrayList<>();
+        for (StudentMaterial material : visible) {
+            if (material.getWeekNo() == null || material.getWeekNo() < 1) other.add(material);
+            else weeks.computeIfAbsent(material.getWeekNo(), ignored -> new ArrayList<>()).add(material);
+        }
+        Integer latestWeek = weeks.isEmpty() ? null : weeks.keySet().stream().max(Integer::compareTo).orElse(null);
+        for (var entry : weeks.entrySet()) {
+            sectionsContainer.add(createMaterialWeek("Week " + entry.getKey(), entry.getValue(),
+                    entry.getKey().equals(latestWeek)));
+            sectionsContainer.add(Box.createVerticalStrut(Theme.CARD_GAP));
+        }
+        if (!other.isEmpty()) sectionsContainer.add(createMaterialWeek("Other", other, weeks.isEmpty()));
+    }
+
+    private boolean matchesMaterialCategory(StudentMaterial material, String category) {
+        if ("All".equals(category)) return true;
+        String text = (material.getTitle() + " " + material.getNotes() + " " + material.getType())
+                .toLowerCase(java.util.Locale.ROOT);
+        return switch (category) {
+            case "Slides" -> text.contains("slide") || text.contains(".ppt");
+            case "Tutorials" -> text.contains("tutorial");
+            case "Lab sheets" -> text.contains("lab");
+            case "Past papers" -> text.contains("past paper") || text.contains("exam paper");
+            case "Links" -> material.isLink();
+            default -> true;
+        };
+    }
+
+    private JPanel createMaterialWeek(String title, List<StudentMaterial> materials, boolean expanded) {
+        Ui.Card weekCard = new Ui.Card(Theme.RADIUS_CARD, Theme.CARD_BG, Theme.CARD_BORDER);
+        weekCard.setLayout(new BorderLayout());
+        JPanel header = new JPanel(new BorderLayout());
+        header.setOpaque(false);
+        header.setBorder(Theme.createPadding(Theme.SPACE_3, Theme.CARD_PADDING,
+                Theme.SPACE_3, Theme.CARD_PADDING));
+        JButton toggle = new JButton((expanded ? "\u2304  " : "\u203a  ") + title
+                + "  \u00b7  " + materials.size() + " items");
+        toggle.setFont(Theme.FONT_BODY_BOLD);
+        toggle.setForeground(Theme.TEXT_MAIN);
+        toggle.setHorizontalAlignment(SwingConstants.LEFT);
+        toggle.setBorder(BorderFactory.createEmptyBorder());
+        toggle.setContentAreaFilled(false);
+        toggle.setFocusPainted(false);
+        toggle.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        JPanel rows = new JPanel();
+        rows.setLayout(new BoxLayout(rows, BoxLayout.Y_AXIS));
+        rows.setOpaque(false);
+        materials.forEach(material -> rows.add(createMaterialRow(material)));
+        rows.setVisible(expanded);
+        toggle.addActionListener(e -> {
+            rows.setVisible(!rows.isVisible());
+            toggle.setText((rows.isVisible() ? "\u2304  " : "\u203a  ") + title
+                    + "  \u00b7  " + materials.size() + " items");
+            weekCard.revalidate();
+            weekCard.repaint();
+        });
+        header.add(toggle, BorderLayout.CENTER);
+        weekCard.add(header, BorderLayout.NORTH);
+        weekCard.add(rows, BorderLayout.CENTER);
+        weekCard.setAlignmentX(Component.LEFT_ALIGNMENT);
+        return weekCard;
+    }
+
+    private JPanel createMaterialRow(StudentMaterial material) {
+        JPanel row = new JPanel(new BorderLayout(Theme.CARD_GAP, 0));
+        row.setOpaque(false);
+        row.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(1, 0, 0, 0, Theme.CARD_BORDER),
+                Theme.createPadding(Theme.SPACE_3, Theme.CARD_PADDING, Theme.SPACE_3, Theme.CARD_PADDING)));
+        JPanel text = new JPanel();
+        text.setOpaque(false);
+        text.setLayout(new BoxLayout(text, BoxLayout.Y_AXIS));
+        JLabel title = new JLabel("\u25a1  " + material.getTitle());
+        title.setFont(Theme.FONT_BODY_BOLD);
+        title.setForeground(Theme.TEXT_MAIN);
+        JLabel notes = new JLabel(material.getNotes().isBlank() ? material.getType() : material.getNotes());
+        notes.setFont(Theme.FONT_SMALL);
+        notes.setForeground(Theme.TEXT_MUTED);
+        JLabel date = new JLabel(material.getUploadedAt() == null ? "Date not provided"
+                : material.getUploadedAt().toLocalDate().toString());
+        date.setFont(Theme.FONT_SMALL);
+        date.setForeground(Theme.TEXT_MUTED);
+        text.add(title);
+        text.add(Box.createVerticalStrut(Theme.SPACE_1));
+        text.add(notes);
+        text.add(date);
+        JButton open = new JButton(material.isLink() ? "Open link" : "Open / Download");
+        open.setFont(Theme.FONT_BODY);
+        open.setForeground(Theme.PRIMARY);
+        open.setBorder(BorderFactory.createEmptyBorder());
+        open.setContentAreaFilled(false);
+        open.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        open.addActionListener(e -> {
+            if (onOpenMaterial != null) onOpenMaterial.accept(material.getCourseCode(), material.getId());
+            else if (onViewAllMaterials != null) onViewAllMaterials.accept(material.getCourseCode());
+            else if (onOpenMaterials != null) onOpenMaterials.run();
+        });
+        row.add(text, BorderLayout.CENTER);
+        row.add(open, BorderLayout.EAST);
+        return row;
+    }
+
+    private void addAssignmentContent(List<StudentAssignment> assignments) {
+        Ui.Card assignmentCard = createCard("Assignments");
+        if (assignments.isEmpty()) {
+            assignmentCard.add(createMessage("No assignments available.",
+                    "Assignments for this course will appear here."));
         } else {
-            Set<String> collapsedIds = COLLAPSED_STATE_CACHE.computeIfAbsent(course.id(), key -> new HashSet<>());
-            for (int i = 0; i < sections.size(); i++) {
-                LoadedSection loaded = sections.get(i);
-                boolean isFirst = i == 0;
-                CollapsibleSection sectionComp = new CollapsibleSection(
-                        loaded.section().id(), loaded.section().title(), isFirst, this::toggleAllSections);
-                for (Activity activity : loaded.activities()) {
-                    sectionComp.addActivityRow(new ActivityRow(
-                            activity, studentId, submissionService, onAssignmentSelected));
-                }
-                if (collapsedIds.contains(loaded.section().id())) {
-                    sectionComp.setExpanded(false, false);
-                }
-                sectionComp.setAlignmentX(Component.LEFT_ALIGNMENT);
-                activeSections.add(sectionComp);
-                sectionsContainer.add(sectionComp);
-                sectionsContainer.add(Box.createVerticalStrut(Theme.CARD_GAP));
+            for (StudentAssignment assignment : assignments) {
+                JPanel row = new JPanel(new BorderLayout(Theme.CARD_GAP, 0));
+                row.setOpaque(false);
+                row.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, Theme.CARD_BORDER));
+                JLabel detail = bodyLabel(assignment.title() + "  \u00b7  due "
+                        + (assignment.dueAt() == null ? "Not provided" : assignment.dueAt().toString()));
+                boolean closed = assignment.dueAt() != null
+                        && LocalDateTime.now().isAfter(assignment.allowLate() && assignment.cutoffAt() != null
+                        ? assignment.cutoffAt() : assignment.dueAt());
+                String actionText = closed || "GRADED".equalsIgnoreCase(assignment.status()) ? "View"
+                        : assignment.hasSubmission() ? "Resubmit" : "Submit";
+                JButton action = new JButton(actionText);
+                action.setFont(Theme.FONT_BODY_BOLD);
+                action.setForeground(Theme.PRIMARY);
+                action.setBorder(BorderFactory.createEmptyBorder());
+                action.setContentAreaFilled(false);
+                action.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+                action.setToolTipText(closed ? "The submission deadline has passed." : null);
+                action.addActionListener(e -> {
+                    if (onOpenAssignment != null) onOpenAssignment.accept(assignment.courseCode(), assignment.id());
+                    else if (onViewAllMaterials != null) onViewAllMaterials.accept(assignment.courseCode());
+                });
+                row.add(detail, BorderLayout.CENTER);
+                row.add(action, BorderLayout.EAST);
+                assignmentCard.add(row);
             }
         }
+        sectionsContainer.add(Box.createVerticalStrut(Theme.CARD_GAP));
+        sectionsContainer.add(assignmentCard);
+    }
+
+    private void rebuildCourseContent() {
+        if (currentCourse == null || sectionsContainer == null) return;
+        sectionsContainer.removeAll();
+        activeSections.clear();
+        populateCourseContent();
         sectionsContainer.revalidate();
         sectionsContainer.repaint();
     }
@@ -482,4 +700,6 @@ public class CoursePageView extends JPanel {
     }
 
     private record LoadedSection(Section section, List<Activity> activities) {}
+    private record CourseContent(List<LoadedSection> sections, List<StudentMaterial> materials,
+                                 List<StudentAssignment> assignments) {}
 }
