@@ -113,6 +113,13 @@ public class Theme {
     public static final Color ENROLLMENT_CORE_TEXT = new Color(37, 99, 235);
     public static final Color ENROLLMENT_ELECTIVE_BG = new Color(244, 244, 245);
     public static final Color ENROLLMENT_ELECTIVE_TEXT = new Color(107, 114, 128);
+    public static final Color TABLE_HOVER = new Color(250, 250, 250);
+    public static final Color BADGE_GRAY_BG = new Color(244, 244, 245);
+    public static final Color BADGE_GRAY_TEXT = new Color(82, 82, 91);
+    public static final Color BADGE_BLUE_BG = PRIMARY_LIGHT;
+    public static final Color BADGE_BLUE_TEXT = PRIMARY;
+    public static final Color BADGE_AMBER_BG = WARNING_BG;
+    public static final Color BADGE_AMBER_TEXT = WARNING;
     public static final Font ENROLLMENT_PAGE_TITLE = new Font("Segoe UI", Font.BOLD, 22);
     public static final Font ENROLLMENT_SECTION_TITLE = new Font("Segoe UI", Font.BOLD, 15);
     public static final Font ENROLLMENT_BODY = new Font("Segoe UI", Font.PLAIN, 13);
