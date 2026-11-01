@@ -24,7 +24,23 @@ public class DashboardHomePanel extends JPanel implements Refreshable {
 
     private static final long serialVersionUID = 1L;
     private static final Color NAVY = new Color(23, 54, 92);
+    private static final Color[] CARD_COLORS = {
+            new Color(232, 243, 255), // Soft blue
+            new Color(245, 235, 255), // Soft purple
+            new Color(235, 248, 237), // Soft green
+            new Color(255, 244, 224), // Soft orange
+            new Color(255, 235, 242), // Soft pink
+            new Color(229, 247, 248)  // Soft cyan
+    };
 
+    private static final Color[] CARD_BORDERS = {
+            new Color(173, 211, 255),
+            new Color(211, 180, 245),
+            new Color(180, 222, 185),
+            new Color(255, 211, 140),
+            new Color(245, 180, 200),
+            new Color(160, 220, 220)
+    };
     private final transient LecturerService service;
     private final JLabel welcome = new JLabel(" ");
     private final JLabel status = new JLabel(" ");
@@ -55,8 +71,13 @@ public class DashboardHomePanel extends JPanel implements Refreshable {
             JLabel caption = new JLabel(captions[i], JLabel.CENTER);
             caption.setFont(new Font("Arial", Font.PLAIN, 12));
             JPanel card = new JPanel(new BorderLayout());
-            card.setBackground(Color.WHITE);
-            card.setBorder(BorderFactory.createEmptyBorder(12, 8, 12, 8));
+
+            card.setBackground(CARD_COLORS[i]);
+
+            card.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(CARD_BORDERS[i], 1),
+                    BorderFactory.createEmptyBorder(11, 7, 11, 7)
+            ));
             card.add(values[i], BorderLayout.CENTER);
             card.add(caption, BorderLayout.SOUTH);
             cards.add(card);
