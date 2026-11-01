@@ -161,6 +161,7 @@ public class MedicalWizardView extends JPanel {
                         }
                     }
                     calendar.setAbsentDates(abs);
+                    abs.stream().max(LocalDate::compareTo).ifPresent(calendar::focusOnDate);
                 } catch (InterruptedException ex) {
                     Thread.currentThread().interrupt();
                     LOGGER.log(Level.WARNING, "Initial absent-date lookup was interrupted", ex);
