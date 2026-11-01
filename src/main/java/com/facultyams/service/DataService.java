@@ -1,6 +1,7 @@
 package com.facultyams.service;
 
 import com.facultyams.dao.StudentMaterialDAO;
+import com.facultyams.dao.StudentContentNotificationDAO;
 import com.facultyams.exception.DatabaseException;
 import com.facultyams.model.CourseOffering;
 import com.facultyams.model.student.StudentMaterial;
@@ -27,6 +28,7 @@ public final class DataService {
     private final StudentProfileService profileService = new DbStudentProfileService();
     private final EnrollmentService enrollmentService = new EnrollmentService();
     private final StudentMaterialDAO materialDAO = new StudentMaterialDAO();
+    private final StudentContentNotificationDAO contentNotificationDAO = new StudentContentNotificationDAO();
     private final List<ProfileChangeListener> profileChangeListeners = new CopyOnWriteArrayList<>();
     private StudentProfile cachedProfile;
 
@@ -109,6 +111,15 @@ public final class DataService {
             return materialDAO.findOne(studentId, materialId);
         } catch (DatabaseException e) {
             throw new StudentServiceException("The material could not be loaded. Please try again.", e);
+        }
+    }
+
+    public int getRecentCourseContentNotificationCount() {
+        StudentAccess.requireOwn(String.valueOf(studentId));
+        try {
+            return contentNotificationDAO.countRecent(studentId);
+        } catch (DatabaseException e) {
+            throw new StudentServiceException("Course content notifications could not be loaded.", e);
         }
     }
 
