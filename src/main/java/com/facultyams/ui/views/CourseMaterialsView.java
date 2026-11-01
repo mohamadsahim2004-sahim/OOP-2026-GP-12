@@ -315,7 +315,7 @@ public class CourseMaterialsView extends JPanel {
         table.getColumnModel().getColumn(5).setCellRenderer((t, value, isSel, hasFocus, r, c) -> {
             ModernButton btn = new ModernButton(String.valueOf(value), ModernButton.StyleType.OUTLINE);
             btn.setIcon(IconHelper.getIcon("downloads", 14, Theme.PRIMARY));
-            btn.setFont(new Font("Segoe UI", Font.BOLD, 11));
+            btn.setFont(Theme.FONT_TINY);
             return btn;
         });
 
@@ -325,7 +325,7 @@ public class CourseMaterialsView extends JPanel {
 
             {
                 btn.setIcon(IconHelper.getIcon("downloads", 14, Theme.PRIMARY));
-                btn.setFont(new Font("Segoe UI", Font.BOLD, 11));
+                btn.setFont(Theme.FONT_TINY);
                 btn.addActionListener(e -> {
                     fireEditingStopped();
                     openMaterial(materialId);

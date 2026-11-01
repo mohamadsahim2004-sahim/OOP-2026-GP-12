@@ -16,7 +16,7 @@ public class ModernButton extends JButton {
     }
 
     private StyleType styleType;
-    private int cornerRadius = 10;
+    private int cornerRadius = Theme.BUTTON_RADIUS;
     private boolean isHovered = false;
 
     public ModernButton(String text) {
@@ -80,16 +80,16 @@ public class ModernButton extends JButton {
                 border = isHovered ? Theme.PRIMARY : Theme.CARD_BORDER;
                 break;
             case GHOST:
-                bg = isHovered ? new Color(241, 245, 249) : new Color(0, 0, 0, 0);
+                bg = isHovered ? Theme.ENROLLMENT_ROW_HOVER : new Color(0, 0, 0, 0);
                 fg = isHovered ? Theme.TEXT_MAIN : Theme.TEXT_MUTED;
                 break;
             case DANGER:
-                bg = isHovered ? new Color(225, 29, 72) : new Color(244, 63, 94);
-                fg = Color.WHITE;
+                bg = isHovered ? Theme.DANGER_BG : new Color(0, 0, 0, 0);
+                fg = Theme.DANGER;
                 break;
             case SUCCESS:
-                bg = isHovered ? new Color(21, 128, 61) : new Color(34, 197, 94);
-                fg = Color.WHITE;
+                bg = isHovered ? Theme.SUCCESS_BG : new Color(0, 0, 0, 0);
+                fg = Theme.SUCCESS;
                 break;
         }
 

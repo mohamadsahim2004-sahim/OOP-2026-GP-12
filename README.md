@@ -10,6 +10,7 @@ Roles: Admin, Lecturer, Technical Officer, Undergraduate.
 - Windows PowerShell. `mysql` and `mysqldump` must be on the PATH, normally
   `C:\Program Files\MySQL\MySQL Server 8.0\bin`. Check with `mysql --version`.
 - VS Code with the *Extension Pack for Java* (optional)
+- The student portal uses FlatLaf (resolved by Maven) only while a student is signed in; the existing vector icon helper and GridBagLayout are retained, so flatlaf-extras and MigLayout are not required.
 
 ## Read this first - safety rules for the database
 - **Never run `database/dev_reset_database.sql`** on a database you want to keep. It drops the whole database. It is not

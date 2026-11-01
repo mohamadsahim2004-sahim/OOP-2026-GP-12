@@ -28,7 +28,8 @@ public class DbStudentCourseService implements StudentCourseService {
         }
         for (CourseOffering c : enrollmentService.getEnrolled()) {
             result.add(new CourseSummary(c.getCode(), c.getCode(), c.getTitle(), c.getSemester(), c.getCode(),
-                    progress.getOrDefault(c.getCode(), 0), null, c.getCredits(), c.getLecturerName()));
+                    progress.getOrDefault(c.getCode(), 0), null, c.getCredits(), c.getLecturerName(),
+                    c.getCourseType(), c.getScheduleTime(), c.getLecturerEmail()));
         }
         return result;
     }

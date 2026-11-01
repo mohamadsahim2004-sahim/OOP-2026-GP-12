@@ -136,12 +136,11 @@ public class MedicalRequestsPanel extends JPanel {
             JButton withdrawBtn = new JButton("Withdraw");
             withdrawBtn.setFont(Theme.FONT_TINY);
             withdrawBtn.setForeground(Theme.DANGER);
-            withdrawBtn.setBackground(Theme.DANGER_BG);
+            withdrawBtn.setBackground(Color.WHITE);
             withdrawBtn.setFocusPainted(false);
-            withdrawBtn.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createLineBorder(new Color(254, 202, 202), 1),
-                    BorderFactory.createEmptyBorder(4, 10, 4, 10)
-            ));
+            withdrawBtn.setBorder(BorderFactory.createEmptyBorder(4, 10, 4, 10));
+            withdrawBtn.setBorderPainted(false);
+            withdrawBtn.setContentAreaFilled(false);
             withdrawBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
             withdrawBtn.addActionListener(e -> {
                 int res = JOptionPane.showConfirmDialog(this,
@@ -167,7 +166,7 @@ public class MedicalRequestsPanel extends JPanel {
         JPanel details = new JPanel();
         details.setLayout(new BoxLayout(details, BoxLayout.Y_AXIS));
         details.setOpaque(true);
-        details.setBackground(new Color(249, 250, 251));
+        details.setBackground(Theme.ENROLLMENT_ROW_HOVER);
         details.setBorder(BorderFactory.createEmptyBorder(12, 14, 12, 14));
 
         JLabel reasonLbl = new JLabel("Reason: " + mr.reason() + " • Hospital/Doctor: " + mr.doctor() + " (Cert #" + mr.certificateNo() + ")");
@@ -233,7 +232,7 @@ public class MedicalRequestsPanel extends JPanel {
         return switch (st) {
             case APPROVED -> new Ui.Pill("Approved", Theme.SUCCESS_BG, Theme.SUCCESS);
             case REJECTED -> new Ui.Pill("Rejected", Theme.DANGER_BG, Theme.DANGER);
-            case WITHDRAWN -> new Ui.Pill("Withdrawn", new Color(241, 245, 249), Theme.TEXT_MUTED);
+            case WITHDRAWN -> new Ui.Pill("Withdrawn", Theme.ACCENT_GRAY_BG, Theme.TEXT_MUTED);
             case PENDING -> new Ui.Pill("Pending Review", Theme.WARNING_BG, Theme.WARNING);
         };
     }

@@ -76,7 +76,7 @@ public class UndergraduateDashboardFrame extends JFrame implements NavigationLis
 
     private void initViews() {
         cardsPanel.setOpaque(false);
-        cardsPanel.setBorder(Theme.createEmptyPadding(20, 24, 16, 24));
+        cardsPanel.setBorder(Theme.createEmptyPadding(24, 32, 24, 32));
 
         dashboardView = new DashboardView(this::navigateTo, this);
         profileView = new StudentProfileView();

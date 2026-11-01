@@ -15,12 +15,12 @@ public class CardPanel extends JPanel {
     }
 
     public CardPanel(int radius) {
-        this.cornerRadius = radius;
+        this.cornerRadius = Theme.CARD_RADIUS;
         setOpaque(false);
     }
 
     public CardPanel(int radius, Color bg) {
-        this.cornerRadius = radius;
+        this.cornerRadius = Theme.CARD_RADIUS;
         this.backgroundColor = bg;
         setOpaque(false);
     }
