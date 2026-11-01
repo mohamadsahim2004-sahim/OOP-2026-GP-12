@@ -4,6 +4,8 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import javax.swing.*;
+import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 
 import com.facultyams.Theme;
 import com.facultyams.controller.CourseController;
@@ -92,6 +94,18 @@ public class CoursesContainerView extends JPanel {
     public void setOnOpenMaterials(Runnable action) {
         overviewView.setOnOpenMaterials(action);
         pageView.setOnOpenMaterials(action);
+    }
+
+    public void setOnViewAllMaterials(Consumer<String> action) {
+        pageView.setOnViewAllMaterials(action);
+    }
+
+    public void setOnOpenAssignment(BiConsumer<String, Long> action) {
+        pageView.setOnOpenAssignment(action);
+    }
+
+    public void setOnOpenMaterial(BiConsumer<String, Integer> action) {
+        pageView.setOnOpenMaterial(action);
     }
 
     public void resetToOverview() {
