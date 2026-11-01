@@ -1717,9 +1717,7 @@ public class CourseMaterialsView extends JPanel {
         if ("GRADED".equalsIgnoreCase(assignment.status())) return "Graded";
         if ("LATE".equalsIgnoreCase(assignment.status())) return "Late";
         if (assignment.hasSubmission()) return "Submitted";
-        if (assignment.dueAt() != null && LocalDateTime.now().isAfter(assignment.dueAt())) {
-            return assignment.allowLate() && !isPastCutoff(assignment) ? "Late" : "Overdue";
-        }
+        if (isPastCutoff(assignment)) return "Overdue";
         return "Not submitted";
     }
 
