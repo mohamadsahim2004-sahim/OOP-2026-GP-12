@@ -78,7 +78,14 @@ public class UndergraduateDashboardFrame extends JFrame implements NavigationLis
         cardsPanel.setOpaque(false);
         cardsPanel.setBorder(Theme.createEmptyPadding(24, 32, 24, 32));
 
-        dashboardView = new DashboardView(this::navigateTo, this);
+        dashboardView = new DashboardView(this::navigateTo);
+        dashboardView.setAssignmentNavigation((courseCode, assignmentId) -> {
+            courseMaterialsView.openAssignment(courseCode, assignmentId);
+            navigateTo("Course Materials");
+        }, () -> {
+            courseMaterialsView.showSubmissions();
+            navigateTo("Course Materials");
+        });
         profileView = new StudentProfileView();
         courseEnrollmentView = new CourseEnrollmentView();
         coursesContainerView = new com.facultyams.ui.views.CoursesContainerView(courseEnrollmentView);

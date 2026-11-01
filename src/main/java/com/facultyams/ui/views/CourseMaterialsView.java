@@ -162,6 +162,11 @@ public class CourseMaterialsView extends JPanel {
         selectCourseItem(courseCode);
     }
 
+    public void showSubmissions() {
+        activeTab = "Submissions";
+        updateTabs();
+    }
+
     public void openAssignment(String courseCode, long assignmentId) {
         if (courseCode == null || courseCode.isBlank()) return;
         pendingCourseCode = courseCode;

@@ -2,28 +2,29 @@ package com.facultyams.ui.views;
 
 import com.facultyams.model.student.StudentNotice;
 import com.facultyams.model.student.StudentProfile;
-import com.facultyams.model.timetable.ClassSession;
+import com.facultyams.model.student.StudentAssignment;
+import com.facultyams.service.StudentAssignmentService;
 import com.facultyams.service.StudentResultService.CourseResult;
 import com.facultyams.service.StudentResultService.Summary;
-import com.facultyams.service.timetable.FileTimetableService;
 import com.facultyams.service.DataService;
 import com.facultyams.service.StudentResultService;
 import com.facultyams.ui.components.CardPanel;
 import com.facultyams.ui.theme.Theme;
 import com.facultyams.util.Constants;
-import com.facultyams.controller.NavigationListener;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.geom.Arc2D;
 import java.awt.geom.Area;
 import java.awt.geom.Ellipse2D;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Comparator;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -35,7 +36,8 @@ import javax.swing.table.JTableHeader;
  */
 public class DashboardView extends JPanel {
     private final Consumer<String> navigationHandler;
-    private final NavigationListener deadlineNavigation;
+    private BiConsumer<String, Long> assignmentNavigation = (courseCode, assignmentId) -> {};
+    private Runnable submissionsNavigation = () -> {};
     private final DataService dataService = DataService.getInstance();
 
     // Snapshot loaded from the database by refresh(); the screen is rebuilt from it.
@@ -44,7 +46,8 @@ public class DashboardView extends JPanel {
     private List<CourseResult> recentResults = new ArrayList<>();
     private List<StudentNotice> notices = new ArrayList<>();
     private List<CourseResult> allGradedResults = new ArrayList<>();
-    private List<ClassSession> todaySessions = new ArrayList<>();
+    private List<StudentAssignment> submissionDeadlines = new ArrayList<>();
+    private String deadlineLoadError;
     private int unreadNotices;
     private String loadError;
 
@@ -72,12 +75,16 @@ public class DashboardView extends JPanel {
     private static final Font FONT_CAPTION = Theme.FONT_SMALL;
     private static final Font FONT_CAP_BOLD = Theme.FONT_TINY;
 
-    public DashboardView(Consumer<String> navigationHandler, NavigationListener deadlineNavigation) {
+    public DashboardView(Consumer<String> navigationHandler) {
         this.navigationHandler = navigationHandler;
-        this.deadlineNavigation = deadlineNavigation;
         setOpaque(false);
         setLayout(new BorderLayout());
         refresh();
+    }
+
+    public void setAssignmentNavigation(BiConsumer<String, Long> action, Runnable viewAllAction) {
+        assignmentNavigation = action == null ? (courseCode, assignmentId) -> {} : action;
+        submissionsNavigation = viewAllAction == null ? () -> {} : viewAllAction;
     }
 
     /** Reloads everything from the database (loading message first, then the live dashboard or an error). */
@@ -95,7 +102,14 @@ public class DashboardView extends JPanel {
                 allGradedResults = StudentResultService.getInstance().getRecentResults(Integer.MAX_VALUE);
                 notices = dataService.getNotices();
                 unreadNotices = (int) notices.stream().filter(n -> !n.isRead()).count();
-                todaySessions = new FileTimetableService().getSessionsForDate(LocalDate.now());
+                try {
+                    submissionDeadlines = new StudentAssignmentService().getAssignmentsForStudent(null);
+                    deadlineLoadError = null;
+                } catch (RuntimeException ex) {
+                    submissionDeadlines = List.of();
+                    deadlineLoadError = ex.getMessage() == null
+                            ? "Submission deadline reminders could not be loaded." : ex.getMessage();
+                }
                 return null;
             }
 
@@ -147,7 +161,7 @@ public class DashboardView extends JPanel {
         mainContent.add(createResultsAndNoticesRow());
         mainContent.add(Box.createVerticalStrut(24));
 
-        // 4. Row 3: Performance Donut (35%) + Upcoming Deadlines (65%)
+        // 4. Row 3: Performance Donut (35%) + Submission deadlines (65%)
         mainContent.add(createPerformanceAndUpcomingRow());
 
         // ScrollPane with smooth scrolling
@@ -695,30 +709,47 @@ public class DashboardView extends JPanel {
         };
     }
 
-    /** Today's classes from the timetable of the student's enrolled courses. */
+    /** Pending assignment deadlines for the student's enrolled courses. */
     private JPanel createUpcomingDeadlinesCard() {
         CardPanel card = new CardPanel(12);
         card.setLayout(new BorderLayout(0, 10));
         card.setBorder(BorderFactory.createEmptyBorder(18, 20, 18, 20));
         JPanel header = new JPanel(new BorderLayout());
         header.setOpaque(false);
-        JLabel title = new JLabel("Today's Classes");
+        JLabel title = new JLabel("Submission deadlines");
         title.setFont(FONT_SECTION);
         title.setForeground(COLOR_TEXT_PRIMARY);
         header.add(title, BorderLayout.WEST);
-        header.add(createLink("Timetable", () -> {
-            if (deadlineNavigation != null) deadlineNavigation.openTimetable();
-        }), BorderLayout.EAST);
+        header.add(createLink("View all", submissionsNavigation), BorderLayout.EAST);
         card.add(header, BorderLayout.NORTH);
-        if (todaySessions.isEmpty()) {
-            card.add(centeredMessage("No classes scheduled for today."), BorderLayout.CENTER);
+        if (deadlineLoadError != null) {
+            card.add(centeredMessage("Deadline reminders unavailable: " + deadlineLoadError),
+                    BorderLayout.CENTER);
+            return card;
+        }
+        LocalDateTime now = LocalDateTime.now();
+        List<StudentAssignment> dueAssignments = submissionDeadlines.stream()
+                .filter(assignment -> !assignment.hasSubmission())
+                .filter(assignment -> !"GRADED".equalsIgnoreCase(assignment.status()))
+                .filter(assignment -> assignment.dueAt() != null)
+                .filter(assignment -> {
+                    LocalDateTime cutoff = assignment.cutoffAt() == null
+                            ? assignment.dueAt() : assignment.cutoffAt();
+                    return !now.isAfter(cutoff)
+                            && (now.isBefore(assignment.dueAt()) || assignment.allowLate());
+                })
+                .sorted(Comparator.comparing(StudentAssignment::dueAt))
+                .limit(4)
+                .toList();
+        if (dueAssignments.isEmpty()) {
+            card.add(centeredMessage("You're all caught up. No upcoming submissions."), BorderLayout.CENTER);
             return card;
         }
         JPanel list = new JPanel();
         list.setOpaque(false);
         list.setLayout(new BoxLayout(list, BoxLayout.Y_AXIS));
-        DateTimeFormatter time = DateTimeFormatter.ofPattern("HH:mm");
-        for (ClassSession cs : todaySessions) {
+        DateTimeFormatter deadlineFormat = DateTimeFormatter.ofPattern("d MMM, HH:mm");
+        for (StudentAssignment assignment : dueAssignments) {
             JPanel line = new JPanel(new GridBagLayout());
             line.setOpaque(false);
             line.setBorder(BorderFactory.createCompoundBorder(
@@ -728,28 +759,38 @@ public class DashboardView extends JPanel {
             c.gridy = 0;
             c.anchor = GridBagConstraints.WEST;
             c.fill = GridBagConstraints.HORIZONTAL;
-            JLabel timeLabel = new JLabel(cs.getStart().format(time) + " – " + cs.getEnd().format(time));
-            timeLabel.setFont(FONT_CAPTION);
-            timeLabel.setForeground(COLOR_TEXT_SECONDARY);
+            c.insets = new Insets(0, 0, 0, 16);
+
+            JLabel deadlineLabel = new JLabel(assignment.dueAt().format(deadlineFormat));
+            deadlineLabel.setFont(FONT_CAPTION);
+            deadlineLabel.setForeground(COLOR_TEXT_SECONDARY);
             c.gridx = 0;
             c.weightx = 0;
-            c.insets = new Insets(0, 0, 0, 16);
-            line.add(timeLabel, c);
+            line.add(deadlineLabel, c);
 
-            JLabel courseLabel = new JLabel(cs.getCourse().getCode() + " · " + cs.getDisplayName());
-            courseLabel.setFont(FONT_BODY_BOLD);
-            courseLabel.setForeground(COLOR_TEXT_PRIMARY);
+            JPanel description = new JPanel();
+            description.setOpaque(false);
+            description.setLayout(new BoxLayout(description, BoxLayout.Y_AXIS));
+            JLabel assignmentLabel = new JLabel(assignment.title());
+            assignmentLabel.setFont(FONT_BODY_BOLD);
+            assignmentLabel.setForeground(COLOR_TEXT_PRIMARY);
+            assignmentLabel.setToolTipText(assignment.title());
+            JLabel courseLabel = new JLabel(assignment.courseCode() + " · " + assignment.courseName());
+            courseLabel.setFont(FONT_CAPTION);
+            courseLabel.setForeground(COLOR_TEXT_SECONDARY);
+            description.add(assignmentLabel);
+            description.add(Box.createVerticalStrut(3));
+            description.add(courseLabel);
             c.gridx = 1;
             c.weightx = 1;
-            line.add(courseLabel, c);
+            line.add(description, c);
 
-            JLabel venueLabel = new JLabel(cs.getVenue() == null ? "—" : cs.getVenue().getName());
-            venueLabel.setFont(FONT_CAPTION);
-            venueLabel.setForeground(COLOR_TEXT_SECONDARY);
+            JLabel action = createLink("Add file", () ->
+                    assignmentNavigation.accept(assignment.courseCode(), assignment.id()));
             c.gridx = 2;
             c.weightx = 0;
-            c.insets = new Insets(0, 16, 0, 0);
-            line.add(venueLabel, c);
+            c.insets = new Insets(0, 12, 0, 0);
+            line.add(action, c);
             list.add(line);
         }
         card.add(list, BorderLayout.CENTER);
