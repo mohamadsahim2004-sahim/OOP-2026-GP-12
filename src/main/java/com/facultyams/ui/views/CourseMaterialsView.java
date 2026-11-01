@@ -129,6 +129,7 @@ public class CourseMaterialsView extends JPanel {
     private boolean populatingFilter;
     private String pendingCourseCode;
     private Long pendingAssignmentId;
+    private boolean pendingSubmissionDetails;
     private Integer pendingMaterialId;
     private String activeTab = "Materials";
     private Consumer<String> onViewCourseDetails;
@@ -184,6 +185,17 @@ public class CourseMaterialsView extends JPanel {
         if (courseCode == null || courseCode.isBlank()) return;
         pendingCourseCode = courseCode;
         pendingAssignmentId = assignmentId;
+        pendingSubmissionDetails = false;
+        selectCourseItem(courseCode);
+        activeTab = "Submissions";
+        updateTabs();
+    }
+
+    public void openSubmissionDetails(String courseCode, long assignmentId) {
+        if (courseCode == null || courseCode.isBlank()) return;
+        pendingCourseCode = courseCode;
+        pendingAssignmentId = assignmentId;
+        pendingSubmissionDetails = true;
         selectCourseItem(courseCode);
         activeTab = "Submissions";
         updateTabs();
@@ -530,8 +542,13 @@ public class CourseMaterialsView extends JPanel {
                         if (pendingAssignmentId != null) {
                             long requestedId = pendingAssignmentId;
                             pendingAssignmentId = null;
+                            boolean showDetails = pendingSubmissionDetails;
+                            pendingSubmissionDetails = false;
                             assignments.stream().filter(item -> item.id() == requestedId).findFirst()
-                                    .ifPresent(item -> SwingUtilities.invokeLater(() -> showAssignmentAction(item)));
+                                    .ifPresent(item -> SwingUtilities.invokeLater(() -> {
+                                        if (showDetails) showSubmissionDetails(item);
+                                        else showAssignmentAction(item);
+                                    }));
                         }
                     }
                 } catch (Exception ex) {

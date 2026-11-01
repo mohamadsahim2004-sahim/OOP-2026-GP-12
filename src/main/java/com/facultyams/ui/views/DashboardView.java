@@ -24,6 +24,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Comparator;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import javax.swing.*;
@@ -35,8 +37,10 @@ import javax.swing.table.JTableHeader;
  * Modern, clean, minimal Dashboard UI matching the exact SRMS undergraduate portal design.
  */
 public class DashboardView extends JPanel {
+    private static final Logger LOGGER = Logger.getLogger(DashboardView.class.getName());
     private final Consumer<String> navigationHandler;
     private BiConsumer<String, Long> assignmentNavigation = (courseCode, assignmentId) -> {};
+    private BiConsumer<String, Long> submissionDetailsNavigation = (courseCode, assignmentId) -> {};
     private Runnable submissionsNavigation = () -> {};
     private final DataService dataService = DataService.getInstance();
 
@@ -82,8 +86,12 @@ public class DashboardView extends JPanel {
         refresh();
     }
 
-    public void setAssignmentNavigation(BiConsumer<String, Long> action, Runnable viewAllAction) {
+    public void setAssignmentNavigation(BiConsumer<String, Long> action,
+                                        BiConsumer<String, Long> detailsAction,
+                                        Runnable viewAllAction) {
         assignmentNavigation = action == null ? (courseCode, assignmentId) -> {} : action;
+        submissionDetailsNavigation = detailsAction == null
+                ? (courseCode, assignmentId) -> {} : detailsAction;
         submissionsNavigation = viewAllAction == null ? () -> {} : viewAllAction;
     }
 
@@ -109,6 +117,7 @@ public class DashboardView extends JPanel {
                     submissionDeadlines = List.of();
                     deadlineLoadError = ex.getMessage() == null
                             ? "Submission deadline reminders could not be loaded." : ex.getMessage();
+                    LOGGER.log(Level.SEVERE, "Could not load student assignment deadlines", ex);
                 }
                 return null;
             }
@@ -709,7 +718,7 @@ public class DashboardView extends JPanel {
         };
     }
 
-    /** Pending assignment deadlines for the student's enrolled courses. */
+    /** Upcoming deadlines and submitted work for the student's enrolled courses. */
     private JPanel createUpcomingDeadlinesCard() {
         CardPanel card = new CardPanel(12);
         card.setLayout(new BorderLayout(0, 10));
@@ -729,26 +738,26 @@ public class DashboardView extends JPanel {
         }
         LocalDateTime now = LocalDateTime.now();
         List<StudentAssignment> dueAssignments = submissionDeadlines.stream()
-                .filter(assignment -> !assignment.hasSubmission())
-                .filter(assignment -> !"GRADED".equalsIgnoreCase(assignment.status()))
                 .filter(assignment -> assignment.dueAt() != null)
-                .filter(assignment -> {
-                    LocalDateTime cutoff = assignment.cutoffAt() == null
-                            ? assignment.dueAt() : assignment.cutoffAt();
-                    return !now.isAfter(cutoff)
-                            && (now.isBefore(assignment.dueAt()) || assignment.allowLate());
-                })
-                .sorted(Comparator.comparing(StudentAssignment::dueAt))
+                .filter(assignment -> assignment.hasSubmission() || !"GRADED".equalsIgnoreCase(assignment.status()))
+                .filter(assignment -> assignment.hasSubmission() || !now.isAfter(assignment.dueAt())
+                        || assignment.allowLate() && !now.isAfter(assignment.cutoffAt() == null
+                        ? assignment.dueAt() : assignment.cutoffAt()))
+                .sorted(Comparator
+                        .comparing((StudentAssignment assignment) -> assignment.hasSubmission())
+                        .thenComparing(assignment -> assignment.hasSubmission()
+                                        ? assignment.submittedAt() : assignment.dueAt(),
+                                Comparator.nullsLast(Comparator.naturalOrder())))
                 .limit(4)
                 .toList();
         if (dueAssignments.isEmpty()) {
-            card.add(centeredMessage("You're all caught up. No upcoming submissions."), BorderLayout.CENTER);
+            card.add(centeredMessage("No upcoming deadlines or submitted work."), BorderLayout.CENTER);
             return card;
         }
         JPanel list = new JPanel();
         list.setOpaque(false);
         list.setLayout(new BoxLayout(list, BoxLayout.Y_AXIS));
-        DateTimeFormatter deadlineFormat = DateTimeFormatter.ofPattern("d MMM, HH:mm");
+        DateTimeFormatter deadlineFormat = DateTimeFormatter.ofPattern("d MMM uuuu, HH:mm");
         for (StudentAssignment assignment : dueAssignments) {
             JPanel line = new JPanel(new GridBagLayout());
             line.setOpaque(false);
@@ -761,9 +770,23 @@ public class DashboardView extends JPanel {
             c.fill = GridBagConstraints.HORIZONTAL;
             c.insets = new Insets(0, 0, 0, 16);
 
-            JLabel deadlineLabel = new JLabel(assignment.dueAt().format(deadlineFormat));
-            deadlineLabel.setFont(FONT_CAPTION);
-            deadlineLabel.setForeground(COLOR_TEXT_SECONDARY);
+            String status = dashboardAssignmentStatus(assignment);
+            JLabel deadlineLabel = new JLabel(status);
+            deadlineLabel.setFont(FONT_CAP_BOLD);
+            deadlineLabel.setForeground(switch (status) {
+                case "Graded", "Submitted" -> COLOR_SUCCESS;
+                case "Late" -> COLOR_WARNING;
+                case "Overdue" -> COLOR_DANGER;
+                default -> COLOR_PRIMARY;
+            });
+            deadlineLabel.setOpaque(true);
+            deadlineLabel.setBackground(switch (status) {
+                case "Graded", "Submitted" -> COLOR_SUCCESS_LIGHT;
+                case "Late" -> COLOR_WARNING_LIGHT;
+                case "Overdue" -> COLOR_DANGER_LIGHT;
+                default -> COLOR_PRIMARY_LIGHT;
+            });
+            deadlineLabel.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
             c.gridx = 0;
             c.weightx = 0;
             line.add(deadlineLabel, c);
@@ -778,15 +801,28 @@ public class DashboardView extends JPanel {
             JLabel courseLabel = new JLabel(assignment.courseCode() + " · " + assignment.courseName());
             courseLabel.setFont(FONT_CAPTION);
             courseLabel.setForeground(COLOR_TEXT_SECONDARY);
+            String opened = assignment.openedAt() == null ? "Opened: Not provided"
+                    : "Opened: " + assignment.openedAt().format(deadlineFormat);
+            String deadline = "Due: " + assignment.dueAt().format(deadlineFormat);
+            JLabel datesLabel = new JLabel(opened + "   ·   " + deadline);
+            datesLabel.setFont(FONT_CAPTION);
+            datesLabel.setForeground(COLOR_TEXT_SECONDARY);
             description.add(assignmentLabel);
             description.add(Box.createVerticalStrut(3));
             description.add(courseLabel);
+            description.add(Box.createVerticalStrut(2));
+            description.add(datesLabel);
             c.gridx = 1;
             c.weightx = 1;
             line.add(description, c);
 
-            JLabel action = createLink("Add file", () ->
-                    assignmentNavigation.accept(assignment.courseCode(), assignment.id()));
+            JLabel action = createLink(assignment.hasSubmission() ? "View submission" : "Add file", () -> {
+                if (assignment.hasSubmission()) {
+                    submissionDetailsNavigation.accept(assignment.courseCode(), assignment.id());
+                } else {
+                    assignmentNavigation.accept(assignment.courseCode(), assignment.id());
+                }
+            });
             c.gridx = 2;
             c.weightx = 0;
             c.insets = new Insets(0, 12, 0, 0);
@@ -795,6 +831,16 @@ public class DashboardView extends JPanel {
         }
         card.add(list, BorderLayout.CENTER);
         return card;
+    }
+
+    private String dashboardAssignmentStatus(StudentAssignment assignment) {
+        if ("GRADED".equalsIgnoreCase(assignment.status())) return "Graded";
+        if ("LATE".equalsIgnoreCase(assignment.status())) return "Late";
+        if (assignment.hasSubmission()) return "Submitted";
+        LocalDateTime cutoff = assignment.cutoffAt() == null ? assignment.dueAt() : assignment.cutoffAt();
+        if (cutoff != null && LocalDateTime.now().isAfter(cutoff)) return "Overdue";
+        if (assignment.dueAt() != null && LocalDateTime.now().isAfter(assignment.dueAt())) return "Late";
+        return "Not submitted";
     }
 
     private JLabel createLink(String text, Runnable action) {
