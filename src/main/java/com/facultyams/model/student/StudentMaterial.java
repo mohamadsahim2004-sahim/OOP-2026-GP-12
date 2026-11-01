@@ -55,10 +55,13 @@ public class StudentMaterial {
         return r.startsWith("http://") || r.startsWith("https://");
     }
 
-    /** "Link", "File" (a reference that names a file) or "Reference" (plain text). */
+    /** "Link", "File" (a reference that names a file, also one with spaces in its name) or "Reference" (plain text). */
     public String getType() {
         if (reference.isEmpty()) return "Note";
         if (isLink()) return "Link";
+        // A file the lecturer uploaded keeps its real name, which often contains spaces
+        // ("Lecture 01 Notes.pdf"), so a known document extension always counts as a file.
+        if (reference.matches("(?i).*\\.(pdf|docx?|pptx?|xlsx?|txt|md|csv|zip|png|jpe?g|java)$")) return "File";
         return reference.matches("(?i).*\\.[a-z0-9]{2,5}$") && !reference.contains(" ") ? "File" : "Reference";
     }
 }
