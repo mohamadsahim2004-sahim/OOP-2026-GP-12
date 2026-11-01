@@ -94,6 +94,51 @@ public final class LecturerUi {
         return table;
     }
 
+    /**
+     * Lets a search box (matches registration number and name, columns 0 and 1) and an optional batch combo
+     * box ("All batches" or a batch; matched against {@code batchColumn}) filter a sortable table.
+     */
+    static void installFilter(JTable table, javax.swing.JTextField search, javax.swing.JComboBox<String> batch,
+                              int batchColumn) {
+        Runnable apply = () -> {
+            String text = search.getText() == null ? "" : search.getText().trim().toLowerCase();
+            String selectedBatch = batch == null || batch.getSelectedIndex() <= 0 ? null
+                    : String.valueOf(batch.getSelectedItem());
+            @SuppressWarnings("unchecked")
+            javax.swing.table.TableRowSorter<javax.swing.table.TableModel> sorter =
+                    (javax.swing.table.TableRowSorter<javax.swing.table.TableModel>) table.getRowSorter();
+            sorter.setRowFilter(new javax.swing.RowFilter<javax.swing.table.TableModel, Integer>() {
+                @Override
+                public boolean include(Entry<? extends javax.swing.table.TableModel, ? extends Integer> e) {
+                    boolean textOk = text.isEmpty()
+                            || String.valueOf(e.getValue(0)).toLowerCase().contains(text)
+                            || String.valueOf(e.getValue(1)).toLowerCase().contains(text);
+                    boolean batchOk = selectedBatch == null || selectedBatch.equals(String.valueOf(e.getValue(batchColumn)));
+                    return textOk && batchOk;
+                }
+            });
+        };
+        search.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            @Override public void insertUpdate(javax.swing.event.DocumentEvent e) { apply.run(); }
+            @Override public void removeUpdate(javax.swing.event.DocumentEvent e) { apply.run(); }
+            @Override public void changedUpdate(javax.swing.event.DocumentEvent e) { apply.run(); }
+        });
+        if (batch != null) {
+            batch.addActionListener(e -> apply.run());
+        }
+    }
+
+    /** Fills a batch combo box with "All batches" plus the distinct batches (keeps the selection if possible). */
+    static void fillBatches(javax.swing.JComboBox<String> combo, java.util.Collection<String> batches) {
+        Object keep = combo.getSelectedItem();
+        combo.removeAllItems();
+        combo.addItem("All batches");
+        new java.util.TreeSet<>(batches).forEach(combo::addItem);
+        if (keep != null) {
+            combo.setSelectedItem(keep);
+        }
+    }
+
     /** Two-decimal text for a percentage / mark; an en dash when there is no value. */
     static String num(Double value) {
         return value == null ? "-" : String.format("%.2f", value);

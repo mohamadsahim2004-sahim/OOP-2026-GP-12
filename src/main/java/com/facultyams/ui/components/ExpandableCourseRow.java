@@ -154,6 +154,15 @@ public class ExpandableCourseRow extends JPanel {
         detailsContent.add(chipsRow);
         detailsContent.add(Box.createVerticalStrut(8));
 
+        // Theory only / practical only / combined (project rule: 15 sessions per component)
+        if (courseAttendance.hasRecords()) {
+            JLabel splitLbl = new JLabel(computeSplitText());
+            splitLbl.setFont(Theme.FONT_BODY);
+            splitLbl.setForeground(Theme.TEXT_MAIN);
+            detailsContent.add(splitLbl);
+            detailsContent.add(Box.createVerticalStrut(8));
+        }
+
         // Smart Calculation Hint
         String hintText = computeSmartHint();
         JLabel hintLbl = new JLabel("💡 " + hintText);
@@ -179,6 +188,34 @@ public class ExpandableCourseRow extends JPanel {
         l.setForeground(fg);
         p.add(l);
         return p;
+    }
+
+    /**
+     * "Theory 86.7% | Practical 80.0% | Combined 83.3%": each component is measured against its own 15 sessions,
+     * the combined value is the course percentage shown in the header.
+     */
+    private String computeSplitText() {
+        StringBuilder sb = new StringBuilder();
+        for (String type : new String[] {"Lecture", "Practical"}) {
+            int recorded = 0;
+            int counted = 0;
+            for (SessionAttendance sa : sessions) {
+                if (!type.equalsIgnoreCase(sa.session().type())) {
+                    continue;
+                }
+                recorded++;
+                if (sa.status() == SessionStatus.PRESENT || sa.status() == SessionStatus.MEDICAL_APPROVED) {
+                    counted++;
+                }
+            }
+            if (recorded > 0) {
+                double pct = Math.min(100.0, counted * 100.0 / 15);
+                sb.append("Lecture".equals(type) ? "Theory " : "Practical ")
+                        .append(String.format(Locale.ENGLISH, "%.1f%%", pct)).append("   |   ");
+            }
+        }
+        sb.append("Combined ").append(String.format(Locale.ENGLISH, "%.1f%%", courseAttendance.percent()));
+        return sb.toString();
     }
 
     /** Uses the project rule: percentage = (present + approved medical) / total sessions of the course. */

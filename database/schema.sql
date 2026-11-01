@@ -359,6 +359,18 @@ CREATE TABLE IF NOT EXISTS course_materials (
         REFERENCES courses (course_id) ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE = InnoDB;
 
+-- Files uploaded by a lecturer with a material (bytes stored in the database; limit 10 MB in the application).
+CREATE TABLE IF NOT EXISTS course_material_files (
+    materialID  INT          NOT NULL,
+    file_name   VARCHAR(255) NOT NULL,
+    file_size   BIGINT       NOT NULL,
+    file_data   LONGBLOB     NOT NULL,
+    uploaded_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (materialID),
+    CONSTRAINT fk_cmf_material FOREIGN KEY (materialID)
+        REFERENCES course_materials (materialID) ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE = InnoDB;
+
 -- -----------------------------------------------------------------------------
 -- Migration history: every numbered migration records itself here.
 -- -----------------------------------------------------------------------------

@@ -12,7 +12,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /** Read-mostly lookups (courses, components, batches, students) used by the Technical Officer screens. */
 public class TechnicalLookupDAO {
@@ -30,6 +32,23 @@ public class TechnicalLookupDAO {
             throw new DatabaseException("Could not load the courses.", e);
         }
         return list;
+    }
+
+    /** How many components (Theory / Practical) each course has, keyed by course code. Read-only. */
+    public Map<String, Integer> componentCountsByCourseCode() throws DatabaseException {
+        String sql = "SELECT c.course_code, COUNT(cc.component_id) FROM courses c "
+                + "JOIN course_component cc ON cc.course_id = c.course_id GROUP BY c.course_code";
+        Map<String, Integer> map = new HashMap<>();
+        try (Connection con = DatabaseConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                map.put(rs.getString(1), rs.getInt(2));
+            }
+        } catch (SQLException e) {
+            throw new DatabaseException("Could not load the course components.", e);
+        }
+        return map;
     }
 
     public List<String> batches() throws DatabaseException {
@@ -140,4 +159,4 @@ public class TechnicalLookupDAO {
         }
         return list;
     }
-}
+}

@@ -108,6 +108,25 @@ public class LecturerAccessService {
         return map;
     }
 
+    /**
+     * Attendance per student for one component type ("THEORY" / "PRACTICAL"); {@code null} means both
+     * components combined (the same result as {@link #attendanceByStudent(int)}).
+     */
+    public Map<Integer, AcademicRules.AttendanceInfo> attendanceByStudent(int courseId, String type)
+            throws DatabaseException {
+        if (type == null) {
+            return attendanceByStudent(courseId);
+        }
+        requireOwnedCourse(courseId);
+        int totalSessions = AcademicRules.SESSIONS_PER_COMPONENT * dao.countAttendanceComponents(courseId, type);
+        Map<Integer, AcademicRules.AttendanceInfo> map = new HashMap<>();
+        for (AttendanceAgg a : dao.attendanceByStudent(courseId, type)) {
+            map.put(a.studentId(), new AcademicRules.AttendanceInfo(
+                    a.present(), a.absent(), a.approvedMedical(), totalSessions));
+        }
+        return map;
+    }
+
     public AcademicRules.AttendanceInfo attendanceOf(Map<Integer, AcademicRules.AttendanceInfo> map, int studentId) {
         return map.getOrDefault(studentId, AcademicRules.AttendanceInfo.none());
     }

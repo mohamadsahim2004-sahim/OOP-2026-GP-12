@@ -203,6 +203,31 @@ public class CourseMaterialsView extends JPanel {
     }
 
     private void downloadMaterial(StudentMaterial m) {
+        // 1) a file the lecturer uploaded through the application (stored in the database)
+        com.facultyams.dao.StudentMaterialDAO.StoredFile stored;
+        try {
+            stored = dataService.getMaterialFile(m.getId());
+        } catch (RuntimeException ex) {
+            JOptionPane.showMessageDialog(this, ex.getMessage(), "Download Failed", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        if (stored != null) {
+            java.io.File downloads = new java.io.File(System.getProperty("user.home"), "Downloads");
+            JFileChooser chooser = new JFileChooser(downloads.isDirectory() ? downloads : new java.io.File(System.getProperty("user.home")));
+            chooser.setSelectedFile(new java.io.File(chooser.getCurrentDirectory(),
+                    java.nio.file.Path.of(stored.fileName()).getFileName().toString()));
+            if (chooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) return;
+            try {
+                java.nio.file.Files.write(chooser.getSelectedFile().toPath(), stored.data());
+                JOptionPane.showMessageDialog(this, "Saved to " + chooser.getSelectedFile(),
+                        "Download Complete", JOptionPane.INFORMATION_MESSAGE);
+            } catch (java.io.IOException ex) {
+                JOptionPane.showMessageDialog(this, "Could not save the file: " + ex.getMessage(),
+                        "Download Failed", JOptionPane.ERROR_MESSAGE);
+            }
+            return;
+        }
+        // 2) otherwise a file placed by hand in data/materials/<courseCode>/ (older behaviour)
         String name = java.nio.file.Path.of(m.getReference().replace('\\', '/')).getFileName().toString();
         String ext = name.contains(".") ? name.substring(name.lastIndexOf('.') + 1).toLowerCase() : "";
         java.nio.file.Path source = materialSource(m.getCourseCode(), name);

@@ -43,6 +43,8 @@ public class AttendancePanel extends TechnicalPage {
     private final JComboBox<Object> courseBox = new JComboBox<>();
     private final JComboBox<Object> batchBox = new JComboBox<>();
     private final JComboBox<String> statusBox = new JComboBox<>(new String[] {"All statuses", "Present", "Absent", "Late"});
+    private final JComboBox<AttendanceService.ComponentView> viewBox =
+            new JComboBox<>(AttendanceService.ComponentView.values());
     private final HintField fromField = new HintField("From (yyyy-MM-dd)", 9);
     private final HintField toField = new HintField("To (yyyy-MM-dd)", 9);
 
@@ -69,6 +71,7 @@ public class AttendancePanel extends TechnicalPage {
         JButton correct = button("Correct Status", "Change the status of the selected attendance record", KeyEvent.VK_C,
                 this::correctStatus);
         statusBox.setToolTipText("The status filter applies to the history tab only");
+        viewBox.setToolTipText("Student Summary tab: theory only, practical only, or both combined");
         studentField.addActionListener(e -> search());
         fromField.addActionListener(e -> search());
         toField.addActionListener(e -> search());
@@ -78,6 +81,7 @@ public class AttendancePanel extends TechnicalPage {
         filters.add(labeled("Course", courseBox));
         filters.add(labeled("Batch", batchBox));
         filters.add(labeled("Status", statusBox));
+        filters.add(labeled("Summary", viewBox));
         filters.add(fromField);
         filters.add(toField);
         filters.add(search);
@@ -120,6 +124,7 @@ public class AttendancePanel extends TechnicalPage {
         statusBox.setSelectedIndex(0);
         courseBox.setSelectedIndex(0);
         batchBox.setSelectedIndex(0);
+        viewBox.setSelectedIndex(0);
         search();
     }
 
@@ -144,7 +149,8 @@ public class AttendancePanel extends TechnicalPage {
             showError(e.getMessage());
             return;
         }
-        load("Loading attendance...", () -> new Result(service.getHistory(f), service.getSummary(f)), r -> {
+        AttendanceService.ComponentView view = (AttendanceService.ComponentView) viewBox.getSelectedItem();
+        load("Loading attendance...", () -> new Result(service.getHistory(f), service.getSummary(f, view)), r -> {
             historyRows = r.history();
             List<Object[]> history = new ArrayList<>();
             for (AttendanceRow a : r.history()) {
@@ -214,20 +220,24 @@ public class AttendancePanel extends TechnicalPage {
         AttendanceFilter f;
         try {
             AttendanceFilter base = currentFilter();
-            f = new AttendanceFilter(null, s.userId(), null, s.componentId(), null, base.from(), base.to(), null);
+            boolean combined = AttendanceService.COMBINED_TYPE.equalsIgnoreCase(s.type());
+            f = new AttendanceFilter(null, s.userId(), null, combined ? null : s.componentId(), null, base.from(), base.to(), null);
         } catch (com.facultyams.exception.ValidationException e) {
             showError(e.getMessage());
             return;
         }
-        load("Loading " + s.fullName() + "...", () -> service.getHistory(f), sessions -> {
-            ReadOnlyTableModel m = ReadOnlyTableModel.ofStrings("Date", "Session", "Status", "Medical");
+        load("Loading " + s.fullName() + "...", () -> service.getHistory(f), allSessions -> {
+            // A combined row covers both components of one course, so keep only that course's sessions.
+            List<AttendanceRow> sessions = allSessions.stream()
+                    .filter(a -> a.courseCode().equals(s.courseCode())).toList();
+            ReadOnlyTableModel m = ReadOnlyTableModel.ofStrings("Date", "Type", "Session", "Status", "Medical");
             for (AttendanceRow a : sessions) {
-                m.addRow(new Object[] {Display.date(a.date()), String.valueOf(a.sessionNo()),
+                m.addRow(new Object[] {Display.date(a.date()), Display.capitalize(a.type()), String.valueOf(a.sessionNo()),
                         Display.capitalize(a.status()), a.medicalStatus() == null ? "" : Display.capitalize(a.medicalStatus())});
             }
             JTable t = table(m);
-            t.getColumnModel().getColumn(2).setCellRenderer(new StatusRenderer());
             t.getColumnModel().getColumn(3).setCellRenderer(new StatusRenderer());
+            t.getColumnModel().getColumn(4).setCellRenderer(new StatusRenderer());
             com.facultyams.ui.admin.AdminTheme.styleTable(t);
             JLabel head = new JLabel("<html><b>" + escape(s.fullName()) + "</b> (" + escape(s.registrationNo()) + ")<br>"
                     + escape(s.courseCode() + " " + Display.capitalize(s.type())) + "<br>"
@@ -248,4 +258,4 @@ public class AttendancePanel extends TechnicalPage {
     private static String escape(String s) {
         return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
     }
-}
+}

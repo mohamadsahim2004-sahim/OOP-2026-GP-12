@@ -123,7 +123,7 @@ public class StudentResultsPanel extends JPanel implements Refreshable {
         });
     }
 
-    private static String describe(StudentRow student, GPAService.GpaSummary gpa, boolean noResultsInMyCourses) {
+    static String describe(StudentRow student, GPAService.GpaSummary gpa, boolean noResultsInMyCourses) {
         StringBuilder sb = new StringBuilder();
         sb.append(student.registrationNo()).append(" - ").append(student.fullName()).append('\n');
         if (noResultsInMyCourses) {

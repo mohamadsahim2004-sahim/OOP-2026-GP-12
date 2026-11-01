@@ -21,14 +21,19 @@ public class StudentResultDAO {
         }
     }
 
+    /**
+     * Results of the student's enrolled courses. Only PUBLISHED marks are returned: a lecturer's draft results
+     * stay hidden from the student until the lecturer publishes them (the same rule the lecturer's GPA uses).
+     */
     public List<ResultRow> findResults(int studentId) throws DatabaseException {
         String sql = "SELECT c.course_id, c.course_code, c.course_name, c.credits, c.academic_level, c.semester, "
                 + "lu.full_name AS lecturer, (e.status = 'ENROLLED') AS enrolled, "
                 + "m.obtainMarks, m.finalMarks, m.overall_mark, m.grade, m.grade_points, m.isEligible "
                 + "FROM courses c "
                 + "LEFT JOIN enrollments e ON e.course_id = c.course_id AND e.student_id = ? "
-                + "LEFT JOIN marks m ON m.student_id = ? AND m.course_id = c.course_id AND m.marksid = "
-                + "(SELECT MAX(m2.marksid) FROM marks m2 WHERE m2.student_id = ? AND m2.course_id = c.course_id) "
+                + "LEFT JOIN marks m ON m.student_id = ? AND m.course_id = c.course_id AND m.published = 1 AND m.marksid = "
+                + "(SELECT MAX(m2.marksid) FROM marks m2 WHERE m2.student_id = ? AND m2.course_id = c.course_id "
+                + "AND m2.published = 1) "
                 + "LEFT JOIN users lu ON lu.user_id = c.lecturer_id "
                 + "WHERE m.marksid IS NOT NULL OR e.status = 'ENROLLED' "
                 + "ORDER BY c.academic_level, c.semester, c.course_code";

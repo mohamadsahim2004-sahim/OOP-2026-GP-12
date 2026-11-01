@@ -130,9 +130,19 @@ public class LecturerService {
 
     /** Attendance of every student of an assigned course (students with no records are included). */
     public AttendanceView getAttendance(int courseId) throws DatabaseException {
+        return getAttendance(courseId, null);
+    }
+
+    /**
+     * Attendance of the students of a course for one component type ("THEORY" or "PRACTICAL");
+     * {@code null} gives theory and practical combined.
+     */
+    public AttendanceView getAttendance(int courseId, String type) throws DatabaseException {
         Course course = access.requireOwnedCourse(courseId);
-        Map<Integer, AcademicRules.AttendanceInfo> byStudent = access.attendanceByStudent(courseId);
-        int expected = AcademicRules.SESSIONS_PER_COMPONENT * accessDAO.countAttendanceComponents(courseId);
+        Map<Integer, AcademicRules.AttendanceInfo> byStudent = access.attendanceByStudent(courseId, type);
+        int expected = AcademicRules.SESSIONS_PER_COMPONENT * (type == null
+                ? accessDAO.countAttendanceComponents(courseId)
+                : accessDAO.countAttendanceComponents(courseId, type));
         List<AttendanceRow> rows = new ArrayList<>();
         for (StudentRow s : access.getStudents(courseId)) {
             rows.add(new AttendanceRow(s, access.attendanceOf(byStudent, s.studentId())));
