@@ -58,7 +58,7 @@ public class NoticesView extends JPanel {
 
         JPanel page = new NoticePage();
         page.setLayout(new BoxLayout(page, BoxLayout.Y_AXIS));
-        page.setBorder(new EmptyBorder(24, 24, 24, 24));
+        page.setBorder(new EmptyBorder(0, 0, 0, 0));
         page.add(createHeaderCard());
         page.add(Box.createVerticalStrut(16));
         page.add(createToolbar());
