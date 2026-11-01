@@ -169,7 +169,7 @@ public class TimetableView extends JPanel {
         JPanel top = new JPanel();
         top.setOpaque(false);
         top.setLayout(new BoxLayout(top, BoxLayout.Y_AXIS));
-        top.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, Theme.PAGE_PADDING + 8));
+        top.setBorder(BorderFactory.createEmptyBorder());
         top.add(header);
         top.add(Box.createVerticalStrut(Theme.CARD_GAP));
 
