@@ -17,3 +17,6 @@ src/main/resources/db.properties
 .DS_Store
 Thumbs.db
 data/
+
+backups/
+backup_*.sql

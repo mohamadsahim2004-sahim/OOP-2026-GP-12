@@ -244,8 +244,7 @@ WHERE u.username = 'tg0961' AND u.email = 'tg0961@fot.example.lk' AND u.role = '
 
 -- ---- courses (natural key: course_code). Last digit of the code = credits.
 INSERT INTO courses (course_code, course_name, credits, academic_level, semester, course_type, department_id, lecturer_id)
-SELECT 'ICT2113', 'Data Structures and Algorithms', 3, 2, 1, 'THEORY_AND_PRACTICAL',
-       (SELECT department_id FROM departments WHERE department_code = 'DICT'),
+SELECT 'ICT2113', 'Data Structures and Algorithms', 3, 2, 1, 'THEORY_AND_PRACTICAL',       (SELECT department_id FROM departments WHERE department_code = 'DICT'),
        (SELECT u.user_id FROM users u WHERE u.username = 'lec.perera' AND u.email = 'lec.perera@fot.example.lk' AND u.role = 'LECTURER') FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM courses WHERE course_code = 'ICT2113');
 INSERT INTO courses (course_code, course_name, credits, academic_level, semester, course_type, department_id, lecturer_id)
