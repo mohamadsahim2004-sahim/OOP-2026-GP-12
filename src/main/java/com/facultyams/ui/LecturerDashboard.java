@@ -66,6 +66,10 @@ public class LecturerDashboard extends JFrame {
     private final Color sidebarColor = new Color(229, 236, 245);
     private final Color backgroundColor = new Color(244, 247, 251);
     private final Color textColor = new Color(40, 69, 99);
+    private final java.util.Map<String, JButton> menuButtons =
+            new java.util.LinkedHashMap<>();
+
+    private JButton activeMenuButton;
 
     /** Section name -> the object that reloads that section's data when it is opened. */
     private final java.util.Map<String, Refreshable> pages = new java.util.LinkedHashMap<>();
@@ -98,71 +102,91 @@ public class LecturerDashboard extends JFrame {
 
     // ------------------------------------------------------------------ frame
 
+
     private void createHeader(User user) {
         JPanel header = new JPanel(new BorderLayout());
-        header.setBackground(navy);
-        header.setBorder(new EmptyBorder(15, 20, 15, 20));
+        header.setBackground(new Color(13, 55, 96));
+        header.setBorder(new EmptyBorder(18, 25, 18, 25));
 
-        JLabel title = new JLabel("FacultyAMS - Lecturer Portal");
-        title.setFont(new Font("Arial", Font.BOLD, 22));
+        JLabel title = new JLabel("FacultyAMS  |  Lecturer Portal");
+        title.setFont(new Font("Arial", Font.BOLD, 23));
         title.setForeground(Color.WHITE);
 
-        JLabel who = new JLabel(user.getFullName() + "   ");
+        JLabel who = new JLabel(user.getFullName());
+        who.setFont(new Font("Arial", Font.BOLD, 13));
         who.setForeground(Color.WHITE);
 
         JButton notification = new JButton("Notices");
+        notification.setFont(new Font("Arial", Font.BOLD, 13));
+        notification.setBackground(Color.WHITE);
+        notification.setForeground(new Color(13, 55, 96));
+        notification.setFocusPainted(false);
+        notification.setBorder(new EmptyBorder(9, 18, 9, 18));
+        notification.setCursor(new Cursor(Cursor.HAND_CURSOR));
         notification.addActionListener(e -> showSection("Notices"));
 
-        JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 0));
         right.setOpaque(false);
         right.add(who);
         right.add(notification);
 
         header.add(title, BorderLayout.WEST);
         header.add(right, BorderLayout.EAST);
+
         add(header, BorderLayout.NORTH);
     }
 
+
+
     private void createSidebar() {
         sidebar.setLayout(new BoxLayout(sidebar, BoxLayout.Y_AXIS));
-        sidebar.setBackground(sidebarColor);
-        sidebar.setBorder(new EmptyBorder(15, 10, 15, 10));
+        sidebar.setBackground(new Color(18, 57, 94));
+        sidebar.setBorder(new EmptyBorder(35, 12, 15, 12));
         sidebar.setPreferredSize(new Dimension(275, 0));
 
         JLabel menuTitle = new JLabel("MAIN MENU");
-        menuTitle.setFont(new Font("Arial", Font.BOLD, 12));
-        menuTitle.setForeground(textColor);
-        menuTitle.setBorder(new EmptyBorder(0, 8, 15, 0));
+        menuTitle.setFont(new Font("Arial", Font.BOLD, 14));
+        menuTitle.setForeground(Color.WHITE);
+        menuTitle.setBorder(new EmptyBorder(10, 10, 20, 0));
         menuTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
         sidebar.add(menuTitle);
 
         for (String item : pages.keySet()) {
             JButton button = createMenuButton(item);
+            menuButtons.put(item, button);
+
             button.addActionListener(e -> showSection(item));
+
             sidebar.add(button);
-            sidebar.add(Box.createVerticalStrut(5));
+            sidebar.add(Box.createVerticalStrut(8));
         }
 
         JButton logout = createMenuButton("Logout");
         logout.addActionListener(e -> DashboardRouter.logout(this));
-        sidebar.add(Box.createVerticalGlue());
-        sidebar.add(logout);
+
+        sidebar.add(Box.createVerticalStrut(20));
+        sidebar.add(logout); sidebar.add(logout);
 
         add(sidebar, BorderLayout.WEST);
     }
 
     private JButton createMenuButton(String text) {
         JButton button = new JButton(text);
-        button.setFont(new Font("Arial", Font.PLAIN, 13));
+
+        button.setFont(new Font("Arial", Font.BOLD, 13));
         button.setHorizontalAlignment(SwingConstants.LEFT);
-        button.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
-        button.setPreferredSize(new Dimension(250, 40));
-        button.setBackground(sidebarColor);
-        button.setForeground(textColor);
-        button.setBorder(new EmptyBorder(8, 10, 8, 10));
+        button.setMaximumSize(new Dimension(Integer.MAX_VALUE, 45));
+        button.setPreferredSize(new Dimension(250, 45));
+
+        button.setBackground(Color.WHITE);
+        button.setForeground(new Color(18, 57, 94));
+
+        button.setBorder(new EmptyBorder(10, 15, 10, 10));
         button.setFocusPainted(false);
+        button.setOpaque(true);
         button.setAlignmentX(Component.LEFT_ALIGNMENT);
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
         return button;
     }
 
@@ -220,6 +244,19 @@ public class LecturerDashboard extends JFrame {
         if (!pages.containsKey(name)) {
             return;
         }
+
+        if (activeMenuButton != null) {
+            activeMenuButton.setBackground(Color.WHITE);
+            activeMenuButton.setForeground(new Color(18, 57, 94));
+        }
+
+        activeMenuButton = menuButtons.get(name);
+
+        if (activeMenuButton != null) {
+            activeMenuButton.setBackground(new Color(105, 185, 247));
+            activeMenuButton.setForeground(new Color(13, 55, 96));
+        }
+
         cardLayout.show(mainContent, name);
         pages.get(name).refresh();
     }

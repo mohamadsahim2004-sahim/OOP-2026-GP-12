@@ -18,6 +18,11 @@ import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridLayout;
 import java.util.function.Consumer;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
+import javax.swing.JTable;
+import javax.swing.table.JTableHeader;
 
 /** Lecturer dashboard: live figures from the database and a list of the lecturer's courses. */
 public class DashboardHomePanel extends JPanel implements Refreshable {
@@ -66,12 +71,12 @@ public class DashboardHomePanel extends JPanel implements Refreshable {
         cards.setOpaque(false);
         for (int i = 0; i < captions.length; i++) {
             values[i] = new JLabel("-", JLabel.CENTER);
-            values[i].setFont(new Font("Arial", Font.BOLD, 26));
-            values[i].setForeground(NAVY);
+            values[i].setFont(new Font("Arial", Font.BOLD, 30));   values[i].setForeground(NAVY);
             JLabel caption = new JLabel(captions[i], JLabel.CENTER);
-            caption.setFont(new Font("Arial", Font.PLAIN, 12));
-            JPanel card = new JPanel(new BorderLayout());
-
+            caption.setFont(new Font("Arial", Font.BOLD, 13));
+            JPanel card = new RoundedCard(CARD_COLORS[i], CARD_BORDERS[i]);
+            card.setLayout(new BorderLayout(0, 8));
+            card.setBorder(BorderFactory.createEmptyBorder(12, 8, 12, 8));
             card.setBackground(CARD_COLORS[i]);
 
             card.setBorder(BorderFactory.createCompoundBorder(
@@ -99,8 +104,26 @@ public class DashboardHomePanel extends JPanel implements Refreshable {
         top.add(links, BorderLayout.SOUTH);
 
         add(top, BorderLayout.NORTH);
-        add(new JScrollPane(LecturerUi.styledTable(model)), BorderLayout.CENTER);
-        add(status, BorderLayout.SOUTH);
+        JTable courseTable = LecturerUi.styledTable(model);
+
+        courseTable.setRowHeight(38);
+        courseTable.setFont(new Font("Arial", Font.PLAIN, 13));
+        courseTable.setForeground(new Color(40, 69, 99));
+        courseTable.setGridColor(new Color(225, 232, 240));
+        courseTable.setShowGrid(true);
+
+        JTableHeader tableHeader = courseTable.getTableHeader();
+        tableHeader.setFont(new Font("Arial", Font.BOLD, 13));
+        tableHeader.setBackground(new Color(220, 234, 252));
+        tableHeader.setForeground(NAVY);
+        tableHeader.setOpaque(true);
+        tableHeader.setPreferredSize(new java.awt.Dimension(0, 38));
+
+        JScrollPane scrollPane = new JScrollPane(courseTable);
+        scrollPane.setBorder(BorderFactory.createLineBorder(
+                new Color(210, 220, 235)));
+
+        add(scrollPane, BorderLayout.CENTER);     add(status, BorderLayout.SOUTH);
     }
 
     @Override
@@ -126,5 +149,39 @@ public class DashboardHomePanel extends JPanel implements Refreshable {
                     ? "No courses are assigned to you yet. Ask the administrator to assign courses."
                     : " ");
         });
+    }
+    private static class RoundedCard extends JPanel {
+
+        private static final long serialVersionUID = 1L;
+
+        private final Color cardColor;
+        private final Color borderColor;
+
+        RoundedCard(Color cardColor, Color borderColor) {
+            this.cardColor = cardColor;
+            this.borderColor = borderColor;
+            setOpaque(false);
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+
+            g2.setRenderingHint(
+                    RenderingHints.KEY_ANTIALIASING,
+                    RenderingHints.VALUE_ANTIALIAS_ON
+            );
+
+            g2.setColor(cardColor);
+            g2.fillRoundRect(0, 0, getWidth() - 1,
+                    getHeight() - 1, 20, 20);
+
+            g2.setColor(borderColor);
+            g2.drawRoundRect(0, 0, getWidth() - 1,
+                    getHeight() - 1, 20, 20);
+
+            g2.dispose();
+            super.paintComponent(g);
+        }
     }
 }
