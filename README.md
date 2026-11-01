@@ -144,8 +144,8 @@ java -cp "target/classes;target/lib/*" com.facultyams.Main
 $demo = "sample_data.sql","migrations/001_sample_notices_timetables.sql","migrations/004_attendance_test_data.sql","migrations/006_lecturer_test_data.sql","migrations/008_student_test_data.sql"
 foreach ($f in $demo) { Write-Host "== $f"; mysql -u <admin_user> -p faculty_ams --table -e "source database/$f"; if ($LASTEXITCODE -ne 0) { break } }
 ```
-Run it **after** section 2. Every script is repeatable: it inserts only rows that do not exist yet, matches people by
-username + e-mail (`@fot.example.lk`), never updates a real account and never deletes attendance or marks.
+Run the scripts listed in `$demo` **after** section 2. They are repeatable development seeds: they insert only rows that
+do not exist yet, match people by username + e-mail (`@fot.example.lk`), and do not update or delete existing data.
 If a real account already uses a demo username, `sample_data.sql` lists it ("skipped: ...") and leaves it alone.
 
 | Role | Username(s) | Password |
@@ -163,6 +163,15 @@ For `StudentModuleChecks` only (throw-away database that contains **only** demo 
 ```powershell
 mysql -u <admin_user> -p faculty_ams -e "source database/test/student_checks_fixture.sql"
 ```
+
+To try a medical submission with clickable calendar dates, run this optional fixture on the development database:
+```powershell
+mysql -u <admin_user> -p faculty_ams -e "source database/test/medical_calendar_demo.sql"
+```
+It makes the existing absent ICT2113 theory session selectable for `tg1002` without changing its attendance status or
+creating a medical request. Log in as `tg1002` / `student123`, open **Attendance > Submit Medical Certificate**, then
+click the displayed weekday twice to set the start and end of the range. The fixture refuses to run if that sample
+absence is missing or already has a medical request; it must not be used with real student data.
 
 ## 6. Verify
 Read-only; one result set `check_name | status | detail` (`PASS`, `FAIL`, `WARN`, `INFO`, `SKIP`) followed by reports:

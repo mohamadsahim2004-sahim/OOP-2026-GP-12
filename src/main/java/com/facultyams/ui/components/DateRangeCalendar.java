@@ -213,8 +213,8 @@ public class DateRangeCalendar extends JPanel {
         this.rangeStart = start;
         this.rangeEnd = end;
 
-        if (start != null) fromField.setText(start.format(INPUT_FMT));
-        if (end != null) toField.setText(end.format(INPUT_FMT));
+        fromField.setText(start == null ? "" : start.format(INPUT_FMT));
+        toField.setText(end == null ? "" : end.format(INPUT_FMT));
 
         canvas.repaint();
         firePropertyChange("range", new LocalDate[]{ oldStart, oldEnd }, new LocalDate[]{ start, end });
@@ -296,11 +296,8 @@ public class DateRangeCalendar extends JPanel {
                     if (d == null || !isSelectable(d)) return;
 
                     if (rangeStart == null || (rangeStart != null && rangeEnd != null)) {
-                        // First click = start
                         setRange(d, null);
-                        rangeEnd = null;
                     } else {
-                        // Second click = end
                         setRange(rangeStart, d);
                     }
                 }
@@ -323,7 +320,6 @@ public class DateRangeCalendar extends JPanel {
                             if (isSelectable(focusedDate)) {
                                 if (rangeStart == null || (rangeStart != null && rangeEnd != null)) {
                                     setRange(focusedDate, null);
-                                    rangeEnd = null;
                                 } else {
                                     setRange(rangeStart, focusedDate);
                                 }
@@ -348,7 +344,7 @@ public class DateRangeCalendar extends JPanel {
         }
 
         private LocalDate dateAt(Point p) {
-            int topY = 28;
+            int topY = 24;
             if (p.y < topY) return null;
             int col = p.x / CELL_SIZE;
             int row = (p.y - topY) / CELL_SIZE;
