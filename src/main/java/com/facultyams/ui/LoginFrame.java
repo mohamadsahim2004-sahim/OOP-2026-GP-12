@@ -14,8 +14,8 @@ public class LoginFrame extends JFrame {
             dispose();
             DashboardRouter.openDashboard(user);
         }));
-        setSize(new Dimension(520, 560));
-        setMinimumSize(new Dimension(480, 500));
+        setSize(new Dimension(900, 640));
+        setMinimumSize(new Dimension(460, 590));
         setLocationRelativeTo(null);
     }
 }

@@ -42,14 +42,40 @@ public class ReportsPanel extends JPanel implements Refreshable {
         top.add(refreshButton);
         top.add(exportButton);
 
-        JPanel tables = new JPanel(new GridLayout(1, 3, 16, 0));
-        tables.add(section("Users by role", rolesModel));
-        tables.add(section("Departments", departmentsModel));
-        tables.add(section("Timetable load", timetableModel));
+        // Unequal shares: the department table needs the most room, the two-column timetable table the least.
+        JPanel tables = new ScrollablePanel(new java.awt.GridBagLayout(), 640);
+        java.awt.GridBagConstraints gc = new java.awt.GridBagConstraints();
+        gc.fill = java.awt.GridBagConstraints.BOTH;
+        gc.weighty = 1;
+        gc.insets = new java.awt.Insets(0, 0, 0, 16);
+        gc.gridx = 0;
+        gc.weightx = 1.0;
+        tables.add(section("Users by role", rolesModel, 130, 55, 55, 65), gc);
+        gc.gridx = 1;
+        gc.weightx = 1.3;
+        tables.add(section("Departments", departmentsModel, 55, 170, 65, 55), gc);
+        gc.gridx = 2;
+        gc.weightx = 0.7;
+        gc.insets = new java.awt.Insets(0, 0, 0, 0);
+        tables.add(section("Timetable load", timetableModel, 110, 90), gc);
 
+        // below 640 px wide the three tables scroll sideways instead of cutting their columns short
+        JScrollPane tableScroll = new JScrollPane(tables);
+        tableScroll.setBorder(null);
+        tableScroll.setOpaque(false);
+        tableScroll.getViewport().setOpaque(false);
         add(top, BorderLayout.NORTH);
-        add(tables, BorderLayout.CENTER);
+        add(tableScroll, BorderLayout.CENTER);
         AdminTheme.apply(this);
+    }
+
+    /** "TECHNICAL_OFFICER" -> "Technical Officer"; unknown values are shown as stored. */
+    private static String roleName(String stored) {
+        try {
+            return com.facultyams.security.Role.valueOf(stored).getDisplayName();
+        } catch (IllegalArgumentException | NullPointerException e) {
+            return String.valueOf(stored);
+        }
     }
 
     private static DefaultTableModel model(String... columns) {
@@ -61,8 +87,11 @@ public class ReportsPanel extends JPanel implements Refreshable {
         };
     }
 
-    private static JPanel section(String title, DefaultTableModel model) {
+    private static JPanel section(String title, DefaultTableModel model, int... widths) {
         JTable table = new JTable(model);
+        for (int i = 0; i < widths.length && i < table.getColumnCount(); i++) {
+            table.getColumnModel().getColumn(i).setPreferredWidth(widths[i]);
+        }
         JScrollPane scroll = new JScrollPane(table);
         scroll.setColumnHeaderView(table.getTableHeader());
         JLabel heading = new JLabel(title);
@@ -80,7 +109,7 @@ public class ReportsPanel extends JPanel implements Refreshable {
         try {
             rolesModel.setRowCount(0);
             for (RoleSummary r : reportService.getUsersByRole()) {
-                rolesModel.addRow(new Object[]{r.role(), r.total(), r.active(), r.total() - r.active()});
+                rolesModel.addRow(new Object[]{roleName(r.role()), r.total(), r.active(), r.total() - r.active()});
             }
             departmentsModel.setRowCount(0);
             for (DepartmentSummary d : reportService.getDepartmentOverview()) {

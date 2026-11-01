@@ -10,6 +10,9 @@ import com.facultyams.security.Session;
 
 /** Authenticates users and manages their session. */
 public class AuthService {
+    /** Verified against when the user does not exist, so an unknown name costs the same time as a wrong password. */
+    private static final String DUMMY_HASH = PasswordUtil.hashPassword("not-a-real-password");
+
     private final UserDAO userDAO;
 
     public AuthService() { this(new UserDAO()); }
@@ -38,6 +41,9 @@ public class AuthService {
             Session.end(); // a failed attempt must never leave an earlier session active
             throw e;                                            // NEW
         }                                                       // NEW
+        if (user == null) {
+            PasswordUtil.verifyPassword(password, DUMMY_HASH);
+        }
         if (user == null || !PasswordUtil.verifyPassword(password, user.getPasswordHash())) {
             Session.end();
             throw new AuthenticationException("Invalid username or password.");

@@ -4,7 +4,7 @@
 -- Adds departments.head_user_id (nullable, points at the lecturer who heads the
 -- department). Safe to run more than once and never touches existing rows.
 --
---   mysql -u root -p faculty_ams < database/migrations/002_department_head.sql
+--   mysql -u <admin_user> -p faculty_ams < database/migrations/002_department_head.sql
 -- =============================================================================
 
 USE faculty_ams;

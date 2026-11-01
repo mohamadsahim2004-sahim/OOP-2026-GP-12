@@ -1,6 +1,7 @@
 package com.facultyams.model;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 public class Medical {
     private int medicalId;
@@ -9,6 +10,11 @@ public class Medical {
     private LocalDate submittedDate;
     private String reason;
     private  String approvalStatus;
+    private int submittedBy;                 // user who filed the medical (student or technical officer); 0 = unknown
+    private String evidenceName;             // original file name shown to users
+    private String evidenceFile;             // generated storage name (never shown, never a path)
+    private String rejectionReason;
+    private LocalDateTime decidedAt;
 
     public Medical(){}
 
@@ -78,7 +84,24 @@ public class Medical {
     public boolean isApproved() {
     return approvalStatus.equals("approved");
 }
-    
 
+    /** reviewedId is 0 until a technical officer has decided the medical. */
+    public boolean isDecided() {
+        return !approvalStatus.equals("pending");
+    }
 
+    public int getSubmittedBy() { return submittedBy; }
+    public void setSubmittedBy(int submittedBy) { this.submittedBy = submittedBy; }
+
+    public String getEvidenceName() { return evidenceName; }
+    public void setEvidenceName(String evidenceName) { this.evidenceName = evidenceName; }
+
+    public String getEvidenceFile() { return evidenceFile; }
+    public void setEvidenceFile(String evidenceFile) { this.evidenceFile = evidenceFile; }
+
+    public String getRejectionReason() { return rejectionReason; }
+    public void setRejectionReason(String rejectionReason) { this.rejectionReason = rejectionReason; }
+
+    public LocalDateTime getDecidedAt() { return decidedAt; }
+    public void setDecidedAt(LocalDateTime decidedAt) { this.decidedAt = decidedAt; }
 }

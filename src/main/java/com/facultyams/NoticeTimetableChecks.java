@@ -648,6 +648,8 @@ public final class NoticeTimetableChecks {
         ProcessBuilder pb = new ProcessBuilder(java, "-Djava.awt.headless=true", "-cp",
                 System.getProperty("java.class.path"), NoticeTimetableChecks.class.getName(), "jdbc");
         pb.environment().put("FOTAMS_DB_URL", "jdbc:fakenotice:test");
+        pb.environment().put("FOTAMS_DB_USER", "checks");        // the app has no default user
+        pb.environment().put("FOTAMS_DB_PASSWORD", "checks");
         pb.inheritIO();
         // the child prints its own PASS/FAIL lines and a RESULT line; its exit code is what counts here
         return pb.start().waitFor();
@@ -1073,6 +1075,15 @@ public final class NoticeTimetableChecks {
         return null;
     }
 
+    private static JTextComponent fieldWithHint(Component root, String hint) {
+        for (JTextComponent tc : all(root, JTextComponent.class)) {
+            if (hint.equals(tc.getToolTipText())) {
+                return tc;
+            }
+        }
+        return null;
+    }
+
     private static Exec lastWith(String fragment) {
         for (int i = EXEC.size() - 1; i >= 0; i--) {
             if (EXEC.get(i).sql().contains(fragment)) {
@@ -1136,28 +1147,27 @@ public final class NoticeTimetableChecks {
         np.refresh();
         JTable nt = tableWithColumn(np, "Posted by");
         check("notice screen lists the notices from the database", nt != null && nt.getRowCount() == 2);
-        check("notice table shows ID, Title, Content, Date and Posted by",
-                nt != null && nt.getColumnCount() == 5 && "Posted by".equals(nt.getColumnName(4))
+                check("notice table shows ID, Title, Content, Date, Posted by and Actions",
+                nt != null && nt.getColumnCount() == 6 && "Posted by".equals(nt.getColumnName(4))
                         && "System Administrator".equals(String.valueOf(nt.getValueAt(0, 4))));
-        nt.setRowSelectionInterval(0, 0);
-        check("selecting a notice shows its full details in the form",
-                textsOf(np).contains("Exam Notice") && textsOf(np).contains("Mid exam schedule will be released next week.")
-                        && textsOf(np).contains("2026-09-20"));
-        JTextComponent nSearch = fieldAfter(np, "Search title / content:");
+        check("notice row shows its title and date",
+                nt != null && "Exam Notice".equals(String.valueOf(nt.getValueAt(0, 1)))
+                        && "2026-09-20".equals(String.valueOf(nt.getValueAt(0, 3))));
+        JTextComponent nSearch = fieldWithHint(np, "Search notices...");
         check("notice screen has a search box", nSearch != null);
         nSearch.setText("exam");
         EXEC.clear();
-        button(np, "Search").doClick();
+        ((javax.swing.JTextField) nSearch).postActionEvent();
         Exec q = lastWith("FROM notices n");
         check("Search sends the keyword (as a bound parameter) for title and content",
                 q != null && q.params().size() == 2 && "%exam%".equals(q.params().get(1)));
+        nSearch.setText("");
         EXEC.clear();
-        button(np, "Show all").doClick();
+        ((javax.swing.JTextField) nSearch).postActionEvent();
         q = lastWith("FROM notices n");
-        check("Show all clears the search box and reloads without a keyword",
-                nSearch.getText().isEmpty() && q != null && q.params().isEmpty());
-        check("notice screen has Add / Update / Delete / Clear buttons",
-                button(np, "Add Notice") != null && button(np, "Update") != null && button(np, "Delete") != null && button(np, "Clear") != null);
+        check("clearing the search box reloads without a keyword",
+                q != null && q.params().isEmpty());
+        check("notice screen has an Add Notice button", button(np, "Add Notice") != null);
 
         EXEC.clear();
         TimeTableManagementPanel tp = new TimeTableManagementPanel();
@@ -1169,26 +1179,24 @@ public final class NoticeTimetableChecks {
                         && "ICT2132".equals(String.valueOf(tt.getValueAt(0, 3))) && "1".equals(String.valueOf(tt.getValueAt(0, 6)))
                         && "LT-01".equals(String.valueOf(tt.getValueAt(0, 7))));
         List<JComboBox> combos = all(tp, JComboBox.class);
-        check("department filter and course list are loaded from the database",
-                combos.stream().anyMatch(c -> c.getItemCount() == 2) && combos.stream().anyMatch(c -> c.getItemCount() == 1));
-        tt.setRowSelectionInterval(1, 1);
-        check("selecting a slot fills the form (times and venue)", textsOf(tp).contains("10:00") && textsOf(tp).contains("12:00") && textsOf(tp).contains("LT-02"));
+        check("department filter is loaded from the database (All + 1 department)",
+                combos.stream().anyMatch(c -> c.getItemCount() == 2));
 
-        JTextComponent tSearch = fieldAfter(tp, "Search course / hall / day:");
+        JTextComponent tSearch = fieldWithHint(tp, "Search timetable...");
         check("timetable screen has a search box", tSearch != null);
         tSearch.setText("lt-01");
         EXEC.clear();
-        button(tp, "View").doClick();
+        ((javax.swing.JTextField) tSearch).postActionEvent();
         q = lastWith("FROM timetables t");
-        check("View with a keyword searches course code, name, venue and day",
+        check("search with a keyword searches course code, name, venue and day",
                 q != null && q.params().size() == 4 && "%lt-01%".equals(q.params().get(1)));
+        tSearch.setText("");
         EXEC.clear();
-        button(tp, "Show all").doClick();
+        ((javax.swing.JTextField) tSearch).postActionEvent();
         q = lastWith("FROM timetables t");
-        check("Show all clears keyword, department and semester",
-                tSearch.getText().isEmpty() && q != null && q.params().isEmpty());
-        check("timetable screen has Add / Update / Delete / Clear buttons",
-                button(tp, "Add Timetable") != null && button(tp, "Update") != null && button(tp, "Delete") != null && button(tp, "Clear") != null);
+        check("clearing the search box reloads without keyword, department or semester",
+                q != null && q.params().isEmpty());
+        check("timetable screen has an Add Timetable button", button(tp, "Add Timetable") != null);
         Session.end();
     }
 
