@@ -62,7 +62,9 @@ public final class DatabaseConnection {
 
     private static final Settings SETTINGS = resolveSettings(loadFile(), System::getenv);
 
-    /** How many idle connections are kept for reuse. */
+    /**
+     * How many idle connections are kept for reuse.
+     */
     private static final int MAX_IDLE = 4;
     private static final Deque<Connection> IDLE = new ArrayDeque<>();
 
@@ -123,7 +125,7 @@ public final class DatabaseConnection {
             real = openNew();
         }
         return (Connection) Proxy.newProxyInstance(Connection.class.getClassLoader(),
-                new Class<?>[] {Connection.class}, new PooledHandle(real));
+                new Class<?>[]{Connection.class}, new PooledHandle(real));
     }
 
     private static Connection openNew() throws DatabaseException {
@@ -148,7 +150,9 @@ public final class DatabaseConnection {
         }
     }
 
-    /** Takes a still-valid idle connection, discarding dead ones; null if none is available. */
+    /**
+     * Takes a still-valid idle connection, discarding dead ones; null if none is available.
+     */
     private static Connection takeIdle() {
         while (true) {
             Connection candidate;
@@ -169,7 +173,9 @@ public final class DatabaseConnection {
         }
     }
 
-    /** Puts a connection back into the idle pool (or closes it if it is unusable or the pool is full). */
+    /**
+     * Puts a connection back into the idle pool (or closes it if it is unusable or the pool is full).
+     */
     private static void giveBack(Connection real) {
         try {
             if (real.isClosed()) {
@@ -193,7 +199,9 @@ public final class DatabaseConnection {
         closeQuietly(real);
     }
 
-    /** Closes every idle connection (e.g. when the application exits). */
+    /**
+     * Closes every idle connection (e.g. when the application exits).
+     */
     public static void closeAll() {
         synchronized (IDLE) {
             Connection c;
@@ -211,7 +219,9 @@ public final class DatabaseConnection {
         }
     }
 
-    /** The object a caller actually holds: forwards everything to the real connection except close(). */
+    /**
+     * The object a caller actually holds: forwards everything to the real connection except close().
+     */
     private static final class PooledHandle implements InvocationHandler {
         private final Connection real;
         private boolean returned;
@@ -265,7 +275,9 @@ public final class DatabaseConnection {
     public record ConnectionInfo(String host, String port, String database, String user) {
     }
 
-    /** Parses db.url ("jdbc:mysql://host:port/database?...") for display on the Settings screen. */
+    /**
+     * Parses db.url ("jdbc:mysql://host:port/database?...") for display on the Settings screen.
+     */
     public static ConnectionInfo getConnectionInfo() {
         String url = SETTINGS.url();
         String user = SETTINGS.hasUser() ? SETTINGS.user() : "(not set)";
@@ -291,7 +303,9 @@ public final class DatabaseConnection {
         return new ConnectionInfo(host, port, database, user);
     }
 
-    /** Returns true if a connection can be opened. Used on start-up. */
+    /**
+     * Returns true if a connection can be opened. Used on start-up.
+     */
     public static boolean testConnection() {
         try (Connection con = getConnection()) {
             return con.isValid(3);
@@ -300,4 +314,5 @@ public final class DatabaseConnection {
             return false;
         }
     }
+
 }
