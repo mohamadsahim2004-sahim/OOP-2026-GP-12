@@ -5,7 +5,7 @@ import com.facultyams.security.Session;
 import com.facultyams.ui.admin.AdminDashboardFrame;
 import com.facultyams.util.UIUtil;
 import com.facultyams.ui.technical.TechnicalOfficerDashboardFrame;
-
+import com.facultyams.model.Student;
 import javax.swing.JFrame;
 
 /**
@@ -36,7 +36,8 @@ public final class DashboardRouter {
             frame = switch (user.getRole()) {
                 case ADMIN -> new AdminDashboardFrame();
                 case LECTURER -> new LecturerDashboard(user);
-                case TECHNICAL_OFFICER -> new TechnicalOfficerDashboardFrame(user);                case STUDENT -> new PlaceholderDashboardFrame(user, "Undergraduate module (Member 4)");
+                case TECHNICAL_OFFICER -> new TechnicalOfficerDashboardFrame(user);                
+                case STUDENT -> new UndergraduateDashboardFrame((Student) user);
             };
         } catch (IllegalStateException e) {
             Session.end();
@@ -55,4 +56,4 @@ public final class DashboardRouter {
         }
         new LoginFrame().setVisible(true);
     }
-}
+}
