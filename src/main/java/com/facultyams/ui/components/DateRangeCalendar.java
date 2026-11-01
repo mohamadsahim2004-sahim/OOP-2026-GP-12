@@ -27,6 +27,7 @@ public class DateRangeCalendar extends JPanel {
     private LocalDate rangeEnd;
     private LocalDate hoverDate;
     private LocalDate focusedDate;
+    private JLabel monthLabel;
 
     private final Set<LocalDate> absentDates = new HashSet<>();
     private final JTextField fromField = new JTextField(10);
@@ -71,29 +72,29 @@ public class DateRangeCalendar extends JPanel {
         JButton prevBtn = createNavArrow("<", -1);
         JButton nextBtn = createNavArrow(">", 1);
 
-        JLabel monthLbl = new JLabel(currentMonth.format(MONTH_FMT), SwingConstants.CENTER) {
+        monthLabel = new JLabel(currentMonth.format(MONTH_FMT), SwingConstants.CENTER) {
             @Override
             public void setText(String text) {
                 super.setText(text);
                 repaint();
             }
         };
-        monthLbl.setFont(Theme.FONT_SUBTITLE);
-        monthLbl.setForeground(Theme.TEXT_MAIN);
+        monthLabel.setFont(Theme.FONT_SUBTITLE);
+        monthLabel.setForeground(Theme.TEXT_MAIN);
 
         navHeader.add(prevBtn, BorderLayout.WEST);
-        navHeader.add(monthLbl, BorderLayout.CENTER);
+        navHeader.add(monthLabel, BorderLayout.CENTER);
         navHeader.add(nextBtn, BorderLayout.EAST);
 
         // Update month label listener
         prevBtn.addActionListener(e -> {
             currentMonth = currentMonth.minusMonths(1);
-            monthLbl.setText(currentMonth.format(MONTH_FMT));
+            monthLabel.setText(currentMonth.format(MONTH_FMT));
             canvas.repaint();
         });
         nextBtn.addActionListener(e -> {
             currentMonth = currentMonth.plusMonths(1);
-            monthLbl.setText(currentMonth.format(MONTH_FMT));
+            monthLabel.setText(currentMonth.format(MONTH_FMT));
             canvas.repaint();
         });
 
@@ -192,6 +193,14 @@ public class DateRangeCalendar extends JPanel {
         canvas.repaint();
     }
 
+    public void focusOnDate(LocalDate date) {
+        if (date == null) return;
+        currentMonth = YearMonth.from(date);
+        focusedDate = date;
+        monthLabel.setText(currentMonth.format(MONTH_FMT));
+        canvas.repaint();
+    }
+
     public void setRange(LocalDate start, LocalDate end) {
         if (start != null && end != null && end.isBefore(start)) {
             LocalDate temp = start;
@@ -250,8 +259,6 @@ public class DateRangeCalendar extends JPanel {
         if (date == null) return false;
         LocalDate today = LocalDate.now();
         if (date.isAfter(today)) return false;
-        DayOfWeek dow = date.getDayOfWeek();
-        if (dow == DayOfWeek.SATURDAY || dow == DayOfWeek.SUNDAY) return false;
         long daysAgo = ChronoUnit.DAYS.between(date, today);
         return daysAgo <= MedicalPolicy.WINDOW_DAYS;
     }
@@ -280,12 +287,16 @@ public class DateRangeCalendar extends JPanel {
                     } else {
                         setToolTipText(null);
                     }
+                    setCursor(d != null && isSelectable(d)
+                            ? Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
+                            : Cursor.getDefaultCursor());
                     repaint();
                 }
 
                 @Override
                 public void mouseExited(MouseEvent e) {
                     hoverDate = null;
+                    setCursor(Cursor.getDefaultCursor());
                     repaint();
                 }
 
@@ -295,6 +306,9 @@ public class DateRangeCalendar extends JPanel {
                     LocalDate d = dateAt(e.getPoint());
                     if (d == null || !isSelectable(d)) return;
 
+                    focusedDate = d;
+                    currentMonth = YearMonth.from(d);
+                    monthLabel.setText(currentMonth.format(MONTH_FMT));
                     if (rangeStart == null || (rangeStart != null && rangeEnd != null)) {
                         setRange(d, null);
                     } else {
@@ -328,6 +342,7 @@ public class DateRangeCalendar extends JPanel {
                         case KeyEvent.VK_ESCAPE -> setRange(null, null);
                     }
                     currentMonth = YearMonth.from(focusedDate);
+                    monthLabel.setText(currentMonth.format(MONTH_FMT));
                     repaint();
                 }
             });
@@ -336,8 +351,6 @@ public class DateRangeCalendar extends JPanel {
         private String getDisabledReason(LocalDate d) {
             LocalDate today = LocalDate.now();
             if (d.isAfter(today)) return "Future date (not selectable)";
-            DayOfWeek dow = d.getDayOfWeek();
-            if (dow == DayOfWeek.SATURDAY || dow == DayOfWeek.SUNDAY) return "Weekend (no classes)";
             long daysAgo = ChronoUnit.DAYS.between(d, today);
             if (daysAgo > MedicalPolicy.WINDOW_DAYS) return "Past policy window (" + MedicalPolicy.WINDOW_DAYS + " days)";
             return null;
@@ -428,8 +441,10 @@ public class DateRangeCalendar extends JPanel {
                     g2.setFont(Theme.FONT_BODY);
                     if ((isStart || isEnd) && selectable) {
                         g2.setColor(Color.WHITE);
-                    } else if (!selectable || !isCurrentMonth) {
+                    } else if (!selectable) {
                         g2.setColor(new Color(203, 213, 225)); // Greyed
+                    } else if (!isCurrentMonth) {
+                        g2.setColor(Theme.TEXT_MUTED);
                     } else {
                         g2.setColor(Theme.TEXT_MAIN);
                     }
@@ -441,7 +456,7 @@ public class DateRangeCalendar extends JPanel {
                     g2.drawString(dayStr, tx, ty);
 
                     // Red dot under absent dates
-                    if (isAbsent && isCurrentMonth) {
+                    if (isAbsent && selectable) {
                         g2.setColor(Theme.DANGER);
                         g2.fillOval(x + CELL_SIZE / 2 - 2, y + CELL_SIZE - 7, 4, 4);
                     }

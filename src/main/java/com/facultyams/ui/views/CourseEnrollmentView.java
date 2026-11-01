@@ -141,7 +141,7 @@ public class CourseEnrollmentView extends JPanel {
 
     private JPanel createElectivesSection() {
         JPanel card = sectionCard();
-        JPanel title = sectionTitle("Available Electives & Modules", electivesCount);
+        JPanel title = electivesSectionTitle();
         JPanel filter = createElectivesToolbar();
         JPanel header = new JPanel(new BorderLayout(Theme.ENROLLMENT_SECTION_GAP, 0));
         header.setOpaque(false);
@@ -151,6 +151,21 @@ public class CourseEnrollmentView extends JPanel {
         electivesBody.setOpaque(false);
         card.add(electivesBody, BorderLayout.CENTER);
         return card;
+    }
+
+    private JPanel electivesSectionTitle() {
+        JPanel row = new JPanel();
+        row.setLayout(new BoxLayout(row, BoxLayout.X_AXIS));
+        row.setOpaque(false);
+
+        JLabel label = new JLabel("Available Electives & Modules");
+        label.setFont(Theme.ENROLLMENT_SECTION_TITLE);
+        label.setForeground(Theme.ENROLLMENT_TEXT);
+        row.add(label);
+        row.add(Box.createHorizontalStrut(8));
+        row.add(electivesCount);
+        row.setAlignmentX(Component.LEFT_ALIGNMENT);
+        return row;
     }
 
     private JPanel sectionCard() {

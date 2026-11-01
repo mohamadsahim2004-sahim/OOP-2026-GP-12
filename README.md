@@ -168,10 +168,12 @@ To try a medical submission with clickable calendar dates, run this optional fix
 ```powershell
 mysql -u <admin_user> -p faculty_ams -e "source database/test/medical_calendar_demo.sql"
 ```
-It makes the existing absent ICT2113 theory session selectable for `tg1002` without changing its attendance status or
-creating a medical request. Log in as `tg1002` / `student123`, open **Attendance > Submit Medical Certificate**, then
-click the displayed weekday twice to set the start and end of the range. The fixture refuses to run if that sample
-absence is missing or already has a medical request; it must not be used with real student data.
+It marks `tg1001`'s ICT2113 theory session 15 absent and moves it to a recent date so it is selectable in the calendar.
+This intentionally changes that demo student's attendance sample and resulting percentage.
+Log in as `tg1001` / `student123`, open **Attendance > Submit Medical Certificate**, then click one calendar number for
+the start date and another for the end date. Dates in the allowed lookback window are clickable, including weekends and
+adjacent-month dates; the wizard enables **Next** only when the range contains an eligible absent session. The fixture
+refuses to run if the demo session is missing or already has a medical request; it must not be used with real student data.
 
 ## 6. Verify
 Read-only; one result set `check_name | status | detail` (`PASS`, `FAIL`, `WARN`, `INFO`, `SKIP`) followed by reports:
