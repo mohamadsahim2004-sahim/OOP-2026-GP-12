@@ -365,7 +365,7 @@ public class MedicalWizardView extends JPanel {
             JButton chip = new JButton(code + " (" + cnt + ")");
             chip.setFont(Theme.FONT_TINY);
             chip.setForeground(Theme.TEXT_MAIN);
-            chip.setBackground(new Color(241, 245, 249));
+            chip.setBackground(Theme.ENROLLMENT_ROW_HOVER);
             chip.setFocusPainted(false);
             chip.setBorder(BorderFactory.createCompoundBorder(
                     BorderFactory.createLineBorder(Theme.CARD_BORDER, 1),
@@ -390,7 +390,7 @@ public class MedicalWizardView extends JPanel {
             // Day Header
             JPanel dayHeader = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 4));
             dayHeader.setOpaque(true);
-            dayHeader.setBackground(new Color(243, 244, 246));
+            dayHeader.setBackground(Theme.TOPBAR_FIELD_BG);
             dayHeader.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
 
             JCheckBox dayCheck = new JCheckBox(date.format(DATE_FMT));
@@ -482,7 +482,7 @@ public class MedicalWizardView extends JPanel {
             case PRESENT -> new Ui.Pill("Present", Theme.SUCCESS_BG, Theme.SUCCESS);
             case MEDICAL_APPROVED -> new Ui.Pill("Medical Approved", Theme.INFO_BG, Theme.INFO);
             case MEDICAL_PENDING -> new Ui.Pill("Medical Pending", Theme.WARNING_BG, Theme.WARNING);
-            case NOT_HELD -> new Ui.Pill("Not Held", new Color(241, 245, 249), Theme.TEXT_MUTED);
+            case NOT_HELD -> new Ui.Pill("Not Held", Theme.ACCENT_GRAY_BG, Theme.TEXT_MUTED);
         };
 
         right.add(timeLbl);
@@ -855,7 +855,7 @@ public class MedicalWizardView extends JPanel {
             btn.setForeground(Theme.DANGER);
             btn.setBackground(Theme.DANGER_BG);
             btn.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createLineBorder(new Color(254, 202, 202), 1),
+                    BorderFactory.createLineBorder(Theme.DANGER_BG, 1),
                     BorderFactory.createEmptyBorder(8, 16, 8, 16)
             ));
         } else {

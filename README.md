@@ -10,6 +10,7 @@ Roles: Admin, Lecturer, Technical Officer, Undergraduate.
 - Windows PowerShell. `mysql` and `mysqldump` must be on the PATH, normally
   `C:\Program Files\MySQL\MySQL Server 8.0\bin`. Check with `mysql --version`.
 - VS Code with the *Extension Pack for Java* (optional)
+- The student portal uses FlatLaf (resolved by Maven) only while a student is signed in; the existing vector icon helper and GridBagLayout are retained, so flatlaf-extras and MigLayout are not required.
 
 ## Read this first - safety rules for the database
 - **Never run `database/dev_reset_database.sql`** on a database you want to keep. It drops the whole database. It is not
@@ -39,7 +40,7 @@ Keep the backup outside the project folder as well (it contains password hashes)
 ### 2a. Fresh install (the database does not exist yet)
 ```powershell
 mysql -u <admin_user> -p -e "source database/schema.sql"
-foreach ($f in "000_schema_migrations","001_notices_timetables","002_department_head","003_attendance_medical","005_lecturer_module","007_student_module","009_technical_officer_medical","010_reconcile_schema") {
+foreach ($f in "000_schema_migrations","001_notices_timetables","002_department_head","003_attendance_medical","005_lecturer_module","007_student_module","009_technical_officer_medical","010_reconcile_schema","011_student_assignments") {
   Write-Host "== $f"
   mysql -u <admin_user> -p faculty_ams --table -e "source database/migrations/$f.sql"
   if ($LASTEXITCODE -ne 0) { Write-Host "STOPPED at $f - read the message above (section 7)"; break }
@@ -72,7 +73,7 @@ and only record themselves in the table `schema_migrations`. (MySQL asks for the
    Then run the migrations of the next step with `Invoke-FotSql <file> faculty_ams_trial`. Never run `schema.sql` on the trial copy.
 4. **Migrate** the real database, in this order (each script is repeatable):
    ```powershell
-   foreach ($f in "000_schema_migrations","001_notices_timetables","002_department_head","003_attendance_medical","005_lecturer_module","007_student_module","009_technical_officer_medical","010_reconcile_schema") {
+   foreach ($f in "000_schema_migrations","001_notices_timetables","002_department_head","003_attendance_medical","005_lecturer_module","007_student_module","009_technical_officer_medical","010_reconcile_schema","011_student_assignments") {
      Write-Host "== $f"
      mysql -u <admin_user> -p faculty_ams --table -e "source database/migrations/$f.sql"
      if ($LASTEXITCODE -ne 0) { Write-Host "STOPPED at $f - read the message above (section 7)"; break }
@@ -94,6 +95,7 @@ and only record themselves in the table `schema_migrations`. (MySQL asks for the
 | 5 | `007_student_module.sql` | `enrollments.status/dropped_at`, `notices.category/priority`, `notice_reads`, the extra `medical` columns, `medical.reviewed_by` may be NULL. |
 | 6 | `009_technical_officer_medical.sql` | `medical.submitted_by`, evidence, rejection and decision columns, status CHECK. The one-time conversion of old rows runs only the first time. |
 | 7 | `010_reconcile_schema.sql` | Adds missing unique keys, foreign keys, CHECK ranges (marks 0-100 ...) and indexes - **only where the existing rows allow it**, otherwise prints a WARNING and skips. |
+| 8 | `011_student_assignments.sql` | Adds weekly material metadata and student assignment/submission tables. |
 | demo | `sample_data.sql`, `001_sample_notices_timetables.sql`, `004`, `006`, `008` | Development demo data (section 5). |
 
 ## 3. Database credentials (and the application user)

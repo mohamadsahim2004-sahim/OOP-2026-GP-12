@@ -16,6 +16,9 @@ public class TechnicalOfficerShell extends AppShell {
     public static final String PAGE_MEDICAL_APPROVAL = "approval";
     public static final String PAGE_ATTENDANCE_REPORT = "attendanceReports";
     public static final String PAGE_MEDICAL_REPORT = "medicalReports";
+    public static final String PAGE_NOTICES = "notices";
+    public static final String PAGE_TIMETABLES = "timetables";
+    public static final String PAGE_PROFILE = "profile";
 
     public TechnicalOfficerShell(JFrame owner, User user) {
         super(owner, user, Role.TECHNICAL_OFFICER);
@@ -32,5 +35,8 @@ public class TechnicalOfficerShell extends AppShell {
         addPage(PAGE_MEDICAL_APPROVAL, "Medical Approval", "Medical Approval", new MedicalApprovalPanel());
         addPage(PAGE_ATTENDANCE_REPORT, "Attendance Reports", "Attendance Reports", new AttendanceReportPanel());
         addPage(PAGE_MEDICAL_REPORT, "Medical Reports", "Medical Reports", new MedicalReportPanel());
+        addPage(PAGE_NOTICES, "Notices", "Notices", new NoticesPanel());
+        addPage(PAGE_TIMETABLES, "Timetables", "Timetables", new TimetablesPanel());
+        addPage(PAGE_PROFILE, "My Profile", "My Profile", new TechnicalProfilePanel());    
     }
 }

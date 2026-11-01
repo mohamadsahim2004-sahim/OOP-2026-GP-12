@@ -19,11 +19,11 @@ public final class Ui {
         private Color bgColor;
 
         public Card() {
-            this(12, Theme.CARD_BG, Theme.CARD_BORDER);
+            this(Theme.RADIUS_CARD, Theme.CARD_BG, Theme.CARD_BORDER);
         }
 
         public Card(int radius, Color bg, Color border) {
-            this.radius = radius;
+            this.radius = Theme.RADIUS_CARD;
             this.bgColor = bg;
             this.borderColor = border;
             setOpaque(false);

@@ -76,14 +76,30 @@ public class UndergraduateDashboardFrame extends JFrame implements NavigationLis
 
     private void initViews() {
         cardsPanel.setOpaque(false);
-        cardsPanel.setBorder(Theme.createEmptyPadding(20, 24, 16, 24));
+        cardsPanel.setBorder(Theme.createEmptyPadding(24, 32, 24, 32));
 
         dashboardView = new DashboardView(this::navigateTo, this);
         profileView = new StudentProfileView();
         courseEnrollmentView = new CourseEnrollmentView();
         coursesContainerView = new com.facultyams.ui.views.CoursesContainerView(courseEnrollmentView);
         courseMaterialsView = new CourseMaterialsView();
+        coursesContainerView.setOnViewAllMaterials(courseCode -> {
+            courseMaterialsView.selectCourse(courseCode);
+            navigateTo("Course Materials");
+        });
+        coursesContainerView.setOnOpenAssignment((courseCode, assignmentId) -> {
+            courseMaterialsView.openAssignment(courseCode, assignmentId);
+            navigateTo("Course Materials");
+        });
+        coursesContainerView.setOnOpenMaterial((courseCode, materialId) -> {
+            courseMaterialsView.openMaterial(courseCode, materialId);
+            navigateTo("Course Materials");
+        });
         coursesContainerView.setOnOpenMaterials(() -> navigateTo("Course Materials"));
+        courseMaterialsView.setOnViewCourseDetails(courseCode -> {
+            navigateTo("Course Enrollment");
+            coursesContainerView.openCourse(courseCode);
+        });
         resultsView = new StudentResultsView();
         modernAttendanceView = new com.facultyams.ui.views.AttendanceView();
         timetableView = new TimetableView();
@@ -158,7 +174,9 @@ public class UndergraduateDashboardFrame extends JFrame implements NavigationLis
         }
         new SwingWorker<Integer, Void>() {
             @Override protected Integer doInBackground() {
-                return StudentNoticeService.getInstance().unreadCount();
+                return StudentNoticeService.getInstance().unreadCount()
+                        + com.facultyams.service.DataService.getInstance()
+                        .getRecentCourseContentNotificationCount();
             }
             @Override protected void done() {
                 try {
