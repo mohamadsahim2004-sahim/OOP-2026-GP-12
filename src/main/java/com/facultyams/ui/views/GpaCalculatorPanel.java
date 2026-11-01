@@ -91,14 +91,14 @@ public final class GpaCalculatorPanel extends JPanel {
         c.weightx = 1;
         c.fill = GridBagConstraints.HORIZONTAL;
         JLabel title = new JLabel("GPA Calculator");
-        title.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        title.setFont(Theme.FONT_TITLE);
         title.setForeground(Theme.TEXT_MAIN);
         card.add(title, c);
 
         c.gridy++;
         c.insets = new Insets(4, 0, 16, 0);
         JLabel description = new JLabel("Estimate your semester GPA and see how it affects your cumulative result.");
-        description.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        description.setFont(Theme.FONT_BODY);
         description.setForeground(Theme.TEXT_MUTED);
         card.add(description, c);
 
@@ -140,7 +140,7 @@ public final class GpaCalculatorPanel extends JPanel {
 
         c.gridy++;
         c.insets = new Insets(0, 0, 12, 0);
-        validationMessage.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        validationMessage.setFont(Theme.FONT_SMALL);
         validationMessage.setForeground(Theme.PROFILE_ERROR);
         card.add(validationMessage, c);
 
@@ -204,7 +204,7 @@ public final class GpaCalculatorPanel extends JPanel {
         c.gridy = 0;
         c.weightx = 1;
         c.fill = GridBagConstraints.HORIZONTAL;
-        resultHeading.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        resultHeading.setFont(Theme.FONT_SECTION);
         resultHeading.setForeground(Theme.TEXT_MAIN);
         card.add(resultHeading, c);
 
@@ -216,13 +216,13 @@ public final class GpaCalculatorPanel extends JPanel {
 
         c.gridy++;
         c.insets = new Insets(4, 0, 0, 0);
-        resultValue.setFont(new Font("Segoe UI", Font.BOLD, 48));
+        resultValue.setFont(Theme.FONT_METRIC);
         resultValue.setForeground(Theme.PRIMARY);
         card.add(resultValue, c);
 
         c.gridy++;
         c.insets = new Insets(8, 0, 24, 0);
-        classification.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        classification.setFont(Theme.FONT_BODY_BOLD);
         classification.setForeground(Theme.PRIMARY);
         classification.setOpaque(true);
         classification.setBackground(Theme.PRIMARY_LIGHT);
@@ -254,14 +254,14 @@ public final class GpaCalculatorPanel extends JPanel {
         left.fill = GridBagConstraints.HORIZONTAL;
         left.insets = new Insets(10, 0, 10, 0);
         JLabel name = new JLabel(text);
-        name.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        name.setFont(Theme.FONT_BODY);
         name.setForeground(Theme.TEXT_MUTED);
         panel.add(name, left);
         GridBagConstraints right = (GridBagConstraints) left.clone();
         right.gridx = 1;
         right.weightx = 0;
         right.anchor = GridBagConstraints.EAST;
-        value.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        value.setFont(Theme.FONT_BODY_BOLD);
         value.setForeground(Theme.TEXT_MAIN);
         panel.add(value, right);
         JPanel divider = new JPanel() {
@@ -560,14 +560,14 @@ public final class GpaCalculatorPanel extends JPanel {
 
     private JLabel label(String text) {
         JLabel label = new JLabel(text);
-        label.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        label.setFont(Theme.FONT_TINY);
         label.setForeground(Theme.TEXT_MUTED);
         return label;
     }
 
     private static JLabel errorLabel() {
         JLabel label = new JLabel(" ");
-        label.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        label.setFont(Theme.FONT_TINY.deriveFont(Font.PLAIN));
         label.setForeground(Theme.PROFILE_ERROR);
         return label;
     }
@@ -649,12 +649,10 @@ public final class GpaCalculatorPanel extends JPanel {
         @Override protected void paintComponent(Graphics graphics) {
             Graphics2D g = (Graphics2D) graphics.create();
             Theme.setAntiAliasing(g);
-            g.setColor(new Color(15, 23, 42, 8));
-            g.fillRoundRect(2, 3, getWidth() - 4, getHeight() - 4, 16, 16);
             g.setColor(Color.WHITE);
-            g.fillRoundRect(0, 0, getWidth() - 3, getHeight() - 4, 16, 16);
-            g.setColor(new Color(229, 231, 235));
-            g.drawRoundRect(0, 0, getWidth() - 4, getHeight() - 5, 16, 16);
+            g.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, Theme.CARD_RADIUS, Theme.CARD_RADIUS);
+            g.setColor(Theme.CARD_BORDER);
+            g.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, Theme.CARD_RADIUS, Theme.CARD_RADIUS);
             g.dispose();
             super.paintComponent(graphics);
         }
@@ -663,7 +661,7 @@ public final class GpaCalculatorPanel extends JPanel {
     private static final class StyledTextField extends JTextField {
         private boolean invalid;
         private StyledTextField() {
-            setFont(new Font("Segoe UI", Font.PLAIN, 14));
+            setFont(Theme.FONT_BODY);
             setForeground(Theme.TEXT_MAIN);
             setCaretColor(Theme.PRIMARY);
             setBorder(new EmptyBorder(8, 10, 8, 10));
@@ -682,7 +680,7 @@ public final class GpaCalculatorPanel extends JPanel {
         @Override protected void paintComponent(Graphics graphics) {
             Graphics2D g = (Graphics2D) graphics.create();
             Theme.setAntiAliasing(g);
-            Color border = invalid ? Theme.PROFILE_ERROR : isFocusOwner() ? Theme.PRIMARY : new Color(229, 231, 235);
+            Color border = invalid ? Theme.PROFILE_ERROR : isFocusOwner() ? Theme.PRIMARY : Theme.CARD_BORDER;
             g.setColor(Color.WHITE);
             g.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 8, 8);
             g.setColor(border);
@@ -696,11 +694,11 @@ public final class GpaCalculatorPanel extends JPanel {
     private static final class StyledComboBox<T> extends JComboBox<T> {
         private StyledComboBox(T[] items) {
             super(items);
-            setFont(new Font("Segoe UI", Font.PLAIN, 14));
+            setFont(Theme.FONT_BODY);
             setBackground(Color.WHITE);
             setForeground(Theme.TEXT_MAIN);
             setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createLineBorder(new Color(229, 231, 235)),
+                    BorderFactory.createLineBorder(Theme.CARD_BORDER),
                     new EmptyBorder(0, 8, 0, 8)));
             setPreferredSize(new Dimension(110, 40));
             setMinimumSize(new Dimension(90, 40));
@@ -711,12 +709,12 @@ public final class GpaCalculatorPanel extends JPanel {
     private static final class StyledSpinner extends JSpinner {
         private StyledSpinner() {
             super(new SpinnerNumberModel(3, 1, 6, 1));
-            setFont(new Font("Segoe UI", Font.PLAIN, 14));
+            setFont(Theme.FONT_BODY);
             setPreferredSize(new Dimension(90, 40));
             setMinimumSize(new Dimension(90, 40));
-            setBorder(BorderFactory.createLineBorder(new Color(229, 231, 235)));
+            setBorder(BorderFactory.createLineBorder(Theme.CARD_BORDER));
             JComponent editor = getEditor();
-            editor.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+            editor.setFont(Theme.FONT_BODY);
             if (editor instanceof JSpinner.DefaultEditor defaultEditor) {
                 defaultEditor.getTextField().setHorizontalAlignment(SwingConstants.CENTER);
                 defaultEditor.getTextField().setBorder(new EmptyBorder(4, 4, 4, 4));
@@ -729,7 +727,7 @@ public final class GpaCalculatorPanel extends JPanel {
         private TabButton(String text, boolean active) {
             super(text);
             this.active = active;
-            setFont(new Font("Segoe UI", Font.BOLD, 14));
+            setFont(Theme.FONT_BODY_BOLD);
             setFocusPainted(false);
             setContentAreaFilled(false);
             setBorderPainted(false);
@@ -744,13 +742,13 @@ public final class GpaCalculatorPanel extends JPanel {
             Graphics2D g = (Graphics2D) graphics.create();
             Theme.setAntiAliasing(g);
             boolean hover = getModel().isRollover();
-            g.setColor(active ? Theme.PRIMARY : hover ? Theme.PRIMARY_LIGHT : Color.WHITE);
+            g.setColor(active || hover ? Theme.PRIMARY_LIGHT : Color.WHITE);
             g.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 10, 10);
             if (!active) {
-                g.setColor(new Color(229, 231, 235));
+                g.setColor(Theme.CARD_BORDER);
                 g.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 10, 10);
             }
-            setForeground(active ? Color.WHITE : Theme.TEXT_MUTED);
+            setForeground(active ? Theme.PRIMARY : Theme.TEXT_MUTED);
             g.dispose();
             super.paintComponent(graphics);
         }
@@ -763,24 +761,24 @@ public final class GpaCalculatorPanel extends JPanel {
             super(text);
             this.primary = primary;
             this.normal = normal;
-            setFont(new Font("Segoe UI", Font.BOLD, 13));
+            setFont(Theme.FONT_BODY_BOLD);
             setFocusPainted(false);
             setContentAreaFilled(false);
             setBorderPainted(false);
             setOpaque(false);
             setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-            setPreferredSize(new Dimension(112, 40));
+            setPreferredSize(new Dimension(112, 36));
         }
         @Override protected void paintComponent(Graphics graphics) {
             Graphics2D g = (Graphics2D) graphics.create();
             Theme.setAntiAliasing(g);
             Color fill = primary ? getModel().isPressed() ? Theme.PRIMARY_HOVER : getModel().isRollover()
                     ? Theme.PRIMARY_HOVER : Theme.PRIMARY : getModel().isRollover()
-                    ? new Color(249, 250, 251) : Color.WHITE;
+                    ? Theme.ENROLLMENT_ROW_HOVER : Color.WHITE;
             g.setColor(fill);
             g.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 8, 8);
             if (!primary) {
-                g.setColor(new Color(229, 231, 235));
+                g.setColor(Theme.CARD_BORDER);
                 g.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 8, 8);
             }
             setForeground(primary ? Color.WHITE : normal);
@@ -814,7 +812,7 @@ public final class GpaCalculatorPanel extends JPanel {
             Graphics2D g = (Graphics2D) graphics.create();
             Theme.setAntiAliasing(g);
             boolean hover = getModel().isRollover();
-            g.setColor(hover ? Theme.ACCENT_ROSE_BG : new Color(255, 255, 255, 0));
+            g.setColor(hover ? Theme.ACCENT_ROSE_BG : new Color(0, 0, 0, 0));
             g.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 8, 8);
             g.setColor(hover ? Theme.ACCENT_ROSE : Theme.TEXT_MUTED);
             g.setStroke(new BasicStroke(1.8f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
@@ -831,7 +829,7 @@ public final class GpaCalculatorPanel extends JPanel {
     private static final class DashedAddButton extends JButton {
         private DashedAddButton() {
             super("+  Add Course");
-            setFont(new Font("Segoe UI", Font.BOLD, 14));
+            setFont(Theme.FONT_BODY_BOLD);
             setForeground(Theme.PRIMARY);
             setPreferredSize(new Dimension(200, 44));
             setFocusPainted(false);
@@ -843,7 +841,7 @@ public final class GpaCalculatorPanel extends JPanel {
         @Override protected void paintComponent(Graphics graphics) {
             Graphics2D g = (Graphics2D) graphics.create();
             Theme.setAntiAliasing(g);
-            g.setColor(getModel().isRollover() ? Theme.PRIMARY_LIGHT : new Color(255, 255, 255, 0));
+            g.setColor(getModel().isRollover() ? Theme.PRIMARY_LIGHT : new Color(0, 0, 0, 0));
             g.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 8, 8);
             g.setColor(Theme.PRIMARY_BORDER);
             g.setStroke(new BasicStroke(1.2f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_ROUND, 1, new float[]{5, 4}, 0));
@@ -881,7 +879,7 @@ public final class GpaCalculatorPanel extends JPanel {
             int x = (getWidth() - diameter) / 2;
             int y = (getHeight() - diameter) / 2;
             g.setStroke(new BasicStroke(7, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-            g.setColor(new Color(226, 232, 240));
+            g.setColor(Theme.CARD_BORDER);
             g.draw(new Arc2D.Double(x, y, diameter, diameter, 90, -360, Arc2D.OPEN));
             g.setColor(Theme.PRIMARY);
             g.draw(new Arc2D.Double(x, y, diameter, diameter, 90, -360 * displayedValue / 4, Arc2D.OPEN));
