@@ -1,5 +1,7 @@
 package com.facultyams.model.student;
 
+import java.time.LocalDateTime;
+
 /**
  * A course material row for an enrolled course ({@code course_materials}). The lecturer module stores a
  * description, optional notes and a reference (web link, file path or plain text); there is no file size or
@@ -14,9 +16,17 @@ public class StudentMaterial {
     private final String title;
     private final String notes;
     private final String reference;
+    private final Integer weekNo;
+    private final LocalDateTime uploadedAt;
 
     public StudentMaterial(int id, int courseId, String courseCode, String courseName, String lecturer,
                            String title, String notes, String reference) {
+        this(id, courseId, courseCode, courseName, lecturer, title, notes, reference, null, null);
+    }
+
+    public StudentMaterial(int id, int courseId, String courseCode, String courseName, String lecturer,
+                           String title, String notes, String reference, Integer weekNo,
+                           LocalDateTime uploadedAt) {
         this.id = id;
         this.courseId = courseId;
         this.courseCode = courseCode;
@@ -25,6 +35,8 @@ public class StudentMaterial {
         this.title = title == null ? "" : title;
         this.notes = notes == null ? "" : notes;
         this.reference = reference == null ? "" : reference.trim();
+        this.weekNo = weekNo;
+        this.uploadedAt = uploadedAt;
     }
 
     public int getId() { return id; }
@@ -35,6 +47,8 @@ public class StudentMaterial {
     public String getTitle() { return title; }
     public String getNotes() { return notes; }
     public String getReference() { return reference; }
+    public Integer getWeekNo() { return weekNo; }
+    public LocalDateTime getUploadedAt() { return uploadedAt; }
 
     public boolean isLink() {
         String r = reference.toLowerCase();
