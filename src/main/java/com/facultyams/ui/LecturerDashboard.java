@@ -240,6 +240,8 @@ public class LecturerDashboard extends JFrame {
             rows.setBorder(new EmptyBorder(25, 25, 25, 25));
 
             JButton edit = new JButton("Edit Profile");
+            edit.setFont(edit.getFont().deriveFont(14f));
+            edit.setPreferredSize(new Dimension(125, 38));
             edit.addActionListener(e -> editProfile());
             JPanel buttons = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 5));
             buttons.setOpaque(false);
@@ -273,13 +275,20 @@ public class LecturerDashboard extends JFrame {
         private void addRow(String label, String value) {
             JPanel row = new JPanel(new BorderLayout());
             row.setOpaque(false);
-            row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
+            row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+
             JLabel l = new JLabel(label);
-            l.setPreferredSize(new Dimension(120, 30));
+            l.setFont(l.getFont().deriveFont(16f));
+            l.setPreferredSize(new Dimension(140, 40));
+
+            JLabel v = new JLabel(value);
+            v.setFont(v.getFont().deriveFont(16f));
+
             row.add(l, BorderLayout.WEST);
-            row.add(new JLabel(value), BorderLayout.CENTER);
+            row.add(v, BorderLayout.CENTER);
+
             rows.add(row);
-            rows.add(Box.createVerticalStrut(6));
+            rows.add(Box.createVerticalStrut(8));
         }
 
         private void editProfile() {
