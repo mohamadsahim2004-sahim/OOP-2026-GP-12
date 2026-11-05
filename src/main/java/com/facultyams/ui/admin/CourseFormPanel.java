@@ -49,6 +49,8 @@ final class CourseFormPanel extends JPanel {
     final JComboBox<Integer> semesterCombo = new JComboBox<>(new Integer[] {1, 2});
     final JComboBox<Course.CourseType> typeCombo = new JComboBox<>(Course.CourseType.values());
     final JComboBox<User> lecturerCombo = new JComboBox<>();
+    /** Live "hours per week" preview, recalculated whenever the credits or the course type change. */
+    final JLabel hoursLabel = new JLabel(" ");
 
     /** @param existing the course to edit, or null to add one */
     CourseFormPanel(CourseService courseService, DepartmentService departmentService, UserService userService,
@@ -100,6 +102,7 @@ final class CourseFormPanel extends JPanel {
         addRow(2, "Department *", departmentCombo, "Credits * (1-6)", creditsSpinner);
         addRow(4, "Level * (1-4)", levelCombo, "Semester * (1-2)", semesterCombo);
         addRow(6, "Course type *", typeCombo, "Lecturer in charge", lecturerCombo);
+        addHoursRow(8);
 
         if (existing != null) {
             codeField.setText(existing.getCourseCode());
@@ -121,6 +124,39 @@ final class CourseFormPanel extends JPanel {
                 }
             }
         }
+
+        // Added after the fields above were filled so loading an existing course does not fire them one by one.
+        creditsSpinner.addChangeListener(e -> updateHours());
+        typeCombo.addActionListener(e -> updateHours());
+        updateHours();
+    }
+
+    /** Full-width read-only line under the fields showing the weekly hours for the chosen credits and type. */
+    private void addHoursRow(int gridy) {
+        hoursLabel.setFont(AdminTheme.FONT_BOLD);
+        hoursLabel.setForeground(AdminTheme.BLUE_DARK);
+        hoursLabel.setOpaque(true);
+        hoursLabel.setBackground(AdminTheme.BLUE_LIGHT);
+        hoursLabel.setBorder(BorderFactory.createEmptyBorder(8, 10, 8, 10));
+        hoursLabel.getAccessibleContext().setAccessibleName("Hours per week");
+        GridBagConstraints c = new GridBagConstraints();
+        c.gridx = 0;
+        c.gridy = gridy;
+        c.gridwidth = 2;
+        c.fill = GridBagConstraints.HORIZONTAL;
+        c.weightx = 1.0;
+        c.insets = new Insets(10, 6, 4, 6);
+        add(hoursLabel, c);
+    }
+
+    /**
+     * Recalculates "Hours per week": 1 theory credit = 1 h, 1 practical credit = 2 h. Reads the spinner's model
+     * value, so it follows the arrows and any value that has been typed and committed.
+     */
+    private void updateHours() {
+        Course.CourseType type = (Course.CourseType) typeCombo.getSelectedItem();
+        int credits = ((Number) creditsSpinner.getValue()).intValue();
+        hoursLabel.setText("Hours per week:  " + Course.hoursFormula(type, credits));
     }
 
     private void addRow(int gridy, String leftLabel, JComponent left, String rightLabel, JComponent right) {

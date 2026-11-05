@@ -164,17 +164,6 @@ For `StudentModuleChecks` only (throw-away database that contains **only** demo 
 mysql -u <admin_user> -p faculty_ams -e "source database/test/student_checks_fixture.sql"
 ```
 
-To try a medical submission with clickable calendar dates, run this optional fixture on the development database:
-```powershell
-mysql -u <admin_user> -p faculty_ams -e "source database/test/medical_calendar_demo.sql"
-```
-It marks `tg1001`'s ICT2113 theory session 15 absent and moves it to a recent date so it is selectable in the calendar.
-This intentionally changes that demo student's attendance sample and resulting percentage.
-Log in as `tg1001` / `student123`, open **Attendance > Submit Medical Certificate**, then click one calendar number for
-the start date and another for the end date. Dates in the allowed lookback window are clickable, including weekends and
-adjacent-month dates; the wizard enables **Next** only when the range contains an eligible absent session. The fixture
-refuses to run if the demo session is missing or already has a medical request; it must not be used with real student data.
-
 ## 6. Verify
 Read-only; one result set `check_name | status | detail` (`PASS`, `FAIL`, `WARN`, `INFO`, `SKIP`) followed by reports:
 ```powershell
@@ -245,5 +234,5 @@ mysql -u <admin_user> -p faculty_ams_restore -e "source backups/faculty_ams_<tim
 | Every file shows as modified in `git status` | Line endings only (CRLF/LF). Use `git config core.autocrlf true` on Windows. |
 
 ## 9. Project layout
-`database/` - `schema.sql`, `migrations/`, `sample_data.sql`, `audit_existing_database.sql`, `verify_assignment_data.sql`, `manual/`, `test/`, `PREFLIGHT_REPORT.md` (findings and corrections);
+`database/` - `schema.sql`, `migrations/`, `sample_data.sql`, `audit_existing_database.sql`, `verify_assignment_data.sql`, `manual/`, `test/`;
 `src/main/java/com/facultyams` - `config`, `dao`, `model`, `service`, `ui` (Swing), `security`.

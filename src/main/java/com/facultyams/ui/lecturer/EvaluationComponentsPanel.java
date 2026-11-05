@@ -96,7 +96,7 @@ public class EvaluationComponentsPanel extends CoursePanel {
             deleteButton.setEnabled(!s.structureLocked());
             status.setText(s.components().isEmpty()
                     ? "No evaluation components yet. Click \"Add Component\" to create the first one."
-                    : (s.published() ? "Results are published - the scheme is locked."
+                    : (s.published() ? "Results are published - the scheme is locked. Unpublish them in \"Marks Entry\" or \"Final Results and Grades\" to change it."
                     : s.marksEntered() > 0 ? "Marks have been entered: components can be renamed but not added, removed or re-weighted."
                     : s.components().size() + " component(s)."));
         });
