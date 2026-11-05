@@ -5,6 +5,7 @@ import com.facultyams.model.EvaluationComponent;
 import com.facultyams.service.AcademicRules;
 import com.facultyams.service.LecturerAccessService;
 import com.facultyams.service.MarksService;
+import com.facultyams.service.ResultService;
 import com.facultyams.util.UIUtil;
 
 import javax.swing.JButton;
@@ -33,10 +34,12 @@ public class MarksEntryPanel extends CoursePanel {
 
     private final transient MarksService service;
     private final JButton saveButton = new JButton("Save Changes");
+    private final JButton unpublishButton = new JButton("Unpublish to Edit");
     private final JLabel notice = new JLabel(" ");
     private final JScrollPane scroll = new JScrollPane();
     private final Set<Integer> dirtyRows = new HashSet<>();
     private transient MarksService.EntrySheet sheet;
+    private transient ResultService resultService;
     private DefaultTableModel model = new DefaultTableModel();
     private boolean loading;
 
@@ -53,6 +56,9 @@ public class MarksEntryPanel extends CoursePanel {
         toolbar.add(reload);
         saveButton.setEnabled(false);
         saveButton.addActionListener(e -> save());
+        toolbar.add(unpublishButton);
+        unpublishButton.setVisible(false);
+        unpublishButton.addActionListener(e -> unpublish());
 
         JPanel center = new JPanel(new BorderLayout(0, 6));
         center.setOpaque(false);
@@ -66,6 +72,7 @@ public class MarksEntryPanel extends CoursePanel {
         scroll.setViewportView(null);
         notice.setText(" ");
         saveButton.setEnabled(false);
+        unpublishButton.setVisible(false);
     }
 
     @Override
@@ -124,7 +131,12 @@ public class MarksEntryPanel extends CoursePanel {
         loading = false;
 
         saveButton.setEnabled(false);
-        notice.setText(entryOpen
+        long publishedCount = s.rows().stream().filter(MarksService.EntryRow::published).count();
+        unpublishButton.setVisible(publishedCount > 0);
+        notice.setText(publishedCount > 0
+                ? publishedCount + " result(s) are published and locked. Click \"Unpublish to Edit\" to take them back to draft, "
+                + "correct the marks, then publish again in \"Final Results and Grades\"."
+                : entryOpen
                 ? "Type marks into the cells, then click Save Changes. Leave a cell empty if the mark is not available yet."
                 : "Marks cannot be entered yet: " + s.scheme().problem()
                 + " Fix this in \"Evaluation Components\".");
@@ -199,6 +211,22 @@ public class MarksEntryPanel extends CoursePanel {
                 UIUtil.showInfo(this, "Marks saved for " + saved + " student(s).");
             }
             loadCourse(course);        // reload from the database so the table shows what is stored
+        });
+    }
+
+    /** Takes the course's published results back to draft so their marks become editable again. */
+    private void unpublish() {
+        Course course = selectedCourse();
+        if (course == null || !UIUtil.confirm(this, "Take all published results of " + course
+                + " back to draft?\nStudents will no longer see them until you publish again.")) {
+            return;
+        }
+        if (resultService == null) {
+            resultService = new ResultService();
+        }
+        LecturerUi.load(this, status, () -> resultService.unpublish(course.getCourseId()), n -> {
+            UIUtil.showInfo(this, n + " result(s) unpublished. You can edit the marks now.");
+            loadCourse(course);
         });
     }
 

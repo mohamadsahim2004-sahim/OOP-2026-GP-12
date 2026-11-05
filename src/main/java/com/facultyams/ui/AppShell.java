@@ -257,7 +257,7 @@ public abstract class AppShell extends JPanel {
         JPanel bar = new JPanel(new BorderLayout());
         bar.setBackground(AdminTheme.HEADER_BLUE);
         bar.setBorder(BorderFactory.createEmptyBorder(9, 28, 9, 20));
-        JLabel title = new JLabel("Faculty Academic Management System");
+        JLabel title = new JLabel("Faculty of Academic Management System");
         title.setForeground(Color.WHITE);
         title.setFont(AdminTheme.FONT_BOLD.deriveFont(15f));
         bar.add(title, BorderLayout.WEST);

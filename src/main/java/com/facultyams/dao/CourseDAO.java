@@ -1,4 +1,3 @@
-
 package com.facultyams.dao;
 
 import com.facultyams.config.DatabaseConnection;

@@ -16,7 +16,7 @@ import java.util.List;
 
 /**
  * Admin "Course Management" screen: database-backed table (course code, name, department, level, semester,
- * credits, lecturer, actions) with department and level filters, search, Add Course, Edit and Delete. All rules (Admin-only access, course
+ * credits, type, hours per week, lecturer, actions) with department and level filters, search, Add Course, Edit and Delete. All rules (Admin-only access, course
  * code, credits, department and lecturer validation, safe delete) are in {@link CourseService}; this class
  * shows data and reports errors.
  */
@@ -24,8 +24,9 @@ public class CourseManagementPanel extends AbstractManagementPanel<Course> {
 
     private static final long serialVersionUID = 1L;
     private static final String[] COLUMNS = {"Course Code", "Course Name", "Department", "Level", "Sem", "Credits",
-            "Lecturer", "Actions"};
-    private static final int ACTIONS_COLUMN = 7;
+            "Type", "Hours/Week", "Lecturer", "Actions"};
+    private static final int TYPE_COLUMN = 6;
+    private static final int ACTIONS_COLUMN = 9;
 
     private final transient CourseService courseService;
     private final transient DepartmentService departmentService;
@@ -65,12 +66,13 @@ public class CourseManagementPanel extends AbstractManagementPanel<Course> {
         liveSearch(searchField, this::refresh);
         setToolbar(filterRow(150, new double[] {2, 1.2, 0.8}, searchField, departmentFilter, levelFilter),
                 addButton("Add Course", this::addCourse));
-        int[] widths = {122, 195, 155, 72, 62, 80, 130};
-        int[] minimums = {118, 90, 90, 68, 58, 76, 90};   // keep the short headers readable ("Level", "Sem", "Credits")
+        int[] widths = {122, 195, 155, 72, 62, 80, 150, 110, 130};
+        int[] minimums = {118, 90, 90, 68, 58, 76, 140, 96, 90};   // keep the short headers readable ("Level", "Sem", "Credits")
         for (int i = 0; i < widths.length; i++) {
             table.getColumnModel().getColumn(i).setPreferredWidth(widths[i]);
             table.getColumnModel().getColumn(i).setMinWidth(minimums[i]);
         }
+        AdminTheme.badgeColumn(table, TYPE_COLUMN);   // Theory / Practical / Theory + Practical as a coloured pill
         RowActions.install(table, ACTIONS_COLUMN, this::editRow, this::deleteRow);
     }
 
@@ -104,6 +106,7 @@ public class CourseManagementPanel extends AbstractManagementPanel<Course> {
     protected Object[] toRow(Course c) {
         return new Object[] {c.getCourseCode(), c.getCourseName(), c.getDepartmentName(),
                 c.getAcademicLevel(), c.getSemester(), c.getCredits(),
+                c.getCourseType().label(), c.getHoursShort(),
                 c.getLecturerName() == null ? "-" : c.getLecturerName(), ""};
     }
 
