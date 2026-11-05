@@ -11,14 +11,22 @@ public final class FormField extends JPanel {
     private final JLabel error = new JLabel(" ");
     private final JComponent input;
     private final boolean readOnly;
+    private final boolean lockWhenNotEditable;
     private final JPanel inputRow;
     private Color borderColor = Theme.CONTROL_BORDER;
+    private boolean editable;
 
     /** Creates a labeled profile field using a consistent vertical grid. */
     public FormField(String label, JComponent input, boolean readOnly) {
+        this(label, input, readOnly, false);
+    }
+
+    /** Creates a field that can show a lock while awaiting edit mode. */
+    public FormField(String label, JComponent input, boolean readOnly, boolean lockWhenNotEditable) {
         super();
         this.input = input;
         this.readOnly = readOnly;
+        this.lockWhenNotEditable = lockWhenNotEditable;
         setOpaque(false);
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -46,7 +54,7 @@ public final class FormField extends JPanel {
 
             @Override protected void paintChildren(Graphics graphics) {
                 super.paintChildren(graphics);
-                if (!FormField.this.readOnly) return;
+                if (!FormField.this.isLocked()) return;
                 Graphics2D g = (Graphics2D) graphics.create();
                 Theme.setAntiAliasing(g);
                 new ProfileIcon(ProfileIcon.Shape.LOCK, Theme.TEXT_SUBTLE, 14)
@@ -89,22 +97,29 @@ public final class FormField extends JPanel {
 
     /** Sets the field's editability and appropriate surface style. */
     public void setEditable(boolean editable) {
+        this.editable = editable && !readOnly;
+        boolean locked = isLocked();
         input.setEnabled(input instanceof JTextField || input instanceof JTextArea || readOnly ? true : editable);
-        input.setFocusable(!readOnly);
-        if (input instanceof JTextField field) field.setEditable(editable && !readOnly);
-        if (input instanceof JTextArea area) area.setEditable(editable && !readOnly);
-        input.setBackground(readOnly ? Theme.PROFILE_LOCKED_BG : Color.WHITE);
+        input.setFocusable(!locked);
+        if (input instanceof JTextField field) field.setEditable(this.editable);
+        if (input instanceof JTextArea area) area.setEditable(this.editable);
+        input.setBackground(locked ? Theme.PROFILE_LOCKED_BG : Color.WHITE);
         input.setForeground(Theme.TEXT_MAIN);
-        input.setToolTipText(readOnly ? "Managed by the university. Contact the registrar to change" : null);
+        input.setToolTipText(readOnly ? "Managed by the university. Contact the registrar to change"
+                : locked ? "Click Edit Profile to change" : null);
         input.setOpaque(false);
         if (input instanceof JTextField) {
             input.setBorder(BorderFactory.createEmptyBorder(0, Theme.PROFILE_FIELD_INSET, 0,
-                    readOnly ? Theme.PROFILE_FIELD_INSET + 18 : Theme.PROFILE_FIELD_INSET));
+                    locked ? Theme.PROFILE_FIELD_INSET + 18 : Theme.PROFILE_FIELD_INSET));
         } else {
             input.setBorder(BorderFactory.createEmptyBorder());
         }
         inputRow.repaint();
         if (input instanceof JComboBox<?> combo) combo.setEnabled(editable && !readOnly);
+    }
+
+    private boolean isLocked() {
+        return readOnly || lockWhenNotEditable && !editable;
     }
 
     /** Shows or clears a validation message. */

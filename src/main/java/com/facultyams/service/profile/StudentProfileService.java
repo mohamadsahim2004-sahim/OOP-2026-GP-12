@@ -2,6 +2,8 @@ package com.facultyams.service.profile;
 
 import com.facultyams.model.student.StudentProfile;
 
+import java.time.LocalDate;
+
 /** Profile operations for the logged-in student. */
 public interface StudentProfileService {
     /** Returns the logged-in student's profile (fresh from the database). */
@@ -9,6 +11,9 @@ public interface StudentProfileService {
 
     /** Updates the contact number (the only editable text field). Throws a message-bearing exception if invalid. */
     void updateContactNumber(String phone);
+
+    /** Updates the date of birth after validating the student's age range. */
+    void updateDateOfBirth(LocalDate dateOfBirth);
 
     /** Updates the profile picture path. */
     void updatePhoto(String imagePath);

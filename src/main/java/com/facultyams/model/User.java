@@ -15,6 +15,7 @@ public abstract class User {
         FULL_NAME,
         EMAIL,
         CONTACT_NUMBER,
+        DATE_OF_BIRTH,
         PROFILE_PICTURE
     }
 

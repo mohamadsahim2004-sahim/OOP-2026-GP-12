@@ -1,6 +1,7 @@
 package com.facultyams.ui.views;
 
 import com.facultyams.model.student.StudentProfile;
+import com.facultyams.model.Student;
 import com.facultyams.model.profile.StudentStatus;
 import com.facultyams.service.DataService;
 import com.facultyams.service.StudentResultService;
@@ -20,7 +21,10 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,6 +36,7 @@ import javax.swing.event.DocumentListener;
 import javax.swing.text.AbstractDocument;
 import javax.swing.text.AttributeSet;
 import javax.swing.text.BadLocationException;
+import javax.swing.text.DateFormatter;
 import javax.swing.text.DocumentFilter;
 
 /** Profile screen with aligned academic/contact details and guarded edit mode. */
@@ -53,11 +58,15 @@ public final class StudentProfileView extends JPanel {
     private JButton photoButton;
     private FormField universityEmail;
     private FormField mobile;
+    private FormField dateOfBirth;
+    private FormField age;
     private boolean editing;
     private boolean saving;
     private boolean dirty;
     private boolean validating;
     private String originalPhone;
+    private String originalDateOfBirth;
+    private String dateOfBirthValidationMessage;
     private String selectedPhotoPath;
     private float transitionAlpha = 1f;
     private Timer transitionTimer;
@@ -392,14 +401,20 @@ public final class StudentProfileView extends JPanel {
         card.setBorder(BorderFactory.createEmptyBorder(Theme.PROFILE_CARD_PADDING, Theme.PROFILE_CARD_PADDING,
                 Theme.PROFILE_CARD_PADDING, Theme.PROFILE_CARD_PADDING));
         card.setAlignmentX(Component.LEFT_ALIGNMENT);
-        addSectionHeading(card, "Contact Information", "You can change your mobile number. Your university e-mail is managed by the university.");
+        addSectionHeading(card, "Contact Information",
+                "You can change your mobile number and date of birth. Your university e-mail is managed by the university.");
         JPanel contactGrid = new JPanel(new GridBagLayout());
         contactGrid.setOpaque(false);
         contactGrid.setAlignmentX(Component.LEFT_ALIGNMENT);
         universityEmail = field("University Email", textField(student.getEmail()), true);
         mobile = editableField("Mobile Number", textField(valueOrEmpty(student.getPhoneNumber())));
+        dateOfBirth = editableField("Date of Birth",
+                dateField(student.getDateOfBirth() == null ? "" : student.getDateOfBirth().toString()), true);
+        age = field("Age", textField(ageLabel(student.getAge())), true);
         addField(contactGrid, universityEmail, 0, 0, 1);
         addField(contactGrid, mobile, 1, 0, 1);
+        addField(contactGrid, dateOfBirth, 0, 1, 1);
+        addField(contactGrid, age, 1, 1, 1);
         card.add(contactGrid);
         card.add(Box.createVerticalStrut(Theme.PROFILE_SECTION_GAP));
         addSectionHeading(card, "Academic Information", "Official academic records are managed by the university.");
@@ -422,6 +437,11 @@ public final class StudentProfileView extends JPanel {
 
         attachValidation();
         configurePhoneField((JTextField) mobile.getInput());
+        ((JTextField) dateOfBirth.getInput()).getDocument().addDocumentListener(new DocumentListener() {
+            @Override public void insertUpdate(DocumentEvent e) { updateAgeDisplay(); }
+            @Override public void removeUpdate(DocumentEvent e) { updateAgeDisplay(); }
+            @Override public void changedUpdate(DocumentEvent e) { updateAgeDisplay(); }
+        });
         installEditKeyBehavior();
         return card;
     }
@@ -467,12 +487,30 @@ public final class StudentProfileView extends JPanel {
         return formField;
     }
 
+    private FormField editableField(String label, JComponent input, boolean lockWhenNotEditable) {
+        FormField formField = new FormField(label, input, false, lockWhenNotEditable);
+        editableFields.add(formField);
+        return formField;
+    }
+
     private FormField field(String label, JTextField input, boolean readOnly) {
         return new FormField(label, input, readOnly);
     }
 
     private JTextField textField(String value) {
         JTextField field = new JTextField(value);
+        field.setFont(Theme.FONT_BODY);
+        field.setForeground(Theme.TEXT_MAIN);
+        field.setCaretColor(Theme.PRIMARY);
+        return field;
+    }
+
+    private JFormattedTextField dateField(String value) {
+        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd", Locale.ROOT);
+        format.setLenient(false);
+        JFormattedTextField field = new JFormattedTextField(new DateFormatter(format));
+        field.setFocusLostBehavior(JFormattedTextField.PERSIST);
+        field.setText(value);
         field.setFont(Theme.FONT_BODY);
         field.setForeground(Theme.TEXT_MAIN);
         field.setCaretColor(Theme.PRIMARY);
@@ -546,8 +584,32 @@ public final class StudentProfileView extends JPanel {
         String value = inputText(field).trim();
         if (field == mobile) {
             message = phoneValidator.validate(value);
+        } else if (field == dateOfBirth) {
+            message = validateDateOfBirth(value);
+            dateOfBirthValidationMessage = message;
         }
         field.setError(message);
+    }
+
+    private String validateDateOfBirth(String value) {
+        if (value.isBlank()) return null;
+        if (!value.matches("\\d{4}-\\d{2}-\\d{2}")) {
+            return "Enter the date in yyyy-MM-dd format.";
+        }
+        LocalDate dob;
+        try {
+            dob = LocalDate.parse(value, DateTimeFormatter.ISO_LOCAL_DATE);
+        } catch (DateTimeParseException ex) {
+            return "Enter a valid date in yyyy-MM-dd format.";
+        }
+        if (dob.isAfter(LocalDate.now())) {
+            return "Date of birth cannot be in the future.";
+        }
+        int years = Student.calculateAge(dob);
+        if (years < 15 || years > 60) {
+            return "Age must be between 15 and 60 years.";
+        }
+        return null;
     }
 
     private boolean validateAll() {
@@ -636,16 +698,24 @@ public final class StudentProfileView extends JPanel {
 
     private void saveChanges(JButton saveButton) {
         if (!validateAll()) {
+            if (dateOfBirth.hasError()) {
+                JOptionPane.showMessageDialog(this, dateOfBirthValidationMessage,
+                        "Invalid date of birth", JOptionPane.ERROR_MESSAGE);
+            }
             showToast("Please correct the highlighted fields.", false);
             return;
         }
         setSaving(true, saveButton);
         String phone = ((JTextField) mobile.getInput()).getText().trim();
         boolean phoneChanged = !phone.equals(originalPhone);
+        String dobText = text(dateOfBirth);
+        boolean dobChanged = !dobText.equals(originalDateOfBirth);
+        LocalDate dob = dobText.isBlank() ? null : LocalDate.parse(dobText, DateTimeFormatter.ISO_LOCAL_DATE);
         String photo = selectedPhotoPath;
         SwingWorker<Void, Void> worker = new SwingWorker<>() {
             @Override protected Void doInBackground() {
                 if (phoneChanged) dataService.updateStudentContactNumber(phone);
+                if (dobChanged) dataService.updateStudentDateOfBirth(dob);
                 if (photo != null) dataService.updateStudentPhoto(photo.isBlank() ? null : photo);
                 return null;
             }
@@ -692,8 +762,8 @@ public final class StudentProfileView extends JPanel {
 
     private void updateDirty() {
         if (!editing || saving) return;
-        StudentProfile student = profile;
-        dirty = !text(mobile).equals(originalPhone) || (selectedPhotoPath != null);
+        dirty = !text(mobile).equals(originalPhone) || !text(dateOfBirth).equals(originalDateOfBirth)
+                || (selectedPhotoPath != null);
         for (Component component : actionBar.getComponents()) {
             if (component instanceof JButton button && button.getText().startsWith("Save")) button.setEnabled(dirty);
         }
@@ -711,9 +781,30 @@ public final class StudentProfileView extends JPanel {
         StudentProfile student = profile;
         ((JTextField) universityEmail.getInput()).setText(student.getEmail());
         ((JTextField) mobile.getInput()).setText(valueOrEmpty(student.getPhoneNumber()));
+        ((JTextField) dateOfBirth.getInput()).setText(
+                student.getDateOfBirth() == null ? "" : student.getDateOfBirth().toString());
+        originalDateOfBirth = student.getDateOfBirth() == null ? "" : student.getDateOfBirth().toString();
         originalPhone = valueOrEmpty(student.getPhoneNumber());
+        updateAgeDisplay();
         selectedPhotoPath = null;
         if (avatar != null) avatar.setImagePath(student.getProfileImageUrl());
+    }
+
+    private void updateAgeDisplay() {
+        String value = text(dateOfBirth);
+        int years = 0;
+        if (value.matches("\\d{4}-\\d{2}-\\d{2}")) {
+            try {
+                years = Student.calculateAge(LocalDate.parse(value, DateTimeFormatter.ISO_LOCAL_DATE));
+            } catch (DateTimeParseException ignored) {
+                // Keep the age blank while the student is entering an incomplete or invalid date.
+            }
+        }
+        ((JTextField) age.getInput()).setText(years > 0 ? ageLabel(years) : "Not set");
+    }
+
+    private String ageLabel(int years) {
+        return years == 1 ? "1 year" : years + " years";
     }
 
     private void choosePhoto() {
@@ -756,6 +847,7 @@ public final class StudentProfileView extends JPanel {
         });
         List<JTextField> focusOrder = new ArrayList<>();
         focusOrder.add((JTextField) mobile.getInput());
+        focusOrder.add((JTextField) dateOfBirth.getInput());
         for (JTextField text : focusOrder) {
                 text.addKeyListener(new KeyAdapter() {
                     @Override public void keyPressed(KeyEvent e) {

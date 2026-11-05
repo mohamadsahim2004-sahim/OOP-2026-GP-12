@@ -1,6 +1,9 @@
 package com.facultyams.model.student;
 
+import com.facultyams.model.Student;
 import com.facultyams.model.profile.StudentStatus;
+
+import java.time.LocalDate;
 
 /**
  * Read model for the student's profile page, filled from {@code users}, {@code students} and
@@ -17,6 +20,7 @@ public class StudentProfile {
     private String studentCategory;   // REGULAR / REPEAT / BATCH_MISSED as stored
     private String department;
     private String contactNumber;
+    private LocalDate dateOfBirth;
     private String profilePicture;
     private StudentStatus status = StudentStatus.ACTIVE;
     private String currentLevelSemester = "";
@@ -49,6 +53,9 @@ public class StudentProfile {
     public void setCurrentSemester(String value) { this.currentLevelSemester = value == null ? "" : value; }
     public String getPhoneNumber() { return contactNumber; }
     public void setPhoneNumber(String contactNumber) { this.contactNumber = contactNumber; }
+    public LocalDate getDateOfBirth() { return dateOfBirth; }
+    public void setDateOfBirth(LocalDate dateOfBirth) { this.dateOfBirth = dateOfBirth; }
+    public int getAge() { return Student.calculateAge(dateOfBirth); }
     public String getProfileImageUrl() { return profilePicture; }
     public void setProfileImageUrl(String profilePicture) { this.profilePicture = profilePicture; }
     public StudentStatus getStatus() { return status; }

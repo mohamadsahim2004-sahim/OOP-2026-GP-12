@@ -4,6 +4,7 @@ import com.facultyams.exception.DatabaseException;
 import com.facultyams.model.profile.StudentStatus;
 import com.facultyams.model.student.StudentProfile;
 
+import java.sql.Date;
 import java.sql.SQLException;
 
 /**
@@ -14,7 +15,7 @@ public class StudentProfileDAO {
 
     private static final String SELECT =
             "SELECT u.user_id, u.username, u.full_name, u.email, u.contact_number, u.profile_picture, u.is_active, "
-                    + "s.registration_no, s.batch, s.student_status, d.department_name "
+                    + "s.registration_no, s.batch, s.student_status, s.dob, d.department_name "
                     + "FROM users u JOIN students s ON s.user_id = u.user_id "
                     + "LEFT JOIN departments d ON d.department_id = u.department_id "
                     + "WHERE u.user_id = ? AND u.role = 'STUDENT'";
@@ -32,6 +33,8 @@ public class StudentProfileDAO {
             p.setRegNo(rs.getString("registration_no"));
             p.setBatch(rs.getString("batch"));
             p.setStudentCategory(rs.getString("student_status"));
+            Date dob = rs.getDate("dob");
+            p.setDateOfBirth(dob == null ? null : dob.toLocalDate());
             p.setDepartment(rs.getString("department_name"));
             return p;
         }, studentId);
@@ -45,6 +48,16 @@ public class StudentProfileDAO {
                 contactNumber, profilePicture, studentId);
         if (rows == 0) {
             throw new DatabaseException("Student account not found.");
+        }
+    }
+
+    /** Updates only the logged-in student's date of birth. */
+    public void updateDateOfBirth(int studentId, java.time.LocalDate dateOfBirth) throws DatabaseException {
+        Date dob = dateOfBirth == null ? null : Date.valueOf(dateOfBirth);
+        int rows = StudentDaoSupport.update(
+                "UPDATE students SET dob = ? WHERE user_id = ?", dob, studentId);
+        if (rows == 0) {
+            throw new DatabaseException("Student record not found.");
         }
     }
 }

@@ -12,6 +12,7 @@ import com.facultyams.service.StudentResultService.Summary;
 import com.facultyams.service.profile.DbStudentProfileService;
 import com.facultyams.service.profile.StudentProfileService;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -141,6 +142,12 @@ public final class DataService {
 
     public void updateStudentContactNumber(String phone) {
         profileService.updateContactNumber(phone);
+        refreshProfile();
+        fireProfileChanged();
+    }
+
+    public void updateStudentDateOfBirth(LocalDate dateOfBirth) {
+        profileService.updateDateOfBirth(dateOfBirth);
         refreshProfile();
         fireProfileChanged();
     }

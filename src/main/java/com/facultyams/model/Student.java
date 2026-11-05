@@ -2,6 +2,8 @@ package com.facultyams.model;
 
 import com.facultyams.security.Role;
 
+import java.time.LocalDate;
+import java.time.Period;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Set;
@@ -35,10 +37,11 @@ public class Student extends User {
     }
 
     private static final Set<ProfileField> EDITABLE = Collections.unmodifiableSet(
-            EnumSet.of(ProfileField.CONTACT_NUMBER, ProfileField.PROFILE_PICTURE));
+            EnumSet.of(ProfileField.CONTACT_NUMBER, ProfileField.DATE_OF_BIRTH, ProfileField.PROFILE_PICTURE));
 
     private String registrationNumber;
     private String batch;
+    private LocalDate dateOfBirth;
     private StudentStatus studentStatus = StudentStatus.REGULAR;
 
     public Student() {
@@ -77,6 +80,23 @@ public class Student extends User {
 
     public void setBatch(String batch) {
         this.batch = batch;
+    }
+
+    public LocalDate getDateOfBirth() {
+        return dateOfBirth;
+    }
+
+    public void setDateOfBirth(LocalDate dateOfBirth) {
+        this.dateOfBirth = dateOfBirth;
+    }
+
+    /** Calculates age from date of birth; age is deliberately not stored. */
+    public int getAge() {
+        return calculateAge(dateOfBirth);
+    }
+
+    public static int calculateAge(LocalDate dateOfBirth) {
+        return dateOfBirth == null ? 0 : Period.between(dateOfBirth, LocalDate.now()).getYears();
     }
 
     public StudentStatus getStudentStatus() {

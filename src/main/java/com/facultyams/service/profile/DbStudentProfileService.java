@@ -3,6 +3,7 @@ package com.facultyams.service.profile;
 import com.facultyams.dao.StudentProfileDAO;
 import com.facultyams.dao.UserDAO;
 import com.facultyams.exception.DatabaseException;
+import com.facultyams.model.Student;
 import com.facultyams.model.User;
 import com.facultyams.model.student.StudentProfile;
 import com.facultyams.security.PasswordUtil;
@@ -11,6 +12,7 @@ import com.facultyams.service.StudentServiceException;
 import com.facultyams.service.profile.validation.PasswordStrengthEvaluator;
 import com.facultyams.service.profile.validation.SriLankanPhoneValidator;
 
+import java.time.LocalDate;
 import java.util.Arrays;
 
 /**
@@ -55,6 +57,24 @@ public final class DbStudentProfileService implements StudentProfileService {
             profileDAO.updateContactAndPicture(me, value, current == null ? null : current.getProfileImageUrl());
         } catch (DatabaseException e) {
             throw new StudentServiceException("Your contact number could not be saved. Please try again.", e);
+        }
+    }
+
+    @Override
+    public void updateDateOfBirth(LocalDate dateOfBirth) {
+        if (dateOfBirth != null) {
+            if (dateOfBirth.isAfter(LocalDate.now())) {
+                throw new IllegalArgumentException("Date of birth cannot be in the future.");
+            }
+            int age = Student.calculateAge(dateOfBirth);
+            if (age < 15 || age > 60) {
+                throw new IllegalArgumentException("Age must be between 15 and 60 years.");
+            }
+        }
+        try {
+            profileDAO.updateDateOfBirth(StudentAccess.currentStudentId(), dateOfBirth);
+        } catch (DatabaseException e) {
+            throw new StudentServiceException("Your date of birth could not be saved. Please try again.", e);
         }
     }
 

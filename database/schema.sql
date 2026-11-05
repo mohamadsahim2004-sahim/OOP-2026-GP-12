@@ -96,6 +96,7 @@ CREATE TABLE IF NOT EXISTS students (
                           user_id         INT         NOT NULL,
                           registration_no VARCHAR(20) NOT NULL,
                           batch           VARCHAR(10) NOT NULL,
+                          dob             DATE        NULL,
                           student_status  ENUM('REGULAR', 'REPEAT', 'BATCH_MISSED') NOT NULL DEFAULT 'REGULAR',
                           CONSTRAINT pk_students PRIMARY KEY (user_id),
                           CONSTRAINT uq_students_registration_no UNIQUE (registration_no),
